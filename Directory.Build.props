@@ -1,0 +1,22 @@
+<Project>
+  
+  <!-- Build settings -->   
+  <PropertyGroup> 
+    <TargetFramework>net9.0</TargetFramework>
+    <LangVersion>Latest</LangVersion>
+    <Platforms>x64</Platforms>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Outputsettings -->   
+  <PropertyGroup>    
+    <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
+    <IntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj/$(MSBuildProjectName)</IntermediateOutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
+  </PropertyGroup>
+</Project>
