@@ -13,6 +13,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine", "source\CapriKit.CommandLine\CapriKit.CommandLine.csproj", "{FB75873B-455F-448E-B06A-BBD073FCCC3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine.Types", "source\CapriKit.CommandLine.Types\CapriKit.CommandLine.Types.csproj", "{65978AF9-426B-4117-88E7-3D5CA00DC350}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -23,8 +27,19 @@ Global
 		{4284895C-5E4C-46C5-8870-CA250B352412}.Debug|x64.Build.0 = Debug|x64
 		{4284895C-5E4C-46C5-8870-CA250B352412}.Release|x64.ActiveCfg = Release|x64
 		{4284895C-5E4C-46C5-8870-CA250B352412}.Release|x64.Build.0 = Release|x64
+		{FB75873B-455F-448E-B06A-BBD073FCCC3D}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{FB75873B-455F-448E-B06A-BBD073FCCC3D}.Debug|x64.Build.0 = Debug|Any CPU
+		{FB75873B-455F-448E-B06A-BBD073FCCC3D}.Release|x64.ActiveCfg = Release|Any CPU
+		{FB75873B-455F-448E-B06A-BBD073FCCC3D}.Release|x64.Build.0 = Release|Any CPU
+		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Debug|x64.Build.0 = Debug|Any CPU
+		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Release|x64.ActiveCfg = Release|Any CPU
+		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BF91BE50-7986-48A2-9280-B42EA8551B73}
 	EndGlobalSection
 EndGlobal
