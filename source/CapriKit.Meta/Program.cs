@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace CapriKit.Meta;
 
@@ -9,9 +10,69 @@ internal partial class Program
 
     [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]    
     private static partial Regex SemVerRegex();
+    
+    public static void Temp()
+    {
+        var comment = """
+            /// <verb>Lalalalal</verb>
+            /// <summary>
+            /// Bumps the package version, in line with semantic versioning 2.0
+            /// </summary>
+            """;
 
+        var lines = comment.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var builder = new StringBuilder();
+        foreach (var line in lines)
+        {
+            if (line.StartsWith("///"))
+            {
+                if (line.Length > 3)
+                {
+                    builder.AppendLine(line[3..]);
+                }
+                else
+                {
+                    builder.AppendLine();
+                }    
+            }
+        }
+
+        var xml = builder.ToString();
+
+        var settings = new XmlReaderSettings()
+        {
+            ConformanceLevel = ConformanceLevel.Fragment
+        };
+        using var reader = XmlReader.Create(new StringReader(xml), settings);
+        while (reader.Read())
+        {
+            if(reader.NodeType == XmlNodeType.Element && reader.Name == "summary")
+            {                
+                Console.WriteLine($"VVVVV: {reader.ReadInnerXml()}");
+            }
+            //switch (reader.NodeType)
+            //{
+            //    case XmlNodeType.Element:
+            //        Console.WriteLine("Start Element {0}", reader.Name);
+            //        break;
+            //    case XmlNodeType.Text:
+            //        Console.WriteLine("Text Node: {0}", reader.Value);
+            //        break;
+            //    case XmlNodeType.EndElement:
+            //        Console.WriteLine("End Element {0}", reader.Name);
+            //        break;
+            //    default:
+            //        Console.WriteLine("Other node {0} with value {1}",
+            //                        reader.NodeType, reader.Value);
+            //        break;
+            //}
+        }
+
+    }
     private static void Main(string[] args)
     {
+        Temp();
+
         if (args.Length == 0)
         {
             while(true)

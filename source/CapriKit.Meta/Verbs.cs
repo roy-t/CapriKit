@@ -10,11 +10,11 @@ namespace CapriKit.Meta;
 [Verb("bump")]
 public partial class Bump
 {
-    ///// <summary>
-    ///// Increase the major version of the package
-    ///// </summary>
-    //[Flag("--major")]
-    //public partial bool Major { get; }
+    /// <summary>
+    /// Increase the major version of the package
+    /// </summary>
+    [Flag("--major")]
+    public partial bool Major { get; }
 
     ///// <summary>
     ///// Increase the minor version of the package
@@ -41,12 +41,41 @@ public partial class Bump
     //public partial string BuildMetaData { get; }
 }
 
-
-
 // TODO: generate something like this:
 
-//public partial class Bump
-//{
-//    private bool major;
-//    public partial bool Major { get => this.major; }
-//}
+public partial class Bump
+{
+    private bool major;
+    public partial bool Major { get => this.major; }
+
+    public static Bump? Parse(string[] args)
+    {
+        return null;
+    }
+}
+
+// Generate
+public class BVerbExecuter : AVerbExecuter
+{
+    public static void Create()
+    {
+        // Generators addsss
+
+        var executer = new BVerbExecuter();
+        executer.Verbs.Add("a");
+        executer.VerbToFlagToDocs.Add("b", []);
+        //etc..
+    }
+
+    // Generate Per method execute things
+
+    // Performs the given action if the arguments match this verb
+    public void Execute(Action<Bump> onBump, params string[] args)
+    {
+        var bump = Bump.Parse(args);
+        if (bump != null)
+        {
+            onBump(bump);
+        }
+    }
+}
