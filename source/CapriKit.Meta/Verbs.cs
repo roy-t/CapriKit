@@ -16,43 +16,43 @@ public partial class Bump
     [Flag("--major")]
     public partial bool Major { get; }
 
-    ///// <summary>
-    ///// Increase the minor version of the package
-    ///// </summary>
-    //[Flag("--minor")]
-    //public partial bool Minor { get; }
+    /// <summary>
+    /// Increase the minor version of the package
+    /// </summary>
+    [Flag("--minor")]
+    public partial bool Minor { get; }
 
-    ///// <summary>
-    ///// Increase the patch version of the package
-    ///// </summary>
-    //[Flag("--patch")]
-    //public partial bool Patch { get; }
+    /// <summary>
+    /// Increase the patch version of the package
+    /// </summary>
+    [Flag("--patch")]
+    public partial bool Patch { get; }
 
-    ///// <summary>
-    ///// Set the prerelease information
-    ///// </summary>
-    //[Flag("--prerelease")]
-    //public partial string Prerelease { get; }
+    /// <summary>
+    /// Set the prerelease information
+    /// </summary>
+    [Flag("--prerelease")]
+    public partial string Prerelease { get; }
 
-    ///// <summary>
-    ///// Set the build meta data
-    ///// </summary>
-    //[Flag("--build-meta-data")]
-    //public partial string BuildMetaData { get; }
+    /// <summary>
+    /// Set the build meta data
+    /// </summary>
+    [Flag("--build-meta-data")]
+    public partial string BuildMetaData { get; }
 }
 
 // TODO: generate something like this:
 
-public partial class Bump
-{
-    private bool major;
-    public partial bool Major { get => this.major; }
+//public partial class Bump
+//{
+//    private bool major;
+//    public partial bool Major { get => this.major; }
 
-    public static Bump? Parse(string[] args)
-    {
-        return null;
-    }
-}
+//    public static Bump? Parse(string[] args)
+//    {
+//        return null;
+//    }
+//}
 
 // Generate
 public class BVerbExecuter : AVerbExecuter
@@ -72,10 +72,10 @@ public class BVerbExecuter : AVerbExecuter
     // Performs the given action if the arguments match this verb
     public void Execute(Action<Bump> onBump, params string[] args)
     {
-        var bump = Bump.Parse(args);
-        if (bump != null)
-        {
-            onBump(bump);
-        }
+        //var bump = Bump.Parse(args);
+        //if (bump != null)
+        //{
+        //    onBump(bump);
+        //}
     }
 }
