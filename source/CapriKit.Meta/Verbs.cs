@@ -55,7 +55,7 @@ public partial class Bump
 //}
 
 // Generate
-public class BVerbExecuter : AVerbExecuter
+public class BVerbExecuter : AVerbExecutor
 {
     public static void Create()
     {

@@ -1,6 +1,6 @@
 namespace CapriKit.CommandLine.Types;
 
-public abstract class AVerbExecuter
+public abstract class AVerbExecutor
 {
     protected readonly List<string> Verbs = [];
     protected readonly Dictionary<string, Dictionary<string, string>> VerbToFlagToDocs = [];   

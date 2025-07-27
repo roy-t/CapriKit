@@ -10,6 +10,9 @@ namespace CapriKit.CommandLine;
 [Generator]
 public class VerbGenerator : IIncrementalGenerator
 {
+    private static readonly string UtilitiesNameSpace = "CapriKit.CommandLine.Types";
+    private static readonly string ExecutorBaseClass = "AVerbExector";
+
     private static readonly string VerbAttributeFullName = "CapriKit.CommandLine.Types.VerbAttribute";
     private static readonly string VerbAttributeName = "VerbAttribute";
 
@@ -60,24 +63,39 @@ public class VerbGenerator : IIncrementalGenerator
     {        
         foreach (var verb in verbs)
         {
+            var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
+
             var builder = new StringBuilder();
+            builder.AppendLine($"using {UtilitiesNameSpace};");
             builder.AppendLine($"namespace {verb.TypeNamespace};");
-            builder.AppendLine($"public partial class {verb.TypeName}");
+            builder.Append($"public partial class {verb.TypeName}(");
+            for (var i = 0; i < flagsForVerb.Count; i++)
+            {
+                var initFlag = flagsForVerb[i];
+                builder.Append($"{initFlag.PropertyType} _{initFlag.PropertyName}");
+                if( i < flagsForVerb.Count - 1 )
+                {
+                    builder.Append(", ");
+                }
+            }
+
+            builder.AppendLine($")");
             builder.AppendLine("{");
 
-            foreach (var flag in flags)
-            {
-                if (flag.ParentTypeName != verb.TypeName)
-                {
-                    continue;
-                }
-
-                builder.AppendLine($"  private {flag.PropertyType} _{flag.PropertyName} = default;");
+            foreach (var flag in flagsForVerb)
+            {                
                 builder.AppendLine($"  public partial {flag.PropertyType} {flag.PropertyName} {{ get => _{flag.PropertyName}; }}");
             }
-            // TODO this generates the partial classes but not the parsing stuff!
 
-            builder.AppendLine("}");
+            // TODO: use ArgsParser IsVerb and then TryParseFlag to try and parse each flag in a new parser method!
+
+            //builder.AppendLine($"public static {verb.TypeName} Parse(params string[] args)");
+            //builder.AppendLine("{");
+
+            //builder.AppendLine("}");
+
+            //builder.AppendLine("}");
+
             context.AddSource($"VerbGenerator.{verb.TypeNamespace}.{verb.TypeName}.g.cs", builder.ToString());
         }               
     }
