@@ -66,13 +66,14 @@ public class VerbGenerator : IIncrementalGenerator
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
 
             var builder = new StringBuilder();
+            builder.AppendLine($"#nullable enable");
             builder.AppendLine($"using {UtilitiesNameSpace};");
             builder.AppendLine($"namespace {verb.TypeNamespace};");
             builder.Append($"public partial class {verb.TypeName}(");
             for (var i = 0; i < flagsForVerb.Count; i++)
             {
                 var initFlag = flagsForVerb[i];
-                builder.Append($"{initFlag.PropertyType} _{initFlag.PropertyName}");
+                builder.Append($"bool _Has{initFlag.PropertyName}, {initFlag.PropertyType} _{initFlag.PropertyName}");
                 if( i < flagsForVerb.Count - 1 )
                 {
                     builder.Append(", ");
@@ -83,19 +84,43 @@ public class VerbGenerator : IIncrementalGenerator
             builder.AppendLine("{");
 
             foreach (var flag in flagsForVerb)
-            {                
+            {
+                builder.AppendLine($"  public bool Has{flag.PropertyName} {{ get => _Has{flag.PropertyName}; }}");
                 builder.AppendLine($"  public partial {flag.PropertyType} {flag.PropertyName} {{ get => _{flag.PropertyName}; }}");
             }
 
             // TODO: use ArgsParser IsVerb and then TryParseFlag to try and parse each flag in a new parser method!
 
-            //builder.AppendLine($"public static {verb.TypeName} Parse(params string[] args)");
-            //builder.AppendLine("{");
+            builder.AppendLine($"  public static {verb.TypeName}? Parse(params string[] args)");
+            builder.AppendLine("  {");
+            builder.AppendLine($"    if (ArgsParser.IsVerb(\"{verb.VerbName}\", args))");
+            builder.AppendLine("    {");
 
-            //builder.AppendLine("}");
+            foreach(var flag in flagsForVerb)
+            {
+                builder.AppendLine($"      var _Has{flag.PropertyName} = ArgsParser.TryParseFlag<{flag.PropertyType}>(\"{flag.FlagName}\", out {flag.PropertyType} __{flag.PropertyName}, args);");
+            }
 
-            //builder.AppendLine("}");
+            builder.Append($"      return new {verb.TypeName}(");
+            for (var i = 0; i < flagsForVerb.Count; i++)
+            {
+                var conFlag = flagsForVerb[i];
+                builder.Append($"_Has{conFlag.PropertyName}, __{conFlag.PropertyName}");
+                if (i < flagsForVerb.Count - 1)
+                {
+                    builder.Append(", ");
+                }
+            }
 
+            builder.AppendLine($");");
+
+            builder.AppendLine("    }");
+            builder.AppendLine("    return null;");
+
+            builder.AppendLine("  }");
+            builder.AppendLine("}");
+
+            builder.AppendLine($"#nullable restore");
             context.AddSource($"VerbGenerator.{verb.TypeNamespace}.{verb.TypeName}.g.cs", builder.ToString());
         }               
     }

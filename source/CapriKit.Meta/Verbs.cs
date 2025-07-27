@@ -1,4 +1,5 @@
 using CapriKit.CommandLine.Types;
+using System.Diagnostics;
 
 namespace CapriKit.Meta;
 
@@ -53,6 +54,23 @@ public partial class Bump
 //        return null;
 //    }
 //}
+
+public class FooBar
+{
+    public static Bump? Parse(params string[] args)
+    {
+        if (ArgsParser.IsVerb("bump", args))
+        {
+            var hasMajor = ArgsParser.TryParseFlag<bool>("--major", out bool major, args);
+            var hasMinor = ArgsParser.TryParseFlag<bool>("--minor", out bool minor, args);
+
+            //return new Bump(m)
+
+        }
+
+        return null;
+    }
+}
 
 // Generate
 public class BVerbExecuter : AVerbExecutor
