@@ -65,62 +65,59 @@ public class VerbGenerator : IIncrementalGenerator
         {
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
 
-            var builder = new StringBuilder();
-            builder.AppendLine($"#nullable enable");
+            var builder = new StringBuilder();            
             builder.AppendLine($"using {UtilitiesNameSpace};");
             builder.AppendLine($"namespace {verb.TypeNamespace};");
-            builder.Append($"public partial class {verb.TypeName}(");
-            for (var i = 0; i < flagsForVerb.Count; i++)
-            {
-                var initFlag = flagsForVerb[i];
-                builder.Append($"bool _Has{initFlag.PropertyName}, {initFlag.PropertyType} _{initFlag.PropertyName}");
-                if( i < flagsForVerb.Count - 1 )
-                {
-                    builder.Append(", ");
-                }
-            }
-
-            builder.AppendLine($")");
-            builder.AppendLine("{");
+            builder.AppendLine($"public partial class {verb.TypeName}");                        
+            builder.AppendLine("{");            
 
             foreach (var flag in flagsForVerb)
             {
-                builder.AppendLine($"  public bool Has{flag.PropertyName} {{ get => _Has{flag.PropertyName}; }}");
-                builder.AppendLine($"  public partial {flag.PropertyType} {flag.PropertyName} {{ get => _{flag.PropertyName}; }}");
+                var name = flag.PropertyName;
+                var type = flag.PropertyType;
+                var fragment = $$"""
+                        private {{type}} _{{name}} = default;
+                        public bool Has{{name}} { get; private set; }
+                        public partial {{type}} {{name}} { get => _{{name}}; }
+                        public void Set{{name}}({{type}} value){ _{{name}} = value; Has{{name}} = true; }
+
+                    """;
+
+                builder.AppendLine(fragment);
             }
 
-            // TODO: use ArgsParser IsVerb and then TryParseFlag to try and parse each flag in a new parser method!
-
+            builder.AppendLine($"#nullable enable");
             builder.AppendLine($"  public static {verb.TypeName}? Parse(params string[] args)");
             builder.AppendLine("  {");
-            builder.AppendLine($"    if (ArgsParser.IsVerb(\"{verb.VerbName}\", args))");
+            builder.AppendLine($"    var argsParser = new ArgsParser(args);");
+            builder.AppendLine($"    if (argsParser.PopVerb(\"{verb.VerbName}\"))");
             builder.AppendLine("    {");
 
-            foreach(var flag in flagsForVerb)
-            {
-                builder.AppendLine($"      var _Has{flag.PropertyName} = ArgsParser.TryParseFlag<{flag.PropertyType}>(\"{flag.FlagName}\", out {flag.PropertyType} __{flag.PropertyName}, args);");
-            }
+            builder.AppendLine($"      var verb = new {verb.TypeName}();");
 
-            builder.Append($"      return new {verb.TypeName}(");
-            for (var i = 0; i < flagsForVerb.Count; i++)
+            //builder.AppendLine($"#nullable disable");
+            foreach (var flag in flagsForVerb)
             {
-                var conFlag = flagsForVerb[i];
-                builder.Append($"_Has{conFlag.PropertyName}, __{conFlag.PropertyName}");
-                if (i < flagsForVerb.Count - 1)
+                if (flag.PropertyType == "bool")
                 {
-                    builder.Append(", ");
+                    builder.AppendLine($"      if(argsParser.PopBoolFlag(\"{flag.FlagName}\")) {{ verb.Set{flag.PropertyName}(true); }}");
+                }
+                else
+                {
+                    builder.AppendLine($"      if(argsParser.PopFlag<{flag.PropertyType}>(\"{flag.FlagName}\", out {flag.PropertyType} __{flag.PropertyName})) {{ verb.Set{flag.PropertyName}(__{flag.PropertyName}); }}");
                 }
             }
+            //builder.AppendLine($"#nullable restore");
 
-            builder.AppendLine($");");
+            builder.AppendLine($"      return verb;");
 
             builder.AppendLine("    }");
             builder.AppendLine("    return null;");
 
             builder.AppendLine("  }");
-            builder.AppendLine("}");
-
             builder.AppendLine($"#nullable restore");
+            builder.AppendLine("}");
+            
             context.AddSource($"VerbGenerator.{verb.TypeNamespace}.{verb.TypeName}.g.cs", builder.ToString());
         }               
     }

@@ -13,6 +13,9 @@ internal partial class Program
     
     public static void Temp()
     {
+
+        var verb = CapriKit.Meta.Bump.Parse("bump", "--major", "--prerelease", "pre", "--wowowowowow");
+
         var comment = """
             /// <verb>Lalalalal</verb>
             /// <summary>

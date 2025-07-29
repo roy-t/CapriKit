@@ -3,7 +3,6 @@ using System.Diagnostics;
 
 namespace CapriKit.Meta;
 
-
 /// <verb>Lalalalal</verb>
 /// <summary>
 /// Bumps the package version, in line with semantic versioning 2.0
@@ -40,36 +39,6 @@ public partial class Bump
     /// </summary>
     [Flag("--build-meta-data")]
     public partial string BuildMetaData { get; }
-}
-
-// TODO: generate something like this:
-
-//public partial class Bump
-//{
-//    private bool major;
-//    public partial bool Major { get => this.major; }
-
-//    public static Bump? Parse(string[] args)
-//    {
-//        return null;
-//    }
-//}
-
-public class FooBar
-{
-    public static Bump? Parse(params string[] args)
-    {
-        if (ArgsParser.IsVerb("bump", args))
-        {
-            var hasMajor = ArgsParser.TryParseFlag<bool>("--major", out bool major, args);
-            var hasMinor = ArgsParser.TryParseFlag<bool>("--minor", out bool minor, args);
-
-            //return new Bump(m)
-
-        }
-
-        return null;
-    }
 }
 
 // Generate
