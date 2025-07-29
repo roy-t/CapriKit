@@ -10,8 +10,7 @@ namespace CapriKit.CommandLine;
 [Generator]
 public class VerbGenerator : IIncrementalGenerator
 {
-    private static readonly string UtilitiesNameSpace = "CapriKit.CommandLine.Types";
-    private static readonly string ExecutorBaseClass = "AVerbExector";
+    private static readonly string UtilitiesNameSpace = "CapriKit.CommandLine.Types";    
 
     private static readonly string VerbAttributeFullName = "CapriKit.CommandLine.Types.VerbAttribute";
     private static readonly string VerbAttributeName = "VerbAttribute";
@@ -20,7 +19,7 @@ public class VerbGenerator : IIncrementalGenerator
     private static readonly string FlagAttributeName = "FlagAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
-    {
+    {        
         // Get all classes annotated with [Verb(..)]
         var verbDeclarations = context.SyntaxProvider.ForAttributeWithMetadataName(
             VerbAttributeFullName,
@@ -65,58 +64,75 @@ public class VerbGenerator : IIncrementalGenerator
         {
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
 
-            var builder = new StringBuilder();            
-            builder.AppendLine($"using {UtilitiesNameSpace};");
-            builder.AppendLine($"namespace {verb.TypeNamespace};");
-            builder.AppendLine($"public partial class {verb.TypeName}");                        
-            builder.AppendLine("{");            
+            var builder = new StringBuilder();
+
+            var classIntro = $$"""
+                using {{UtilitiesNameSpace}};
+                namespace {{verb.TypeNamespace}};
+                public partial class {{verb.TypeName}}
+                {
+                """;
+            builder.AppendLine(classIntro);            
 
             foreach (var flag in flagsForVerb)
             {
                 var name = flag.PropertyName;
                 var type = flag.PropertyType;
-                var fragment = $$"""
+                var docs = flag.Documentation;
+                var fields = $$"""
                         private {{type}} _{{name}} = default;
                         public bool Has{{name}} { get; private set; }
+                        public static string {{name}}Documentation => {{Utilities.ToLiteral(docs)}};
                         public partial {{type}} {{name}} { get => _{{name}}; }
                         public void Set{{name}}({{type}} value){ _{{name}} = value; Has{{name}} = true; }
 
                     """;
 
-                builder.AppendLine(fragment);
+                builder.AppendLine(fields);
             }
 
-            builder.AppendLine($"#nullable enable");
-            builder.AppendLine($"  public static {verb.TypeName}? Parse(params string[] args)");
-            builder.AppendLine("  {");
-            builder.AppendLine($"    var argsParser = new ArgsParser(args);");
-            builder.AppendLine($"    if (argsParser.PopVerb(\"{verb.VerbName}\"))");
-            builder.AppendLine("    {");
-
-            builder.AppendLine($"      var verb = new {verb.TypeName}();");
-
-            //builder.AppendLine($"#nullable disable");
+            var verbName = verb.TypeName;
+            var parseIntro = $$"""
+                #nullable enable
+                    public static {{verb.TypeName}}? Parse(params string[] args)
+                    {
+                        var argsParser = new ArgsParser(args);
+                        if (argsParser.PopVerb("{{verb.VerbName}}"))
+                        {
+                            var verb = new {{verb.TypeName}}();                        
+                """;
+            builder.AppendLine(parseIntro);
+            
             foreach (var flag in flagsForVerb)
             {
+                var flagName = flag.FlagName;
+                var flagPropertyName = flag.PropertyName;
+                var flagType = flag.PropertyType;
                 if (flag.PropertyType == "bool")
-                {
-                    builder.AppendLine($"      if(argsParser.PopBoolFlag(\"{flag.FlagName}\")) {{ verb.Set{flag.PropertyName}(true); }}");
+                {                    
+                    builder.AppendLine($"            if(argsParser.PopBoolFlag(\"{flagName}\")) {{ verb.Set{flagPropertyName}(true); }}");
                 }
                 else
-                {
-                    builder.AppendLine($"      if(argsParser.PopFlag<{flag.PropertyType}>(\"{flag.FlagName}\", out {flag.PropertyType} __{flag.PropertyName})) {{ verb.Set{flag.PropertyName}(__{flag.PropertyName}); }}");
+                {                    
+                    builder.AppendLine($"            if(argsParser.PopFlag<{flagType}>(\"{flagName}\", out {flagType} __{flagPropertyName})) {{ verb.Set{flagPropertyName}(__{flagPropertyName}); }}");
                 }
             }
-            //builder.AppendLine($"#nullable restore");
 
-            builder.AppendLine($"      return verb;");
+            var parseOutro = $$"""
+                            return verb;
+                        }
+                        return null;
+                    }
+                #nullable restore
+                """;
+            builder.AppendLine(parseOutro);
 
-            builder.AppendLine("    }");
-            builder.AppendLine("    return null;");
+            // TODO: add a method that prints the class documentation, then all flags with documentation (in alphabetical order?)
 
-            builder.AppendLine("  }");
-            builder.AppendLine($"#nullable restore");
-            builder.AppendLine("}");
+            var classOutro = """                
+                }
+                """;
+            builder.AppendLine(classOutro);
             
             context.AddSource($"VerbGenerator.{verb.TypeNamespace}.{verb.TypeName}.g.cs", builder.ToString());
         }               
@@ -142,7 +158,7 @@ public class VerbGenerator : IIncrementalGenerator
         if (syntax.Type is not PredefinedTypeSyntax predefinedType)
         {
             throw new NotSupportedException($"The flag attribute can only be used on built in types");
-        }
+        } 
 
         // Ignore built-in reference types, except for string
         var propertyType = predefinedType.Keyword.ValueText;

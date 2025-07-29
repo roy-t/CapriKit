@@ -8,14 +8,21 @@ namespace CapriKit.CommandLine;
 
 public static class Utilities
 {
-    public static string GetDocumentationFromLeadingTrivia(SyntaxNode syntax)
+    public static string ToLiteral(string text)
     {
+        return SymbolDisplay.FormatLiteral(text, true);
+    }
+
+    public static string GetDocumentationFromLeadingTrivia(SyntaxNode syntax)
+    {        
         if (syntax.HasLeadingTrivia)
         {
             var trivia = syntax.GetLeadingTrivia();
             foreach (var triviaNode in trivia)
             {
                 var kind = triviaNode.Kind();
+                // BUG: https://github.com/dotnet/roslyn/issues/58210
+                // this only works if <GenerateDocumentationFile>true</> was set in the csproj file
                 if (kind == SyntaxKind.SingleLineDocumentationCommentTrivia)
                 {
                     var comment = triviaNode.ToFullString();
@@ -31,10 +38,10 @@ public static class Utilities
     {
         try
         {
-            var lines = comment.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            var lines = comment.Split(['\r', '\n']).Select(c => c.Trim());
             var builder = new StringBuilder();
             foreach (var line in lines)
-            {
+            {                
                 if (line.StartsWith("///"))
                 {
                     if (line.Length > 3)
@@ -59,7 +66,7 @@ public static class Utilities
             {
                 if (reader.NodeType == XmlNodeType.Element && reader.Name == "summary")
                 {
-                    return reader.ReadInnerXml();
+                    return reader.ReadInnerXml().Trim();
                 }
             }
         }

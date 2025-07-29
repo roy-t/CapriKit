@@ -12,6 +12,8 @@ public partial class Bump
 {
     /// <summary>
     /// Increase the major version of the package
+    ///
+    /// then do "funky" stuff!{}
     /// </summary>
     [Flag("--major")]
     public partial bool Major { get; }

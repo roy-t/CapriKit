@@ -11,6 +11,12 @@
     <WarningsAsErrors>nullable</WarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Documentation -->
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591</NoWarn>
+  </PropertyGroup>
+    
   <!-- Outputsettings -->   
   <PropertyGroup>    
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
