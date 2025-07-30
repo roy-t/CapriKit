@@ -64,18 +64,22 @@ public class VerbGenerator : IIncrementalGenerator
         var body = new StringBuilder();        
         foreach (var verb in verbs)
         {
-            // TODO: add if statement to match input verb!!
+            body.AppendLine($"        if({Utilities.ToLiteral(verb.VerbName)}.Equals(verb))");
+            body.AppendLine(@"        {");            
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
             if (flagsForVerb.Any())
             {
                 var tuples = string.Join(", ", flagsForVerb.Select(f => $"({Utilities.ToLiteral(f.FlagName)}, {Utilities.ToLiteral(f.Documentation)})"));
-                body.AppendLine($"        HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)}, {tuples});");
+                body.AppendLine($"            HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)}, {tuples});");
             }
             else
             {
-                body.AppendLine($"        HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)})");
-            }                
+                body.AppendLine($"            HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)})");
+            }
+            body.AppendLine(@"        }");
         }
+
+        var allVerbs = string.Join(", ", verbs.Select(v => Utilities.ToLiteral(v.VerbName)));
 
         var file = $$"""
                 using {{UtilitiesNameSpace}};
@@ -92,6 +96,8 @@ public class VerbGenerator : IIncrementalGenerator
                     {
                 {{body}}
                     }
+
+                    public static IReadOnlyList<string> Verbs => [{{allVerbs}}];                    
                 }
                 """;
         context.AddSource($"VerbGenerator.CommandLinePrinter.g.cs", file);
@@ -110,6 +116,8 @@ public class VerbGenerator : IIncrementalGenerator
                 namespace {{verb.TypeNamespace}};
                 public partial class {{verb.TypeName}}
                 {
+                    public static string Documentation => {{Utilities.ToLiteral(verb.Documentation)}};
+
                 """;
             builder.AppendLine(classIntro);            
 
@@ -138,12 +146,7 @@ public class VerbGenerator : IIncrementalGenerator
                         var argsParser = new ArgsParser(args);
                         if (argsParser.PopVerb("{{verb.VerbName}}"))
                         {
-                            var verb = new {{verb.TypeName}}();
-                            var unmatched = argsParser.GetUnmatchedArguments();
-                            if (unmatched.Any())
-                            {
-                                throw new UnmatchedArgumentsException(unmatched);
-                            }
+                            var verb = new {{verb.TypeName}}();                            
                 """;
             builder.AppendLine(parseIntro);
             
@@ -163,6 +166,11 @@ public class VerbGenerator : IIncrementalGenerator
             }
 
             var parseOutro = $$"""
+                            var unmatched = argsParser.GetUnmatchedArguments();
+                            if (unmatched.Any())
+                            {
+                                throw new UnmatchedArgumentsException(unmatched);
+                            }
                             value = verb;
                             return true;
                         }

@@ -49,6 +49,9 @@ public partial class Bump
 [Verb("help")]
 public partial class Help
 {
+    /// <summary>
+    /// Specifies the command to show help information for
+    /// </summary>
     [Flag("--command")]
-    public partial string Command { get; }
+    public partial string Command { get; }    
 }

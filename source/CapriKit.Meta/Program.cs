@@ -41,9 +41,13 @@ internal partial class Program
     {
         if(Help.TryParse(out var help, args))
         {
-            if (help.HasCommand)
+            if (help.HasCommand && CommandLinePrinter.Verbs.Contains(help.Command))
             {
-
+                CommandLinePrinter.PrintVerb(help.Command);
+            }
+            else
+            {
+                CommandLinePrinter.PrintVerb("help");
             }
         }
 

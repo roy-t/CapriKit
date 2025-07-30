@@ -12,7 +12,7 @@ public static class HelpPrinter
         var name = GetExecutableName();
         var version = GetExecutableVersion();
         Console.WriteLine($"{name} — version {version}");
-        Console.WriteLine($"usage: {name} <verb> [<arguments>]");
+        Console.WriteLine($"usage: {name} <verb> [<flags>]");
         Console.WriteLine();
         Console.WriteLine("Available commands:");
         Console.WriteLine();
@@ -27,8 +27,12 @@ public static class HelpPrinter
     {
         var name = GetExecutableName();
 
-        Console.WriteLine($"usage: {name} {verb} [<arguments>]");
+        Console.WriteLine(verbDocumentation);
         Console.WriteLine();
+        Console.WriteLine($"Usage:");
+        Console.WriteLine($"{Indent}{name} {verb} [<flags>]");
+        Console.WriteLine();
+        Console.WriteLine($"Available flags:");
         PrintTable(flags);
         Console.WriteLine();
     }
