@@ -1,6 +1,17 @@
 namespace CapriKit.CommandLine.Types;
 
 
+public class UnmatchedArgumentsException : Exception
+{    
+    public UnmatchedArgumentsException(IEnumerable<string> unmatched)
+        : base("One or more arguments were unmatched")
+    {
+        this.Unmatched = unmatched;
+    }
+
+    public IEnumerable<string> Unmatched { get; private set; }
+}
+
 public class ArgsParser
 {
     private const StringComparison ArgStringComparison = StringComparison.InvariantCulture;

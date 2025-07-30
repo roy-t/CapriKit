@@ -43,28 +43,12 @@ public partial class Bump
     public partial string BuildMetaData { get; }
 }
 
-// Generate
-public class BVerbExecuter : AVerbExecutor
+/// <summary>
+/// Displays the help information
+/// </summary>
+[Verb("help")]
+public partial class Help
 {
-    public static void Create()
-    {
-        // Generators addsss
-
-        var executer = new BVerbExecuter();
-        executer.Verbs.Add("a");
-        executer.VerbToFlagToDocs.Add("b", []);
-        //etc..
-    }
-
-    // Generate Per method execute things
-
-    // Performs the given action if the arguments match this verb
-    public void Execute(Action<Bump> onBump, params string[] args)
-    {
-        //var bump = Bump.Parse(args);
-        //if (bump != null)
-        //{
-        //    onBump(bump);
-        //}
-    }
+    [Flag("--command")]
+    public partial string Command { get; }
 }

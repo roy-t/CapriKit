@@ -1,8 +1,6 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System;
 using System.Collections.Immutable;
-using System.Diagnostics;
 using System.Text;
 
 namespace CapriKit.CommandLine;
@@ -10,7 +8,8 @@ namespace CapriKit.CommandLine;
 [Generator]
 public class VerbGenerator : IIncrementalGenerator
 {
-    private static readonly string UtilitiesNameSpace = "CapriKit.CommandLine.Types";    
+    private static readonly string UtilitiesNameSpace = "CapriKit.CommandLine.Types";
+    private static readonly string PrinterNameSpace = "CapriKit.CommandLine";
 
     private static readonly string VerbAttributeFullName = "CapriKit.CommandLine.Types.VerbAttribute";
     private static readonly string VerbAttributeName = "VerbAttribute";
@@ -55,13 +54,53 @@ public class VerbGenerator : IIncrementalGenerator
             verbs.Add(verb);
         }
 
-        GenerateCode(context, verbs, flags);
+        GenerateVerbFiles(context, verbs, flags);
+        GeneratePrinter(context, verbs, flags);
     }
 
-    private static void GenerateCode(SourceProductionContext context, IReadOnlyList<VerbClass> verbs, IReadOnlyList<FlagProperty> flags)
-    {        
+    private static void GeneratePrinter(SourceProductionContext context, List<VerbClass> verbs, List<FlagProperty> flags)
+    {
+        var printVerbsArgs = string.Join(",  ", verbs.Select(v => $"({Utilities.ToLiteral(v.VerbName)}, {Utilities.ToLiteral(v.Documentation)})"));        
+        var body = new StringBuilder();        
         foreach (var verb in verbs)
         {
+            // TODO: add if statement to match input verb!!
+            var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
+            if (flagsForVerb.Any())
+            {
+                var tuples = string.Join(", ", flagsForVerb.Select(f => $"({Utilities.ToLiteral(f.FlagName)}, {Utilities.ToLiteral(f.Documentation)})"));
+                body.AppendLine($"        HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)}, {tuples});");
+            }
+            else
+            {
+                body.AppendLine($"        HelpPrinter.PrintVerbDetails({Utilities.ToLiteral(verb.VerbName)}, {Utilities.ToLiteral(verb.Documentation)})");
+            }                
+        }
+
+        var file = $$"""
+                using {{UtilitiesNameSpace}};
+                namespace {{PrinterNameSpace}};
+                public static class CommandLinePrinter
+                {
+                    public static void PrintUsage()
+                    {
+                        HelpPrinter.PrintHeader();
+                        HelpPrinter.PrintVerbs({{printVerbsArgs}});
+                    }
+
+                    public static void PrintVerb(string verb)
+                    {
+                {{body}}
+                    }
+                }
+                """;
+        context.AddSource($"VerbGenerator.CommandLinePrinter.g.cs", file);
+    }
+
+    private static void GenerateVerbFiles(SourceProductionContext context, IReadOnlyList<VerbClass> verbs, IReadOnlyList<FlagProperty> flags)
+    {        
+        foreach (var verb in verbs)
+        {            
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
 
             var builder = new StringBuilder();
@@ -94,12 +133,17 @@ public class VerbGenerator : IIncrementalGenerator
             var verbName = verb.TypeName;
             var parseIntro = $$"""
                 #nullable enable
-                    public static {{verb.TypeName}}? Parse(params string[] args)
+                    public static bool TryParse(out {{verb.TypeName}} value, params string[] args)
                     {
                         var argsParser = new ArgsParser(args);
                         if (argsParser.PopVerb("{{verb.VerbName}}"))
                         {
-                            var verb = new {{verb.TypeName}}();                        
+                            var verb = new {{verb.TypeName}}();
+                            var unmatched = argsParser.GetUnmatchedArguments();
+                            if (unmatched.Any())
+                            {
+                                throw new UnmatchedArgumentsException(unmatched);
+                            }
                 """;
             builder.AppendLine(parseIntro);
             
@@ -119,15 +163,24 @@ public class VerbGenerator : IIncrementalGenerator
             }
 
             var parseOutro = $$"""
-                            return verb;
+                            value = verb;
+                            return true;
                         }
-                        return null;
+                        value = null!;
+                        return false;
                     }
                 #nullable restore
                 """;
             builder.AppendLine(parseOutro);
-
-            // TODO: add a method that prints the class documentation, then all flags with documentation (in alphabetical order?)
+            
+            var tuples = string.Join(", ", flagsForVerb.Select(f => $"({Utilities.ToLiteral(f.FlagName)}, {Utilities.ToLiteral(f.Documentation)})"));
+            var printIntro = $$"""
+                    public static void PrintUsage()
+                    {
+                        HelpPrinter.PrintVerbDetails("{{verb.VerbName}}", {{Utilities.ToLiteral(verb.Documentation)}}, {{tuples}});
+                    }
+                """;
+            builder.AppendLine(printIntro);
 
             var classOutro = """                
                 }
