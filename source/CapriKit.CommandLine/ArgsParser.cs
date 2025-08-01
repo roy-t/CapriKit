@@ -1,4 +1,4 @@
-namespace CapriKit.CommandLine.Types;
+namespace CapriKit.CommandLine;
 
 
 public class UnmatchedArgumentsException : Exception

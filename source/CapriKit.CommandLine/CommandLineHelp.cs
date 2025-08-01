@@ -1,13 +1,13 @@
 using System.Reflection;
 
-namespace CapriKit.CommandLine.Types;
+namespace CapriKit.CommandLine;
 
-public static class HelpPrinter
+public static class CommandLineHelp
 {    
     private const string Indent = "  ";
     private const string Tab = "    ";
 
-    public static void PrintHeader()
+    public static void PrintGeneralHelp(IReadOnlyDictionary<string, (VerbInfo Verb, IReadOnlyList<FlagInfo> Flags)> verbs)
     {
         var name = GetExecutableName();
         var version = GetExecutableVersion();
@@ -16,28 +16,25 @@ public static class HelpPrinter
         Console.WriteLine();
         Console.WriteLine("Available commands:");
         Console.WriteLine();
+
+        PrintTable(verbs.Values.Select(v => (v.Verb.Name, v.Verb.Documentation)));
     }
 
-    public static void PrintVerbs(params (string verb, string documentation)[] verbs)
-    {
-        PrintTable(verbs);
-    }    
-
-    public static void PrintVerbDetails(string verb, string verbDocumentation,  params (string flag, string flagDocumentation)[] flags)
+    public static void PrintVerbHelp(VerbInfo verb, IReadOnlyList<FlagInfo> flags)
     {
         var name = GetExecutableName();
 
-        Console.WriteLine(verbDocumentation);
+        Console.WriteLine(verb.Documentation);
         Console.WriteLine();
         Console.WriteLine($"Usage:");
-        Console.WriteLine($"{Indent}{name} {verb} [<flags>]");
+        Console.WriteLine($"{Indent}{name} {verb.Name} [<flags>]");
         Console.WriteLine();
         Console.WriteLine($"Available flags:");
-        PrintTable(flags);
+        PrintTable(flags.Select(f => (f.Name, f.Documentation)));
         Console.WriteLine();
-    }
+    }   
 
-    private static void PrintTable(params (string item, string documentation)[] table)
+    private static void PrintTable(IEnumerable<(string item, string documentation)> table)
     {
         var itemWidth = table.Select(v => v.item.Length).Max();
         var emptyCell = new string(' ', itemWidth + Indent.Length + Tab.Length);

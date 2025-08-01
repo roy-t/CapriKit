@@ -1,5 +1,4 @@
-using CapriKit.CommandLine.Types;
-using System.Diagnostics;
+using CapriKit.CommandLine;
 
 namespace CapriKit.Meta;
 
@@ -53,5 +52,12 @@ public partial class Help
     /// Specifies the command to show help information for
     /// </summary>
     [Flag("--command")]
-    public partial string Command { get; }    
+    public partial string Command { get; }
+
+
+    public static readonly IReadOnlyDictionary<string, string> FlagDocumentation = new Dictionary<string, string>()
+    {
+        { "a", "b" },
+        { "c", "b" }
+    };
 }

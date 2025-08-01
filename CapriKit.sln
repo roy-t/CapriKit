@@ -13,9 +13,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine", "source\CapriKit.CommandLine\CapriKit.CommandLine.csproj", "{FB75873B-455F-448E-B06A-BBD073FCCC3D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine.Generator", "source\CapriKit.CommandLine.Generator\CapriKit.CommandLine.Generator.csproj", "{FB75873B-455F-448E-B06A-BBD073FCCC3D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine.Types", "source\CapriKit.CommandLine.Types\CapriKit.CommandLine.Types.csproj", "{65978AF9-426B-4117-88E7-3D5CA00DC350}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine", "source\CapriKit.CommandLine\CapriKit.CommandLine.csproj", "{65978AF9-426B-4117-88E7-3D5CA00DC350}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
