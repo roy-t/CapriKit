@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Text;
 
 namespace CapriKit.CommandLine;
 
@@ -45,7 +46,9 @@ public static class CommandLineHelp
 
             if (!string.IsNullOrEmpty(documentation))
             {
-                var lines = documentation.Split('\r', '\n');
+                var wrapped = WordWrap(documentation, 80);
+                wrapped = wrapped.Replace("\r\n", "\n");
+                var lines = wrapped.Split('\n');
                 Console.WriteLine(lines[0]);
                 foreach (var line in lines.Skip(1))
                 {
@@ -53,6 +56,37 @@ public static class CommandLineHelp
                 }
             }
         }
+    }
+
+    public static string WordWrap(string text, int maxLength)
+    {
+        if (text.Length < maxLength || maxLength < 1)
+        {
+            return text;
+        }
+        
+        var builder = new StringBuilder();
+        var back = 0;
+        var lineLength = 0;
+        for (var front = 0; front < text.Length; front++)
+        {
+            if (char.IsWhiteSpace((text[front])))
+            {
+                var length = front - back;
+                if (lineLength > maxLength)
+                {
+                    builder.AppendLine();
+                    // ignore the whitespace character between this word and the previous word
+                    back += 1; 
+                    lineLength = 0;
+                }
+                builder.Append(text.Substring(back, length));
+                lineLength += length;
+                back = front;
+            }            
+        }
+
+        return builder.ToString();
     }
 
     private static string GetExecutableName()
