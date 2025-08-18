@@ -1,8 +1,7 @@
 using CapriKit.CommandLine;
-using System;
-using System.Text;
+using System.Text.RegularExpressions;
 
-namespace CapriKit.Meta;
+namespace CapriKit.Meta.Verbs;
 
 /// <summary>
 /// Bumps the package version, in line with semantic versioning 2.0
@@ -43,24 +42,23 @@ public partial class Bump
     /// </summary>
     [Flag("--build-meta-data")]
     public partial string BuildMetaData { get; }
-}
-
-/// <summary>
-/// Displays the help information
-/// </summary>
-[Verb("help")]
-public partial class Help
-{
-    /// <summary>
-    /// Specifies the command to show help information for
-    /// </summary>
-    [Flag("--command")]
-    public partial string Command { get; }
 
 
-    public static readonly IReadOnlyDictionary<string, string> FlagDocumentation = new Dictionary<string, string>()
+    [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
+    private static partial Regex SemVerRegex();
+
+    public static void Execute(params string[] args)
     {
-        { "a", "b" },
-        { "c", "b" }
-    };
+        // TODO: see if this should be a unit test instead, or we should wait until the real test functionality is built.
+        var text = "1.4.3-p-r-e+HASH";// File.ReadAllText(filename);
+        var match = SemVerRegex().Match(text);
+        if (match.Success)
+        {
+            var major = match.Groups[1];
+            var minor = match.Groups[2];
+            var patch = match.Groups[3];
+            var pre = match.Groups[4];
+            var build = match.Groups[5];
+        }        
+    }
 }

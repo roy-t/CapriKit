@@ -91,8 +91,8 @@ public class VerbGenerator : IIncrementalGenerator
                 namespace {{verb.TypeNamespace}};
                 public partial class {{verb.TypeName}}
                 {
-                    public static string VerbName => {{Utilities.ToLiteral(verb.VerbName)}};
-                    public static string Documentation => {{Utilities.ToLiteral(verb.Documentation)}};
+                    public const string VerbName = {{Utilities.ToLiteral(verb.VerbName)}};
+                    public const string Documentation = {{Utilities.ToLiteral(verb.Documentation)}};
 
                 """;
             builder.AppendLine(classIntro);
@@ -126,6 +126,15 @@ public class VerbGenerator : IIncrementalGenerator
             var verbName = verb.TypeName;
             var parseIntro = $$"""
                 #nullable enable
+                    public static {{verb.TypeName}} Parse(params string[] args)
+                    {
+                        if (TryParse(out var value, args))
+                        {
+                            return value;
+                        }
+
+                        throw new Exception("Invalid arguments: " + string.Join(", ", args));
+                    }
                     /// <summary>
                     /// Tries parsing the given arguments as this verb and its flags.
                     ///

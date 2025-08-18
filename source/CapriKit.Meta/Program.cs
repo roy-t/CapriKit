@@ -1,13 +1,11 @@
 using System.Text.RegularExpressions;
 using CapriKit.CommandLine;
+using CapriKit.Meta.Verbs;
 
 namespace CapriKit.Meta;
 
 internal partial class Program
-{
-    [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]    
-    private static partial Regex SemVerRegex();
-       
+{           
     private static void Main(string[] args)
     {
         if (args.Length == 0)
@@ -35,36 +33,24 @@ internal partial class Program
     }
 
     private static void Execute(string[] args)
-    {
-        if(Help.TryParse(out var help, args))
+    {        
+        switch (args[0])
         {
-            if (help.HasCommand)
-            {
-                if (CommandLineVerbs.AllVerbs.ContainsKey(help.Command))
-                {
-                    var info = CommandLineVerbs.AllVerbs[help.Command];
-                    CommandLineHelp.PrintVerbHelp(info.Item1, info.Item2);
-                }
-                else
-                {
-                    Console.WriteLine($"Error, invalid command: {help.Command}");
-                }
-            }
-            else
-            {                
-                var info = CommandLineVerbs.AllVerbs["help"];
-                CommandLineHelp.PrintVerbHelp(info.Item1, info.Item2);                
-            }
-        }
+            case Help.VerbName:
+                Help.Execute(args);
+                break;
 
-        if (Bump.TryParse(out var bump, args))
-        {
+            case Bump.VerbName:
+                Bump.Execute(args);
+                break;
 
-        }
+            default:
+                Console.WriteLine("Invalid arguments: " + string.Join(", ", args));
+                Console.WriteLine();
+                Console.WriteLine("Available commands:");
+                Console.WriteLine();
+                CommandLineHelp.PrintAvailableCommands(CommandLineVerbs.AllVerbs);
+                break;
+        }        
     }
-
-    public static readonly IReadOnlyDictionary<string, (VerbInfo, IReadOnlyList<FlagInfo>)> AllVerbs = new Dictionary<string, (VerbInfo, IReadOnlyList<FlagInfo>)>()
-    {
-        {CapriKit.Meta.Bump.VerbName, (new VerbInfo(CapriKit.Meta.Bump.VerbName, CapriKit.Meta.Bump.Documentation), CapriKit.Meta.Bump.Flags)}, {CapriKit.Meta.Help.VerbName, (new VerbInfo(CapriKit.Meta.Help.VerbName, CapriKit.Meta.Help.Documentation), CapriKit.Meta.Help.Flags)}
-    };
 }

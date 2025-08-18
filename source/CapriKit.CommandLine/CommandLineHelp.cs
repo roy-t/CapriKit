@@ -18,6 +18,11 @@ public static class CommandLineHelp
         Console.WriteLine("Available commands:");
         Console.WriteLine();
 
+        PrintAvailableCommands(verbs);
+    }
+
+    public static void PrintAvailableCommands(IReadOnlyDictionary<string, (VerbInfo Verb, IReadOnlyList<FlagInfo> Flags)> verbs)
+    {
         PrintTable(verbs.Values.Select(v => (v.Verb.Name, v.Verb.Documentation)));
     }
 
