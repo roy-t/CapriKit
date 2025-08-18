@@ -1,4 +1,5 @@
 using CapriKit.CommandLine;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace CapriKit.Meta.Verbs;
@@ -41,24 +42,140 @@ public partial class Bump
     /// Build metadata MAY be denoted by appending a plus sign and a series of dot separated identifiers immediately following the patch or pre-release version. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-]. Identifiers MUST NOT be empty. Build metadata MUST be ignored when determining version precedence. Thus two versions that differ only in the build metadata, have the same precedence. Examples: 1.0.0-alpha+001, 1.0.0+20130313144700, 1.0.0-beta+exp.sha.5114f85, 1.0.0+21AF26D3----117B344092BD.
     /// </summary>
     [Flag("--build-meta-data")]
-    public partial string BuildMetaData { get; }
-
-
-    [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
-    private static partial Regex SemVerRegex();
+    public partial string BuildMetaData { get; }    
 
     public static void Execute(params string[] args)
     {
-        // TODO: see if this should be a unit test instead, or we should wait until the real test functionality is built.
-        var text = "1.4.3-p-r-e+HASH";// File.ReadAllText(filename);
+        // TODO: read previous version from disk or assume 0.1;
+        var text = "1.4.3-p-r-e+HASH";
+        var version = SemVer.Parse(text);
+
+        Console.Write($"Version change: {version} -> ");
+
+        var bump = Parse(args);
+        if (bump.HasMajor && bump.Major)
+        {
+            version = version.BumpMajor();
+        }
+
+        if (bump.HasMinor && bump.Minor)
+        {
+            version = version.BumpMinor();
+        }
+
+        if (bump.HasPatch && bump.Patch)
+        {
+            version = version.BumpPatch();
+        }
+
+        if (bump.HasPrerelease)
+        {
+            version = version.SetPreReleaseData(bump.Prerelease);
+        }
+
+        if (bump.HasBuildMetaData)
+        {
+            version = version.SetBuildMetaData(bump.BuildMetaData);
+        }
+
+
+        Console.WriteLine($"{version}");
+    }
+}
+
+// TODO: move to separate library
+// TODO: constructor doesn't validate input
+public partial record SemVer(int Major, int Minor, int Patch, string PreRelease, string BuildMetaData)
+{
+    [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
+    private static partial Regex SemVerRegex();
+
+    [GeneratedRegex("^[a-zA-Z0-9-]+$")]
+    private static partial Regex IdentifierRegex();
+
+    public SemVer BumpMajor()
+    {
+        return this with { Major = Major + 1 };
+    }
+
+    public SemVer BumpMinor()
+    {
+        return this with { Minor = Minor + 1 };
+    }
+
+    public SemVer BumpPatch()
+    {
+        return this with { Patch = Patch + 1 };
+    }
+
+    public SemVer SetPreReleaseData(string preRelease)
+    {
+        ValidateTextPart(preRelease);
+        return this with { PreRelease = preRelease };
+    }
+
+    public SemVer SetBuildMetaData(string buildMetaData)
+    {
+        ValidateTextPart(buildMetaData);
+        return this with { BuildMetaData = buildMetaData };
+    }
+
+    public static SemVer Parse(string text)
+    {
+        // TODO: add tests
         var match = SemVerRegex().Match(text);
         if (match.Success)
         {
-            var major = match.Groups[1];
-            var minor = match.Groups[2];
-            var patch = match.Groups[3];
-            var pre = match.Groups[4];
-            var build = match.Groups[5];
-        }        
+            var majorString = match.Groups[1].Value;
+            var minorString = match.Groups[2].Value;
+            var patchString = match.Groups[3].Value;
+            var preRelease = match.Groups[4].Value;
+            var buildMetaData = match.Groups[5].Value;
+
+            if (!int.TryParse(majorString, out var major))
+            {
+                throw new Exception($"The major segment in version {text} should be a positive integer, but was: {major}");
+            }
+
+            if (!int.TryParse(minorString, out var minor))
+            {
+                throw new Exception($"The minor segment in version {text} should be a positive integer, but was: {minor}");
+            }
+
+            if (!int.TryParse(patchString, out var patch))
+            {
+                throw new Exception($"The patch segment in version {text} should be a positive integer, but was: {patch}");
+            }
+
+            return new SemVer(major, minor, patch, preRelease, buildMetaData);
+        }
+        else
+        {
+            throw new Exception($"Version '{text}' does not match the pattern for a version that complies with the semantic versioning 2.0 specification");
+        }
+    }
+
+    public override string ToString()
+    {
+        var text = $"{Major}.{Minor}.{Patch}";
+        if (!string.IsNullOrEmpty(PreRelease))
+        {
+            text = text + "-" + PreRelease;
+        }
+
+        if (!string.IsNullOrEmpty(BuildMetaData))
+        {
+            text = text + "+" + BuildMetaData;
+        }
+
+        return text;
+    }
+
+    private static void ValidateTextPart(string text)
+    {
+        if(string.IsNullOrEmpty(text) || !IdentifierRegex().IsMatch(text))
+        {
+            throw new Exception($"Invalid identifier: {text}. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-]. Identifiers MUST NOT be empty.");
+        }
     }
 }

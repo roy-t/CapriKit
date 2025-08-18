@@ -15,13 +15,13 @@ public static class CommandLineHelp
         Console.WriteLine($"{name} — version {version}");
         Console.WriteLine($"usage: {name} <verb> [<flags>]");
         Console.WriteLine();
-        Console.WriteLine("Available commands:");
+        Console.WriteLine("Available verbs:");
         Console.WriteLine();
 
-        PrintAvailableCommands(verbs);
+        PrintAvailableVerbs(verbs);
     }
 
-    public static void PrintAvailableCommands(IReadOnlyDictionary<string, (VerbInfo Verb, IReadOnlyList<FlagInfo> Flags)> verbs)
+    public static void PrintAvailableVerbs(IReadOnlyDictionary<string, (VerbInfo Verb, IReadOnlyList<FlagInfo> Flags)> verbs)
     {
         PrintTable(verbs.Values.Select(v => (v.Verb.Name, v.Verb.Documentation)));
     }

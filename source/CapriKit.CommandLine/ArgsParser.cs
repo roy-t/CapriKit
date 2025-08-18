@@ -1,15 +1,17 @@
 namespace CapriKit.CommandLine;
 
 
-public class UnmatchedArgumentsException : Exception
-{    
-    public UnmatchedArgumentsException(IEnumerable<string> unmatched)
-        : base("One or more arguments were unmatched")
+public class UnmatchedFlagsException : Exception
+{
+    public UnmatchedFlagsException(string verb, IEnumerable<string> unmatched)
+        : base($"One or more flags for verb '{verb}' were unmatched: " + string.Join(", ", unmatched))
     {
+        this.Verb = verb;
         this.Unmatched = unmatched;
     }
 
-    public IEnumerable<string> Unmatched { get; private set; }
+    public string Verb { get; }
+    public IEnumerable<string> Unmatched { get; }    
 }
 
 public class ArgsParser
@@ -59,6 +61,7 @@ public class ArgsParser
                 }
 
                 current = next;
+                next = current.Next;
             }
         }
 

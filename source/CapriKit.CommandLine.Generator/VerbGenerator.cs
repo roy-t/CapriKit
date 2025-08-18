@@ -138,7 +138,7 @@ public class VerbGenerator : IIncrementalGenerator
                     /// <summary>
                     /// Tries parsing the given arguments as this verb and its flags.
                     ///
-                    /// Throws an UnmatchedArgumentsException if the verb matched, but any of the arguments could not be matched to a flag.
+                    /// Throws an UnmatchedFlagsException if the verb matched, but any of the arguments could not be matched to a flag.
                     /// </summary>
                     public static bool TryParse(out {{verb.TypeName}} value, params string[] args)
                     {
@@ -168,7 +168,7 @@ public class VerbGenerator : IIncrementalGenerator
                             var unmatched = argsParser.GetUnmatchedArguments();
                             if (unmatched.Any())
                             {
-                                throw new UnmatchedArgumentsException(unmatched);
+                                throw new UnmatchedFlagsException("{{verb.VerbName}}", unmatched);
                             }
                             value = verb;
                             return true;
