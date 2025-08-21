@@ -1,11 +1,10 @@
-using System.Text.RegularExpressions;
 using CapriKit.CommandLine;
 using CapriKit.Meta.Verbs;
 
 namespace CapriKit.Meta;
 
 internal partial class Program
-{           
+{
     private static void Main(string[] args)
     {
         if (args.Length == 0)

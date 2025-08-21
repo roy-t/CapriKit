@@ -70,12 +70,12 @@ public partial class Bump
 
         if (bump.HasPrerelease)
         {
-            version = version.SetPreReleaseData(bump.Prerelease);
+            version = version.WithPreReleaseData(bump.Prerelease);
         }
 
         if (bump.HasBuildMetaData)
         {
-            version = version.SetBuildMetaData(bump.BuildMetaData);
+            version = version.WithBuildMetaData(bump.BuildMetaData);
         }
 
 
@@ -84,40 +84,72 @@ public partial class Bump
 }
 
 // TODO: move to separate library
-// TODO: constructor doesn't validate input
-public partial record SemVer(int Major, int Minor, int Patch, string PreRelease, string BuildMetaData)
-{
+public partial class SemVer
+{    
     [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
     private static partial Regex SemVerRegex();
 
     [GeneratedRegex("^[a-zA-Z0-9-]+$")]
     private static partial Regex IdentifierRegex();
 
+    public SemVer(int major, int minor, int patch, string? preRelease = null, string? buildMetaData = null)
+    {
+        if (major < 0)
+        {
+            throw new ArgumentException("Major version should be positive");
+        }
+
+        if (minor < 0)
+        {
+            throw new ArgumentException("Minor version should be positive");
+        }
+
+        if (patch < 0)
+        {
+            throw new ArgumentException("Patch version should be positive");
+        }
+
+        Major = major;
+        Minor = minor;
+        Patch = patch;
+        
+        ValidateTextPart(preRelease);
+        PreRelease = preRelease ?? string.Empty;
+
+        ValidateTextPart(buildMetaData);
+        BuildMetaData = buildMetaData ?? string.Empty;        
+    }
+
+    public int Major { get; }
+    public int Minor { get; }
+    public int Patch { get; }
+    public string PreRelease { get; }
+    public string BuildMetaData { get; }
+
     public SemVer BumpMajor()
     {
-        return this with { Major = Major + 1 };
+        return new SemVer(Major + 1, Minor, Patch, PreRelease, BuildMetaData);        
     }
 
     public SemVer BumpMinor()
     {
-        return this with { Minor = Minor + 1 };
+        return new SemVer(Major, Minor + 1, Patch, PreRelease, BuildMetaData);
     }
 
     public SemVer BumpPatch()
     {
-        return this with { Patch = Patch + 1 };
+        return new SemVer(Major, Minor, Patch + 1, PreRelease, BuildMetaData);
     }
 
-    public SemVer SetPreReleaseData(string preRelease)
-    {
-        ValidateTextPart(preRelease);
-        return this with { PreRelease = preRelease };
+    public SemVer WithPreReleaseData(string? preRelease)
+    {        
+        return new SemVer(Major, Minor, Patch, preRelease, BuildMetaData);
     }
 
-    public SemVer SetBuildMetaData(string buildMetaData)
+    public SemVer WithBuildMetaData(string? buildMetaData)
     {
-        ValidateTextPart(buildMetaData);
-        return this with { BuildMetaData = buildMetaData };
+        
+        return new SemVer(Major, Minor, Patch, PreRelease, buildMetaData);
     }
 
     public static SemVer Parse(string text)
@@ -171,11 +203,11 @@ public partial record SemVer(int Major, int Minor, int Patch, string PreRelease,
         return text;
     }
 
-    private static void ValidateTextPart(string text)
+    private static void ValidateTextPart(string? text)
     {
-        if(string.IsNullOrEmpty(text) || !IdentifierRegex().IsMatch(text))
+        if (!string.IsNullOrEmpty(text) && !IdentifierRegex().IsMatch(text))
         {
-            throw new Exception($"Invalid identifier: {text}. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-]. Identifiers MUST NOT be empty.");
-        }
+            throw new Exception($"Invalid identifier: {text}. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-].");
+        }        
     }
 }
