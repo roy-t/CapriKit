@@ -46,11 +46,30 @@ public partial class Bump
 
     public static void Execute(params string[] args)
     {
-        // TODO: read previous version from disk or assume 0.1;
-        var text = "1.4.3-p-r-e+HASH";
-        var version = SemVer.Parse(text);
+        var leafDirectory = AppContext.BaseDirectory;
+        var rootDirectory = GetGitRepositoryRootDirectory(leafDirectory);
+        if (rootDirectory == null)
+        {
+            throw new Exception($"Not a git repository: {leafDirectory}");
+        }        
+        
+        var path = Path.Combine(rootDirectory.FullName, "version.txt");
+        var version = new SemVer(0, 1, 0);
+        
+        if (File.Exists(path))
+        {
+            var text = File.ReadAllText(path).Trim();
+            version = SemVer.Parse(text);
 
-        Console.Write($"Version change: {version} -> ");
+            Console.Write($"Changing version in {path}: {version} -> ");
+        }
+        else
+        {
+            Console.Write($"Creating new version file at {path}. Initial version: ");
+        }
+
+
+        var x = version.ToString().Split(['-', '+'], StringSplitOptions.RemoveEmptyEntries)[0];
 
         var bump = Parse(args);
         if (bump.HasMajor && bump.Major)
@@ -80,10 +99,28 @@ public partial class Bump
 
 
         Console.WriteLine($"{version}");
+
+        File.WriteAllText(path, version.ToString());
+    }
+
+    public static DirectoryInfo? GetGitRepositoryRootDirectory(string pathInGitRepository)
+    {        
+        var directory = new DirectoryInfo(pathInGitRepository);
+        while (directory.GetDirectories(".git").Length == 0)
+        {
+            directory = directory.Parent;
+            if (directory == null)
+            {
+                return null;
+            }
+        }
+
+        return directory;
     }
 }
 
 // TODO: move to separate library
+// TODO: add tests
 public partial class SemVer
 {    
     [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
@@ -92,37 +129,22 @@ public partial class SemVer
     [GeneratedRegex("^[a-zA-Z0-9-]+$")]
     private static partial Regex IdentifierRegex();
 
-    public SemVer(int major, int minor, int patch, string? preRelease = null, string? buildMetaData = null)
-    {
-        if (major < 0)
-        {
-            throw new ArgumentException("Major version should be positive");
-        }
-
-        if (minor < 0)
-        {
-            throw new ArgumentException("Minor version should be positive");
-        }
-
-        if (patch < 0)
-        {
-            throw new ArgumentException("Patch version should be positive");
-        }
-
+    public SemVer(uint major, uint minor, uint patch, string? preRelease = null, string? buildMetaData = null)
+    {        
         Major = major;
         Minor = minor;
         Patch = patch;
         
-        ValidateTextPart(preRelease);
+        ValidateIdentifier(preRelease);
         PreRelease = preRelease ?? string.Empty;
 
-        ValidateTextPart(buildMetaData);
+        ValidateIdentifier(buildMetaData);
         BuildMetaData = buildMetaData ?? string.Empty;        
     }
 
-    public int Major { get; }
-    public int Minor { get; }
-    public int Patch { get; }
+    public uint Major { get; }
+    public uint Minor { get; }
+    public uint Patch { get; }
     public string PreRelease { get; }
     public string BuildMetaData { get; }
 
@@ -153,8 +175,7 @@ public partial class SemVer
     }
 
     public static SemVer Parse(string text)
-    {
-        // TODO: add tests
+    {        
         var match = SemVerRegex().Match(text);
         if (match.Success)
         {
@@ -164,19 +185,19 @@ public partial class SemVer
             var preRelease = match.Groups[4].Value;
             var buildMetaData = match.Groups[5].Value;
 
-            if (!int.TryParse(majorString, out var major))
+            if (!uint.TryParse(majorString, out var major))
             {
-                throw new Exception($"The major segment in version {text} should be a positive integer, but was: {major}");
+                throw new Exception($"The major segment in version {text} should be an unsigned integer, but was: {major}");
             }
 
-            if (!int.TryParse(minorString, out var minor))
+            if (!uint.TryParse(minorString, out var minor))
             {
-                throw new Exception($"The minor segment in version {text} should be a positive integer, but was: {minor}");
+                throw new Exception($"The minor segment in version {text} should be an unsigned integer, but was: {minor}");
             }
 
-            if (!int.TryParse(patchString, out var patch))
+            if (!uint.TryParse(patchString, out var patch))
             {
-                throw new Exception($"The patch segment in version {text} should be a positive integer, but was: {patch}");
+                throw new Exception($"The patch segment in version {text} should be an unsigned integer, but was: {patch}");
             }
 
             return new SemVer(major, minor, patch, preRelease, buildMetaData);
@@ -203,7 +224,7 @@ public partial class SemVer
         return text;
     }
 
-    private static void ValidateTextPart(string? text)
+    private static void ValidateIdentifier(string? text)
     {
         if (!string.IsNullOrEmpty(text) && !IdentifierRegex().IsMatch(text))
         {

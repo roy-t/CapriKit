@@ -1,4 +1,15 @@
 <Project>
+
+    <Target Name="ReadVersion" BeforeTargets="BeforeCompile">        
+        <ReadLinesFromFile
+            File="$(MSBuildThisFileDirectory)version.txt" >
+            <Output
+                TaskParameter="Lines"
+                ItemName="ExternalVersion"/>
+        </ReadLinesFromFile>
+        <Message Importance="High" Text="Using version @(ExternalVersion) from $(MSBuildThisFileDirectory)version.txt" />
+        <Message Importance="High" Text="BLA BLA @(ExternalVersion->'%(Identity)') " />
+    </Target>
   
   <!-- Build settings -->   
   <PropertyGroup> 
@@ -9,9 +20,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-  </PropertyGroup>
+  </PropertyGroup>    
 
-  <!-- Documentation -->
+  <!-- Versioning-->
+  <PropertyGroup>
+    <FlatVersion>@(ExternalVersion->'%(Identity)')</FlatVersion>
+    <!--<ExternalVersion>$([System.IO.File]::ReadAllText("version.txt"))</ExternalVersion>-->
+    <!--<AssemblyVersion>"@(ExternalVersion)"</AssemblyVersion>-->
+    <Version>$(FlatVersion)</Version>
+    <!--<FileVersion>"@(ExternalVersion)"</FileVersion>-->
+  </PropertyGroup>
+    <!-- Documentation -->
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>1591</NoWarn>
@@ -25,4 +44,6 @@
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
   </PropertyGroup>
+
+
 </Project>
