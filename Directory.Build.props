@@ -1,18 +1,7 @@
 <Project>
 
-    <Target Name="ReadVersion" BeforeTargets="BeforeCompile">        
-        <ReadLinesFromFile
-            File="$(MSBuildThisFileDirectory)version.txt" >
-            <Output
-                TaskParameter="Lines"
-                ItemName="ExternalVersion"/>
-        </ReadLinesFromFile>
-        <Message Importance="High" Text="Using version @(ExternalVersion) from $(MSBuildThisFileDirectory)version.txt" />
-        <Message Importance="High" Text="BLA BLA @(ExternalVersion->'%(Identity)') " />
-    </Target>
-  
-  <!-- Build settings -->   
-  <PropertyGroup> 
+  <!-- Build settings -->
+  <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>Latest</LangVersion>
     <Platforms>x64</Platforms>
@@ -20,24 +9,29 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-  </PropertyGroup>    
+  </PropertyGroup>  
 
   <!-- Versioning-->
+  <Target Name="ReadVersion" BeforeTargets="BeforeBuild">
+    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)version.txt">
+      <Output TaskParameter="Lines" ItemName="VersionLines" />
+    </ReadLinesFromFile>
+    <Message Importance="High"
+      Text="Using version %(VersionLines.Identity) from $(MSBuildThisFileDirectory)version.txt for $(MSBuildProjectName)" />
+    <PropertyGroup>      
+      <Version>%(VersionLines.Identity)</Version>
+      <FileVersion>%(VersionLines.Identity)</FileVersion>
+      <AssemblyInformationalVersion>%(VersionLines.Identity)</AssemblyInformationalVersion >      
+    </PropertyGroup>
+  </Target>
+  
+  <!-- Documentation -->
   <PropertyGroup>
-    <FlatVersion>@(ExternalVersion->'%(Identity)')</FlatVersion>
-    <!--<ExternalVersion>$([System.IO.File]::ReadAllText("version.txt"))</ExternalVersion>-->
-    <!--<AssemblyVersion>"@(ExternalVersion)"</AssemblyVersion>-->
-    <Version>$(FlatVersion)</Version>
-    <!--<FileVersion>"@(ExternalVersion)"</FileVersion>-->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>        
   </PropertyGroup>
-    <!-- Documentation -->
+
+  <!-- Outputsettings -->
   <PropertyGroup>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>1591</NoWarn>
-  </PropertyGroup>
-    
-  <!-- Outputsettings -->   
-  <PropertyGroup>    
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
     <IntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj/$(MSBuildProjectName)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -45,5 +39,11 @@
     <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
   </PropertyGroup>
 
-
+  <!-- Supressions-->
+  <PropertyGroup>
+    <!-- 7035: Ignore the MSBuild warning when using the prerelease and build meta data fields in a semantic version -->
+    <!-- 1591: When generating documentation, do not require each public property/method/class to have documentation-->
+    <NoWarn>7035;1591</NoWarn>
+  </PropertyGroup>
+  
 </Project>

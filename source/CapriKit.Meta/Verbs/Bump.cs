@@ -100,6 +100,7 @@ public partial class Bump
 
         Console.WriteLine($"{version}");
 
+        // TODO: msbuild and NuGet do not support SEMVER, so store version without the prerelease and buildmetadata and use those somewhere else?
         File.WriteAllText(path, version.ToString());
     }
 
