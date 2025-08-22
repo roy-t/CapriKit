@@ -33,7 +33,7 @@
   </ItemGroup>
 
   <!-- Versioning-->
-  <Target Name="ReadVersion" BeforeTargets="BeforeBuild">
+  <Target Name="ReadVersion" BeforeTargets="BeforeBuild;GenerateNuspec">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)version.txt">
       <Output TaskParameter="Lines" ItemName="VersionLines" />
     </ReadLinesFromFile>
@@ -55,7 +55,8 @@
   <!-- Outputsettings -->
   <PropertyGroup>
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
-    <IntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj/$(MSBuildProjectName)</IntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
     <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>

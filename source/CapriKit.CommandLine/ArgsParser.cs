@@ -11,7 +11,7 @@ public class UnmatchedFlagsException : Exception
     }
 
     public string Verb { get; }
-    public IEnumerable<string> Unmatched { get; }    
+    public IEnumerable<string> Unmatched { get; }
 }
 
 public class ArgsParser
@@ -47,12 +47,12 @@ public class ArgsParser
             var current = arguments.First;
             var next = current.Next;
             while (current != null && next != null)
-            {                
+            {
                 var currentValue = current.Value;
                 var nextValue = next.Value;
                 if (currentValue.Equals(flag, ArgStringComparison))
                 {
-                    
+
                     arguments.Remove(currentValue);
                     arguments.Remove(nextValue);
 
@@ -73,10 +73,10 @@ public class ArgsParser
     {
         if (arguments.Count > 0)
         {
-            var current = arguments.First;            
+            var current = arguments.First;
             while (current != null)
             {
-                var currentValue = current.Value;                
+                var currentValue = current.Value;
                 if (currentValue.Equals(flag, ArgStringComparison))
                 {
 

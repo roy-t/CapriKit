@@ -7,7 +7,7 @@ namespace CapriKit.CommandLine;
 
 [Generator]
 public class VerbGenerator : IIncrementalGenerator
-{    
+{
     private static readonly string RootNameSpace = "CapriKit.CommandLine";
 
     private static readonly string VerbAttributeFullName = "CapriKit.CommandLine.VerbAttribute";
@@ -17,7 +17,7 @@ public class VerbGenerator : IIncrementalGenerator
     private static readonly string FlagAttributeName = "FlagAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
-    {        
+    {
         // Get all classes annotated with [Verb(..)]
         var verbDeclarations = context.SyntaxProvider.ForAttributeWithMetadataName(
             VerbAttributeFullName,
@@ -43,11 +43,11 @@ public class VerbGenerator : IIncrementalGenerator
         foreach (var flagDeclaration in source.FlagDeclarations)
         {
             var flag = GetFlag(flagDeclaration.Syntax, flagDeclaration.Data, flagDeclaration.ParentClass);
-            flags.Add(flag);            
+            flags.Add(flag);
         }
 
         var verbs = new List<VerbClass>();
-        foreach(var verbDeclaration in source.VerbDeclarations)
+        foreach (var verbDeclaration in source.VerbDeclarations)
         {
             var verb = GetVerb(verbDeclaration.Syntax, verbDeclaration.Data, verbDeclaration.Namespace);
             verbs.Add(verb);
@@ -58,7 +58,7 @@ public class VerbGenerator : IIncrementalGenerator
     }
 
     private static void GeneratePrinter(SourceProductionContext context, List<VerbClass> verbs, List<FlagProperty> flags)
-    {               
+    {
         var verbDictionary = string.Join(", ", verbs.Select(v => $"{{{v.TypeNamespace}.{v.TypeName}.VerbName, (new VerbInfo({v.TypeNamespace}.{v.TypeName}.VerbName, {v.TypeNamespace}.{v.TypeName}.Documentation), {v.TypeNamespace}.{v.TypeName}.Flags)}}"));
 
         var file = $$"""
@@ -77,11 +77,11 @@ public class VerbGenerator : IIncrementalGenerator
                 """;
         context.AddSource($"VerbGenerator.CommandLineHelp.g.cs", file);
     }
-    
+
     private static void GenerateVerbFiles(SourceProductionContext context, IReadOnlyList<VerbClass> verbs, IReadOnlyList<FlagProperty> flags)
-    {        
+    {
         foreach (var verb in verbs)
-        {            
+        {
             var flagsForVerb = flags.Where(f => f.ParentTypeName == verb.TypeName).ToList();
 
             var builder = new StringBuilder();
@@ -97,7 +97,7 @@ public class VerbGenerator : IIncrementalGenerator
                 """;
             builder.AppendLine(classIntro);
 
-            var flagInfos = string.Join(", ", flagsForVerb.Select(f => $"new FlagInfo({Utilities.ToLiteral(f.FlagName)}, {Utilities.ToLiteral(f.PropertyType)}, {Utilities.ToLiteral(f.Documentation)})"));            
+            var flagInfos = string.Join(", ", flagsForVerb.Select(f => $"new FlagInfo({Utilities.ToLiteral(f.FlagName)}, {Utilities.ToLiteral(f.PropertyType)}, {Utilities.ToLiteral(f.Documentation)})"));
             var flagList = $$"""
                     /// <summary>
                     /// Name, type and description of each flag available for this command.
@@ -148,18 +148,18 @@ public class VerbGenerator : IIncrementalGenerator
                             var verb = new {{verb.TypeName}}();                            
                 """;
             builder.AppendLine(parseIntro);
-            
+
             foreach (var flag in flagsForVerb)
             {
                 var flagName = flag.FlagName;
                 var flagPropertyName = flag.PropertyName;
                 var flagType = flag.PropertyType;
                 if (flag.PropertyType == "bool")
-                {                    
+                {
                     builder.AppendLine($"            if(argsParser.PopBoolFlag(\"{flagName}\")) {{ verb.Set{flagPropertyName}(true); }}");
                 }
                 else
-                {                    
+                {
                     builder.AppendLine($"            if(argsParser.PopFlag<{flagType}>(\"{flagName}\", out {flagType} __{flagPropertyName})) {{ verb.Set{flagPropertyName}(__{flagPropertyName}); }}");
                 }
             }
@@ -179,37 +179,37 @@ public class VerbGenerator : IIncrementalGenerator
                 #nullable restore                
                 """;
             builder.AppendLine(parseOutro);
-                      
+
             var classOutro = """                
                 }
                 """;
             builder.AppendLine(classOutro);
-            
+
             context.AddSource($"VerbGenerator.{verb.TypeNamespace}.{verb.TypeName}.g.cs", builder.ToString());
-        }               
+        }
     }
 
     private static VerbClass GetVerb(ClassDeclarationSyntax syntax, AttributeData data, string @namespace)
-    {        
+    {
         if (data.ConstructorArguments.Length != 1)
         {
             throw new Exception($"{VerbAttributeFullName} should have exactly one constructor argument");
         }
 
         var typeName = syntax.Identifier.ValueText;
-        var verbName = data.ConstructorArguments[0].Value?.ToString() ?? string.Empty;        
+        var verbName = data.ConstructorArguments[0].Value?.ToString() ?? string.Empty;
         var documentation = Utilities.GetDocumentationFromLeadingTrivia(syntax);
 
         return new VerbClass(typeName, @namespace, verbName, documentation);
     }
 
     private static FlagProperty GetFlag(PropertyDeclarationSyntax syntax, AttributeData data, string parentTypeName)
-    {        
+    {
         // Limit support to built-in-types: https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/built-in-types        
         if (syntax.Type is not PredefinedTypeSyntax predefinedType)
         {
             throw new NotSupportedException($"The flag attribute can only be used on built in types");
-        } 
+        }
 
         // Ignore built-in reference types, except for string
         var propertyType = predefinedType.Keyword.ValueText;
@@ -221,16 +221,16 @@ public class VerbGenerator : IIncrementalGenerator
         if (data.ConstructorArguments.Length != 1)
         {
             throw new Exception($"{FlagAttributeFullName} should have exactly one constructor argument");
-        }        
+        }
 
         var flagName = data.ConstructorArguments[0].Value?.ToString() ?? string.Empty;
         var propertyName = syntax.Identifier.ValueText ?? string.Empty;
-        
-        var documentation = Utilities.GetDocumentationFromLeadingTrivia(syntax);       
+
+        var documentation = Utilities.GetDocumentationFromLeadingTrivia(syntax);
 
         return new FlagProperty(propertyType, propertyName, parentTypeName, flagName, documentation);
     }
-    
+
     private static (ClassDeclarationSyntax Syntax, AttributeData Data, string Namespace) GetSemanticTargetForVerbGeneration(GeneratorAttributeSyntaxContext context, CancellationToken ct)
     {
         if (context.TargetNode is not ClassDeclarationSyntax classDeclaration)
@@ -271,6 +271,6 @@ public class VerbGenerator : IIncrementalGenerator
             throw new NotSupportedException($"Properties attributed with [{FlagAttributeFullName}] should be defined in a class");
         }
 
-        return (properyDeclaration, attribute, parentClass);        
-    }    
+        return (properyDeclaration, attribute, parentClass);
+    }
 }

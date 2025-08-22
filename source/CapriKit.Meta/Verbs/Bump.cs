@@ -32,7 +32,7 @@ public partial class Bump
     /// 
     /// A pre-release version MAY be denoted by appending a hyphen and a series of dot separated identifiers immediately following the patch version.Identifiers MUST comprise only ASCII alphanumerics and hyphens[0 - 9A - Za - z -]. Identifiers MUST NOT be empty.Numeric identifiers MUST NOT include leading zeroes.Pre-release versions have a lower precedence than the associated normal version.A pre-release version indicates that the version is unstable and might not satisfy the intended compatibility requirements as denoted by its associated normal version.Examples: 1.0.0-alpha, 1.0.0-alpha.1, 1.0.0-0.3.7, 1.0.0-x.7.z.92, 1.0.0-x-y-z.--.
     /// </summary>
-        [Flag("--prerelease")]
+    [Flag("--prerelease")]
     public partial string Prerelease { get; }
 
     /// <summary>
@@ -41,7 +41,7 @@ public partial class Bump
     /// Build metadata MAY be denoted by appending a plus sign and a series of dot separated identifiers immediately following the patch or pre-release version. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-]. Identifiers MUST NOT be empty. Build metadata MUST be ignored when determining version precedence. Thus two versions that differ only in the build metadata, have the same precedence. Examples: 1.0.0-alpha+001, 1.0.0+20130313144700, 1.0.0-beta+exp.sha.5114f85, 1.0.0+21AF26D3----117B344092BD.
     /// </summary>
     [Flag("--build-meta-data")]
-    public partial string BuildMetaData { get; }    
+    public partial string BuildMetaData { get; }
 
     public static void Execute(params string[] args)
     {
@@ -51,7 +51,7 @@ public partial class Bump
 
         var path = Path.Combine(rootDirectory.FullName, "version.txt");
         var version = new SemVer(0, 1, 0);
-        
+
         if (File.Exists(path))
         {
             var text = File.ReadAllText(path).Trim();
@@ -98,7 +98,7 @@ public partial class Bump
     }
 
     public static DirectoryInfo? GetGitRepositoryRootDirectory(string pathInGitRepository)
-    {        
+    {
         var directory = new DirectoryInfo(pathInGitRepository);
         while (directory.GetDirectories(".git").Length == 0)
         {
@@ -116,7 +116,7 @@ public partial class Bump
 // TODO: move to separate library
 // TODO: add tests
 public partial class SemVer
-{    
+{
     [GeneratedRegex("^(?<major>0|[1-9]\\d*)\\.(?<minor>0|[1-9]\\d*)\\.(?<patch>0|[1-9]\\d*)(?:-(?<prerelease>(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+(?<buildmetadata>[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$")]
     private static partial Regex SemVerRegex();
 
@@ -124,16 +124,16 @@ public partial class SemVer
     private static partial Regex IdentifierRegex();
 
     public SemVer(uint major, uint minor, uint patch, string? preRelease = null, string? buildMetaData = null)
-    {        
+    {
         Major = major;
         Minor = minor;
         Patch = patch;
-        
+
         ValidateIdentifier(preRelease);
         PreRelease = preRelease ?? string.Empty;
 
         ValidateIdentifier(buildMetaData);
-        BuildMetaData = buildMetaData ?? string.Empty;        
+        BuildMetaData = buildMetaData ?? string.Empty;
     }
 
     public uint Major { get; }
@@ -144,7 +144,7 @@ public partial class SemVer
 
     public SemVer BumpMajor()
     {
-        return new SemVer(Major + 1, Minor, Patch, PreRelease, BuildMetaData);        
+        return new SemVer(Major + 1, Minor, Patch, PreRelease, BuildMetaData);
     }
 
     public SemVer BumpMinor()
@@ -158,18 +158,18 @@ public partial class SemVer
     }
 
     public SemVer WithPreReleaseData(string? preRelease)
-    {        
+    {
         return new SemVer(Major, Minor, Patch, preRelease, BuildMetaData);
     }
 
     public SemVer WithBuildMetaData(string? buildMetaData)
     {
-        
+
         return new SemVer(Major, Minor, Patch, PreRelease, buildMetaData);
     }
 
     public static SemVer Parse(string text)
-    {        
+    {
         var match = SemVerRegex().Match(text);
         if (match.Success)
         {
@@ -223,6 +223,6 @@ public partial class SemVer
         if (!string.IsNullOrEmpty(text) && !IdentifierRegex().IsMatch(text))
         {
             throw new Exception($"Invalid identifier: {text}. Identifiers MUST comprise only ASCII alphanumerics and hyphens [0-9A-Za-z-].");
-        }        
+        }
     }
 }

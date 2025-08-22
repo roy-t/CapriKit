@@ -7,13 +7,13 @@ internal sealed class FlagProperty
         PropertyType = propertyType;
         PropertyName = propertyName;
         ParentTypeName = parentTypeName;
-        FlagName = flagName;        
-        Documentation = documentation;        
+        FlagName = flagName;
+        Documentation = documentation;
     }
 
     public string PropertyType { get; }
     public string PropertyName { get; }
     public string ParentTypeName { get; }
-    public string FlagName { get; }   
-    public string Documentation { get; }        
+    public string FlagName { get; }
+    public string Documentation { get; }
 }

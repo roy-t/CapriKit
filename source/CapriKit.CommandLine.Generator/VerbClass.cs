@@ -6,13 +6,13 @@ internal sealed class VerbClass
     {
         TypeName = typeName;
         TypeNamespace = typeNamespace;
-        VerbName = verbName;        
-        Documentation = documentation;        
+        VerbName = verbName;
+        Documentation = documentation;
     }
-    
+
     public string TypeName { get; }
     public string TypeNamespace { get; }
     public string VerbName { get; }
     public string Documentation { get; }
-    
+
 }

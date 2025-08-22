@@ -4,7 +4,7 @@ using System.Text;
 namespace CapriKit.CommandLine;
 
 public static class CommandLineHelp
-{    
+{
     private const string Indent = "  ";
     private const string Tab = "    ";
 
@@ -38,7 +38,7 @@ public static class CommandLineHelp
         Console.WriteLine($"Available flags:");
         PrintTable(flags.Select(f => (f.Name, f.Documentation)));
         Console.WriteLine();
-    }   
+    }
 
     private static void PrintTable(IEnumerable<(string item, string documentation)> table)
     {
@@ -69,7 +69,7 @@ public static class CommandLineHelp
         {
             return text;
         }
-        
+
         var builder = new StringBuilder();
         var back = 0;
         var lineLength = 0;
@@ -82,13 +82,13 @@ public static class CommandLineHelp
                 {
                     builder.AppendLine();
                     // ignore the whitespace character between this word and the previous word
-                    back += 1; 
+                    back += 1;
                     lineLength = 0;
                 }
                 builder.Append(text.Substring(back, length));
                 lineLength += length;
                 back = front;
-            }            
+            }
         }
 
         return builder.ToString();

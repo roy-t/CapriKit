@@ -10,7 +10,7 @@ internal partial class Program
         if (args.Length == 0)
         {
             CommandLineHelp.PrintGeneralHelp(CommandLineVerbs.AllVerbs);
-                   
+
             Console.WriteLine();
             Console.WriteLine("Entering interactive mode, press ctrl+c or type :q to quit");
             Console.WriteLine();
@@ -55,7 +55,7 @@ internal partial class Program
                     break;
             }
         }
-        catch(UnmatchedFlagsException unmatched)
+        catch (UnmatchedFlagsException unmatched)
         {
             WriteError(unmatched.Message);
             Console.WriteLine($"Use 'help --command {unmatched.Verb}' to read more about the supported arguments");
@@ -85,6 +85,6 @@ internal partial class Program
         Console.ForegroundColor = ConsoleColor.Red;
         Console.Write("Error: ");
         Console.ResetColor();
-        Console.WriteLine(message);        
+        Console.WriteLine(message);
     }
 }

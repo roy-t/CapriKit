@@ -14,7 +14,7 @@ public static class Utilities
     }
 
     public static string GetDocumentationFromLeadingTrivia(SyntaxNode syntax)
-    {        
+    {
         if (syntax.HasLeadingTrivia)
         {
             var trivia = syntax.GetLeadingTrivia();
@@ -41,7 +41,7 @@ public static class Utilities
             var lines = comment.Split(['\r', '\n']).Select(c => c.Trim());
             var builder = new StringBuilder();
             foreach (var line in lines)
-            {                
+            {
                 if (line.StartsWith("///"))
                 {
                     if (line.Length > 3)
