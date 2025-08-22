@@ -9,7 +9,28 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
-  </PropertyGroup>  
+  </PropertyGroup>
+
+  <!--Nuget package info-->
+  <PropertyGroup>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Authors>Roy Triesscheijn</Authors>
+    <Description>$(MSBuildProjectName), part of Roy Triesscheijn's collection of code libraries</Description>
+    <PackageProjectUrl>https://github.com/roy-t/CapriKit</PackageProjectUrl>        
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/roy-t/CapriKit</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>gamedev, gamedevelopment, utilities, vectors, matrix, numerics, path, curve</PackageTags>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <!-- Versioning-->
   <Target Name="ReadVersion" BeforeTargets="BeforeBuild">
@@ -20,6 +41,7 @@
       Text="Using version %(VersionLines.Identity) from $(MSBuildThisFileDirectory)version.txt for $(MSBuildProjectName)" />
     <PropertyGroup>      
       <Version>%(VersionLines.Identity)</Version>
+      <PackageVersion>%(VersionLines.Identity)</PackageVersion>
       <FileVersion>%(VersionLines.Identity)</FileVersion>
       <AssemblyInformationalVersion>%(VersionLines.Identity)</AssemblyInformationalVersion >      
     </PropertyGroup>
