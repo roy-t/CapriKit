@@ -1,5 +1,4 @@
 using CapriKit.CommandLine;
-using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace CapriKit.Meta.Verbs;
@@ -47,12 +46,9 @@ public partial class Bump
     public static void Execute(params string[] args)
     {
         var leafDirectory = AppContext.BaseDirectory;
-        var rootDirectory = GetGitRepositoryRootDirectory(leafDirectory);
-        if (rootDirectory == null)
-        {
-            throw new Exception($"Not a git repository: {leafDirectory}");
-        }        
-        
+        var rootDirectory = GetGitRepositoryRootDirectory(leafDirectory)
+            ?? throw new Exception($"Not a git repository: {leafDirectory}");
+
         var path = Path.Combine(rootDirectory.FullName, "version.txt");
         var version = new SemVer(0, 1, 0);
         
@@ -67,9 +63,6 @@ public partial class Bump
         {
             Console.Write($"Creating new version file at {path}. Initial version: ");
         }
-
-
-        var x = version.ToString().Split(['-', '+'], StringSplitOptions.RemoveEmptyEntries)[0];
 
         var bump = Parse(args);
         if (bump.HasMajor && bump.Major)
