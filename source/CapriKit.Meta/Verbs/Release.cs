@@ -4,7 +4,7 @@ using CapriKit.CommandLine;
 namespace CapriKit.Meta.Verbs;
 
 /// <summary>
-/// Formats, builds, tests and packs the application, then pushes the packages to NuGet.org
+/// Runs formatting, test, build and pack steps before pushing to NuGet
 /// </summary>
 [Verb("release")]
 public partial class Release
@@ -14,6 +14,12 @@ public partial class Release
     /// </summary>
     [Flag("--dry-run")]
     public partial bool DryRun { get; }
+
+    /// <summary>
+    /// The api-key required for uploading the packages to NuGet.org
+    /// </summary>
+    [Flag("--api-key")]
+    public partial string ApiKey { get; }
 
     public static void Execute(params string[] args)
     {
@@ -46,12 +52,19 @@ public partial class Release
             }
             else
             {
-                var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
-                var packagePath = Path.Combine(solutionPath, ".build", "pkg");
-
-                if (DotNetManager.NuGetPush(packagePath, "abc"))
+                if (!release.HasApiKey)
                 {
-                    Console.WriteLine("Error: nuget push failed");
+                    Console.WriteLine("Error: missing --api-key argument");
+                }
+                else
+                {
+                    var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
+                    var packagePath = Path.Combine(solutionPath, ".build", "pkg");
+
+                    if (DotNetManager.NuGetPush(packagePath, release.ApiKey))
+                    {
+                        Console.WriteLine("Error: nuget push failed");
+                    }
                 }
             }
         }
