@@ -1,0 +1,6 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="17.14.8" ExcludeAssets="runtime" /> <!-- Use the system's installed MSBuild -->
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.9.1" />
+  </ItemGroup>
+</Project>

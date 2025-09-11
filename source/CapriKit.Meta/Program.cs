@@ -1,5 +1,6 @@
 using CapriKit.CommandLine;
 using CapriKit.Meta.Verbs;
+using CapriKit.Build;
 
 namespace CapriKit.Meta;
 
@@ -45,7 +46,19 @@ internal partial class Program
                 case Bump.VerbName:
                     Bump.Execute(args);
                     break;
-
+                case "Release":
+                    var solution = Utilities.SearchUp("*.sln").FirstOrDefault();
+                    if (solution != null)
+                    {
+                        //DotNetManager.Format(solution);
+                        DotNetManager.Test(solution);
+                        //MSBuildManager.BuildSolution(solution);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
+                    }
+                    break;
                 default:
                     Console.WriteLine($"Invalid verb: {args[0]}");
                     Console.WriteLine();

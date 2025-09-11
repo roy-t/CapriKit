@@ -3,6 +3,7 @@
     <OutputType>Exe</OutputType>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
     <ProjectReference Include="..\CapriKit.CommandLine\CapriKit.CommandLine.csproj" />
     <ProjectReference Include="..\CapriKit.CommandLine.Generator\CapriKit.CommandLine.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>

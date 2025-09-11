@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine.Genera
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.CommandLine", "source\CapriKit.CommandLine\CapriKit.CommandLine.csproj", "{65978AF9-426B-4117-88E7-3D5CA00DC350}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Build", "source\CapriKit.Build\CapriKit.Build.csproj", "{67AF248B-C74D-4637-9AD8-5431235EFA34}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -35,6 +37,10 @@ Global
 		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Debug|x64.Build.0 = Debug|Any CPU
 		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Release|x64.ActiveCfg = Release|Any CPU
 		{65978AF9-426B-4117-88E7-3D5CA00DC350}.Release|x64.Build.0 = Release|Any CPU
+		{67AF248B-C74D-4637-9AD8-5431235EFA34}.Debug|x64.ActiveCfg = Debug|x64
+		{67AF248B-C74D-4637-9AD8-5431235EFA34}.Debug|x64.Build.0 = Debug|x64
+		{67AF248B-C74D-4637-9AD8-5431235EFA34}.Release|x64.ActiveCfg = Release|x64
+		{67AF248B-C74D-4637-9AD8-5431235EFA34}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

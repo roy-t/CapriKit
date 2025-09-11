@@ -59,7 +59,7 @@
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)-$(Configuration)</OutputPath>
   </PropertyGroup>
 
   <!-- Supressions-->
