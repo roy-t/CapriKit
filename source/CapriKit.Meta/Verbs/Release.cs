@@ -1,20 +1,63 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using CapriKit.Build;
+using CapriKit.CommandLine;
 
 namespace CapriKit.Meta.Verbs;
 
-internal class Release
+/// <summary>
+/// Formats, builds, tests and packs the application, then pushes the packages to NuGet.org
+/// </summary>
+[Verb("release")]
+public partial class Release
 {
-    // TODO:
-    // - dotnet format    
-    // - dotnet build --configuration Release
-    // - dotnet test --no-build
-    // - dotnet solution list
-    // foreach...
-    // -  dotnet pack .\source\CapriKit.CommandLine\CapriKit.CommandLine.csproj --configuration Release --no-build -o .\.pack
-    // end
-    // - dotnet nuget push *.nupkg --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}}
+    /// <summary>
+    /// Performs all the release steps without actually pushing the packages to NuGet
+    /// </summary>
+    [Flag("--dry-run")]
+    public partial bool DryRun { get; }
+
+    public static void Execute(params string[] args)
+    {
+        var release = Parse(args);
+
+        var solution = Utilities.SearchFileUp("*.sln").FirstOrDefault();
+        if (solution != null)
+        {
+            if (!DotNetManager.Restore(solution))
+            {
+                Console.WriteLine("Error: restore failed");
+                return;
+            }
+            if (!DotNetManager.Format(solution))
+            {
+                Console.WriteLine("Error: format failed");
+            }
+            if (!DotNetManager.Test(solution))
+            {
+                Console.WriteLine("Error: test failed");
+            }
+            if (!MSBuildManager.BuildAndPackSolution(solution))
+            {
+                Console.WriteLine("Error: build or pack failed");
+            }
+
+            if (release.DryRun)
+            {
+                Console.WriteLine("Dry run, skipping nuget push");
+            }
+            else
+            {
+                var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
+                var packagePath = Path.Combine(solutionPath, ".build", "pkg");
+
+                if (DotNetManager.NuGetPush(packagePath, "abc"))
+                {
+                    Console.WriteLine("Error: nuget push failed");
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
+        }
+    }
 }

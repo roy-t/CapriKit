@@ -28,7 +28,7 @@ public class MSBuildManager
     public static bool BuildProject(string projectPath, string configuration = "Release")
     {
         InitializeMsBuild();
-        return BuildProjectInternal(projectPath, configuration) == MSBUILD_SUCCESS;
+        return BuildProjectInternal(projectPath, configuration, "build") == MSBUILD_SUCCESS;
     }
 
     /// <summary>
@@ -38,10 +38,20 @@ public class MSBuildManager
     public static bool BuildSolution(string solutionPath, string configuration = "Release")
     {
         InitializeMsBuild();
-        return BuildSolutionInternal(solutionPath, configuration) == MSBUILD_SUCCESS;
+        return BuildSolutionInternal(solutionPath, configuration, "build") == MSBUILD_SUCCESS;
     }
 
-    private static int BuildProjectInternal(string projectUrl, string configuration)
+    /// <summary>
+    /// Packages all MSBuild projects referenced in the given Visual Studio Solution file.
+    /// </summary>    
+    /// <returns>True if the all builds succeeded, false otherwise</returns>
+    public static bool BuildAndPackSolution(string solutionPath, string configuration = "Release")
+    {
+        InitializeMsBuild();
+        return BuildSolutionInternal(solutionPath, configuration, "build", "pack") == MSBUILD_SUCCESS;
+    }
+
+    private static int BuildProjectInternal(string projectUrl, string configuration, params string[] targetsToBuild)
     {
         var globalProperties = new Dictionary<string, string?>
         {
@@ -53,14 +63,13 @@ public class MSBuildManager
             Loggers = [new ConsoleLogger(LoggerVerbosity.Normal)]
         };
 
-        string[] targetsToBuild = ["Build"];
         var buildRequest = new BuildRequestData(projectUrl, globalProperties, null, targetsToBuild, null);
         var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
 
         return (int)result.OverallResult;
     }
 
-    private static int BuildSolutionInternal(string solutionPath, string configuration)
+    private static int BuildSolutionInternal(string solutionPath, string configuration, params string[] targetsToBuild)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         if (!File.Exists(solutionPath) || solutionDirectory == null)
@@ -75,7 +84,7 @@ public class MSBuildManager
         foreach (var project in projects)
         {
             var projectPath = Path.Combine(solutionDirectory, project.RelativePath);
-            var result = BuildProjectInternal(projectPath, configuration);
+            var result = BuildProjectInternal(projectPath, configuration, targetsToBuild);
 
             if (result != MSBUILD_SUCCESS)
             {

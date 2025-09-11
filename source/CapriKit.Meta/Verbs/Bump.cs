@@ -45,11 +45,10 @@ public partial class Bump
 
     public static void Execute(params string[] args)
     {
-        var leafDirectory = AppContext.BaseDirectory;
-        var rootDirectory = GetGitRepositoryRootDirectory(leafDirectory)
-            ?? throw new Exception($"Not a git repository: {leafDirectory}");
+        var rootDirectory = Utilities.SearchDirectoryUp(".git", Environment.CurrentDirectory)
+            .FirstOrDefault() ?? throw new Exception($"Not a git repository: {Environment.CurrentDirectory}");
 
-        var path = Path.Combine(rootDirectory.FullName, "version.txt");
+        var path = Path.Combine(rootDirectory, "version.txt");
         var version = new SemVer(0, 1, 0);
 
         if (File.Exists(path))
@@ -95,21 +94,6 @@ public partial class Bump
 
         // TODO: msbuild and NuGet do not support SEMVER, so store version without the prerelease and buildmetadata and use those somewhere else?
         File.WriteAllText(path, version.ToString());
-    }
-
-    public static DirectoryInfo? GetGitRepositoryRootDirectory(string pathInGitRepository)
-    {
-        var directory = new DirectoryInfo(pathInGitRepository);
-        while (directory.GetDirectories(".git").Length == 0)
-        {
-            directory = directory.Parent;
-            if (directory == null)
-            {
-                return null;
-            }
-        }
-
-        return directory;
     }
 }
 

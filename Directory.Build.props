@@ -12,6 +12,7 @@
   </PropertyGroup>
 
   <!--Nuget package info-->
+  <!-- https://learn.microsoft.com/en-us/nuget/reference/msbuild-targets -->
   <PropertyGroup>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <Authors>Roy Triesscheijn</Authors>
@@ -24,6 +25,14 @@
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
+
+  <!-- Copy nupgk files to a different output directory -->
+  <Target Name="CopyPackage" AfterTargets="Pack">
+    <Copy
+      SourceFiles="$(OutputPath)\$(PackageId).$(PackageVersion).nupkg"
+      DestinationFolder="$(OutputPath)\..\..\pkg\"
+    />
+  </Target>
 
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)README.md">
@@ -58,7 +67,14 @@
     <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>        
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == ''">
+    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' != ''">
     <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)-$(Configuration)</OutputPath>
   </PropertyGroup>
 
@@ -68,5 +84,6 @@
     <!-- 1591: When generating documentation, do not require each public property/method/class to have documentation-->
     <NoWarn>7035;1591</NoWarn>
   </PropertyGroup>
+
   
 </Project>

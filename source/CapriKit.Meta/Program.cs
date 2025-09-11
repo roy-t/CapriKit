@@ -46,18 +46,8 @@ internal partial class Program
                 case Bump.VerbName:
                     Bump.Execute(args);
                     break;
-                case "Release":
-                    var solution = Utilities.SearchUp("*.sln").FirstOrDefault();
-                    if (solution != null)
-                    {
-                        //DotNetManager.Format(solution);
-                        DotNetManager.Test(solution);
-                        //MSBuildManager.BuildSolution(solution);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
-                    }
+                case Release.VerbName:
+                    Release.Execute(args);
                     break;
                 default:
                     Console.WriteLine($"Invalid verb: {args[0]}");
