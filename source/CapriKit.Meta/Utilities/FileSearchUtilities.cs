@@ -1,6 +1,6 @@
-namespace CapriKit.Meta;
+namespace CapriKit.Meta.Utilities;
 
-public static class Utilities
+public static class FileSearchUtilities
 {
     public static IEnumerable<string> SearchFileUp(string searchPattern, string? startingDirectory = null)
     {
