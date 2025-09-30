@@ -46,15 +46,8 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
             var oldVersion = SemVer.Parse(text);
             var newVersion = UpdateVersion(oldVersion, bump);
 
-            if (oldVersion == newVersion)
-            {
-                AnsiConsoleExt.ErrorMarkupLineInterpolated($"The bump command requires you to specify at least one option");
-            }
-            else
-            {
-                WriteVersionToFile(path, newVersion);
-                AnsiConsoleExt.InfoMarkupLineInterpolated($"Updating [gray]({path})[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
-            }
+            WriteVersionToFile(path, newVersion);
+            AnsiConsoleExt.InfoMarkupLineInterpolated($"Updating [gray]({path})[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
         }
         else
         {
@@ -64,6 +57,16 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         }
 
         return 0;
+    }
+
+    public override ValidationResult Validate(CommandContext context, Settings settings)
+    {
+        if (!context.Remaining.Raw.Any())
+        {
+            return ValidationResult.Error("Command requires at least one option");
+        }
+        
+        return base.Validate(context, settings);
     }
 
     private static SemVer UpdateVersion(SemVer version, Settings bump)

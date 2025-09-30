@@ -14,6 +14,7 @@ internal partial class Program
                 .WithDescription("Bumps the package version, in line with semantic versioning 2.0");
             configure.AddCommand<ReleaseCommand>("release")
                 .WithDescription("Runs formatting, test, build and pack steps before pushing to NuGet");
+            configure.AddCommand<StreamCommand>("stream");
         });
         app.Run(args);
     }

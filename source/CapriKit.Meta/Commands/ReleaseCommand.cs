@@ -1,5 +1,6 @@
 using CapriKit.Build;
 using CapriKit.Meta.Utilities;
+using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
@@ -27,26 +28,39 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             return 10;
         }
 
-        if (!DotNetManager.Restore(solution))
+        //if (!DotNetManager.Restore(solution))
+        //{
+        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Package restore failed");
+        //    return 20;
+        //}
+        //if (!DotNetManager.Format(solution))
+        //{
+        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Code formatting failed");
+        //    return 30;
+        //}
+        //if (!DotNetManager.Test(solution))
+        //{
+        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Tests failed");
+        //    return 40;
+        //}
+
+        // TODO: have to call this metnhod since BuildLogger has public elements that reference MSBuild, fix by encapsulating it
+        // TODO: have to capture status of build somehow and stop if it fails
+        MSBuildManager.InitializeMsBuild();
+        AnsiConsole.Status().Start($"Initializing build of {solution}", progress =>
         {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Package restore failed");
-            return 20;
-        }
-        if (!DotNetManager.Format(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Code formatting failed");
-            return 30;
-        }
-        if (!DotNetManager.Test(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Tests failed");
-            return 40;
-        }
-        if (!MSBuildManager.BuildAndPackSolution(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Building and packing failed");
-            return 50;
-        }
+            
+            var logger = new BuildLogger(progress);
+            progress.Spinner(Spinner.Known.Dots);
+            MSBuildManager.BuildAndPackSolution(logger, solution);
+        });
+        
+
+        //if ()
+        //{
+        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Building and packing failed");
+        //    return 50;
+        //}
 
         if (release.DryRun)
         {
