@@ -7,56 +7,56 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet restore` on all projects in the solution.
     /// </summary>    
-    public static bool Restore(string solutionPath)
+    public static void Restore(IProgressTracker tracker, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
-        using var process = BootstrapProcess("dotnet", solutionDirectory);
+        using var process = BootstrapProcess(tracker, "dotnet", solutionDirectory);
 
         process.StartInfo.ArgumentList.Add("restore");
         process.StartInfo.ArgumentList.Add(solutionPath);
 
         AppendLoggerArguments(process);
-        return RunProcess(process);
+        RunProcess(tracker, $"dotnet restore for {solutionPath}", process);
     }
 
 
     /// <summary>
     /// Runs `dotnet format --no-restore` on all projects in the solution.
     /// </summary>    
-    public static bool Format(string solutionPath)
+    public static void Format(IProgressTracker tracker, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
-        using var process = BootstrapProcess("dotnet", solutionDirectory);
+        using var process = BootstrapProcess(tracker, "dotnet", solutionDirectory);
 
         process.StartInfo.ArgumentList.Add("format");
         process.StartInfo.ArgumentList.Add(solutionPath);
         process.StartInfo.ArgumentList.Add("--no-restore");
 
         AppendLoggerArguments(process);
-        return RunProcess(process);
+        RunProcess(tracker, $"dotnet format for {solutionPath}", process);
     }
 
     /// <summary>
     /// Runs `dotnet test --no-restore` on all projects in the solution.
     /// </summary>    
-    public static bool Test(string solutionPath)
+    public static void Test(IProgressTracker tracker, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
-        using var process = BootstrapProcess("dotnet", solutionDirectory);
+        using var process = BootstrapProcess(tracker, "dotnet", solutionDirectory);
 
         process.StartInfo.ArgumentList.Add("test");
         process.StartInfo.ArgumentList.Add("--no-restore");
 
         AppendLoggerArguments(process);
-        return RunProcess(process);
+        RunProcess(tracker, $"dotnet test for {solutionPath}", process);
     }
 
     /// <summary>
     /// Runs `dotnet nuget push *.nupkg` in the directory.
     /// </summary>    
-    public static bool NuGetPush(string packageDirectory, string apiKey)
+    public static void NuGetPush(IProgressTracker tracker, string packageDirectory, string apiKey)
     {
-        using var process = BootstrapProcess("dotnet", packageDirectory);
+        using var process = BootstrapProcess(tracker, "dotnet", packageDirectory);
 
         process.StartInfo.ArgumentList.Add("nuget");
         process.StartInfo.ArgumentList.Add("push");
@@ -68,20 +68,10 @@ public static class DotNetManager
         process.StartInfo.ArgumentList.Add(apiKey);
 
         // dotnet nuget .. does not support -v or --verbosity
-        return RunProcess(process);
+        RunProcess(tracker, $"nuget push for {packageDirectory}", process);
     }
 
-    private static void Process_ErrorDataReceived(object _, DataReceivedEventArgs e)
-    {
-        Console.WriteLine(e.Data);
-    }
-
-    private static void Process_OutputDataReceived(object _, DataReceivedEventArgs e)
-    {
-        Console.WriteLine(e.Data);
-    }
-
-    private static Process BootstrapProcess(string executable, string? workingDirectory)
+    private static Process BootstrapProcess(IProgressTracker tracker, string executable, string? workingDirectory)
     {
         var process = new Process();
 
@@ -91,8 +81,8 @@ public static class DotNetManager
         process.StartInfo.RedirectStandardOutput = true;
         process.StartInfo.RedirectStandardError = true;
 
-        process.OutputDataReceived += Process_OutputDataReceived;
-        process.ErrorDataReceived += Process_ErrorDataReceived;
+        process.OutputDataReceived += (_, e) => tracker.HandleInfoMessage(e.Data ?? string.Empty);
+        process.ErrorDataReceived += (_, e) => tracker.HandleErrorMessage(e.Data ?? string.Empty);
 
         return process;
     }
@@ -103,8 +93,9 @@ public static class DotNetManager
         process.StartInfo.ArgumentList.Add("normal");
     }
 
-    private static bool RunProcess(Process process)
+    private static void RunProcess(IProgressTracker tracker, string message, Process process)
     {
+        tracker.HandleStarted($"Started {message}");
         if (process.Start())
         {
             process.BeginOutputReadLine();
@@ -112,11 +103,12 @@ public static class DotNetManager
             process.WaitForExit();
 
             var exitCode = process.ExitCode;
-            return exitCode == 0;
+
+            tracker.HandleCompleted($"Completed {message}", exitCode == 0);
         }
         else
         {
-            throw new Exception("Could not start process");
+            tracker.HandleCompleted("Could not start process", false);
         }
     }
 }

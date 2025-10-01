@@ -65,7 +65,7 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         {
             return ValidationResult.Error("Command requires at least one option");
         }
-        
+
         return base.Validate(context, settings);
     }
 

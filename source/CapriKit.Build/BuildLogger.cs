@@ -1,24 +1,12 @@
 using CapriKit.Build;
 using Microsoft.Build.Framework;
-using Microsoft.Build.Locator;
-using Spectre.Console;
 
 namespace CapriKit.Meta.Commands;
 
-public sealed class BuildLogger : ILogger
+internal sealed class MSBuildLogger(IProgressTracker tracker) : ILogger
 {
-    private readonly StatusContext progress;
-
-    public BuildLogger(StatusContext progress)
-    {        
-        this.progress = progress;
-    }    
-
-
     public LoggerVerbosity Verbosity { get; set; }
     public string? Parameters { get; set; }
-
-    public void Shutdown() { }
 
     public void Initialize(IEventSource eventSource)
     {
@@ -26,8 +14,8 @@ public sealed class BuildLogger : ILogger
         {
             eventSource.BuildStarted += BuildStartedHandler;
             eventSource.BuildFinished += BuildFinishedHandler;
-            eventSource.ProjectStarted += InfoEventHandler;
-            eventSource.ProjectFinished += InfoEventHandler;
+            eventSource.ProjectStarted += ProjectStartedHandler;
+            eventSource.ProjectFinished += ProjectFinishedHandler;
             eventSource.TargetStarted += InfoEventHandler;
             eventSource.TargetFinished += InfoEventHandler;
             eventSource.TaskStarted += InfoEventHandler;
@@ -36,74 +24,53 @@ public sealed class BuildLogger : ILogger
             eventSource.WarningRaised += WarningEventHandler;
             eventSource.MessageRaised += InfoEventHandler;
             eventSource.CustomEventRaised += InfoEventHandler;
-            eventSource.StatusEventRaised += InfoEventHandler;            
+            eventSource.StatusEventRaised += InfoEventHandler;
         }
     }
 
+    public void Shutdown() { }
+
     private void BuildStartedHandler(object sender, BuildStartedEventArgs e)
     {
-        progress.Status(e.Message ?? string.Empty);
-        progress.Spinner(Spinner.Known.Star);
-        progress.SpinnerStyle(Style.Parse("green"));
+        tracker.HandleStarted(e.Message ?? string.Empty);
     }
 
     private void BuildFinishedHandler(object sender, BuildFinishedEventArgs e)
     {
-        progress.Status(e.Message ?? string.Empty);
+        tracker.HandleCompleted(e.Message ?? string.Empty, e.Succeeded);
+    }
+
+    private void ProjectStartedHandler(object sender, ProjectStartedEventArgs e)
+    {
+        tracker.HandleTaskStarted(e.Message);
+    }
+
+    private void ProjectFinishedHandler(object sender, ProjectFinishedEventArgs e)
+    {
+        tracker.HandleTaskCompleted(e.Message, e.Succeeded);
     }
 
     private void InfoEventHandler(object sender, BuildEventArgs e)
     {
-        InfoMarkupLineInterpolated($"{e.Message ?? ""}");
+        if (!string.IsNullOrEmpty(e.Message))
+        {
+            tracker.HandleInfoMessage(e.Message ?? string.Empty);
+        }
     }
 
     private void WarningEventHandler(object sender, BuildEventArgs e)
     {
-        WarningMarkupLineInterpolated($"{e.Message ?? ""}");        
-        progress.SpinnerStyle(Style.Parse("yellow"));
+        if (!string.IsNullOrEmpty(e.Message))
+        {
+            tracker.HandleWarningMessage(e.Message ?? string.Empty);
+        }
     }
 
     private void ErrorEventHandler(object sender, BuildEventArgs e)
     {
-        ErrorMarkupLineInterpolated($"{e.Message ?? ""}");
-        progress.SpinnerStyle(Style.Parse("red"));
-    }
-
-    // TODO: duplicated from Caprikit.Meta!
-    public static void InfoMarkupLineInterpolated(FormattableString markup)
-    {
-        WriteInfo();
-        AnsiConsole.MarkupLineInterpolated(markup);
-    }
-
-    public static void WarningMarkupLineInterpolated(FormattableString markup)
-    {
-        WriteWarning();
-        AnsiConsole.MarkupLineInterpolated(markup);
-    }
-
-    public static void ErrorMarkupLineInterpolated(FormattableString markup)
-    {
-        WriteError();
-        AnsiConsole.MarkupLineInterpolated(markup);
-    }
-
-
-    private static void WriteInfo()
-    {
-        const string INFO = "[INFO]";
-        AnsiConsole.MarkupInterpolated($"[bold grey]{INFO}[/]: ");
-    }
-
-    private static void WriteWarning()
-    {
-        const string WARNING = "[WARN]";
-        AnsiConsole.MarkupInterpolated($"[bold orangered1]{WARNING}[/]: ");
-    }
-
-    private static void WriteError()
-    {
-        const string ERROR = "[ERROR]";
-        AnsiConsole.MarkupInterpolated($"[bold red]{ERROR}[/]: ");
+        if (!string.IsNullOrEmpty(e.Message))
+        {
+            tracker.HandleErrorMessage(e.Message ?? string.Empty);
+        }
     }
 }

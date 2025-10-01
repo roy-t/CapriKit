@@ -28,39 +28,28 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             return 10;
         }
 
-        //if (!DotNetManager.Restore(solution))
-        //{
-        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Package restore failed");
-        //    return 20;
-        //}
-        //if (!DotNetManager.Format(solution))
-        //{
-        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Code formatting failed");
-        //    return 30;
-        //}
-        //if (!DotNetManager.Test(solution))
-        //{
-        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Tests failed");
-        //    return 40;
-        //}
-
-        // TODO: have to call this metnhod since BuildLogger has public elements that reference MSBuild, fix by encapsulating it
-        // TODO: have to capture status of build somehow and stop if it fails
-        MSBuildManager.InitializeMsBuild();
-        AnsiConsole.Status().Start($"Initializing build of {solution}", progress =>
+        if (!Restore(solution))
         {
-            
-            var logger = new BuildLogger(progress);
-            progress.Spinner(Spinner.Known.Dots);
-            MSBuildManager.BuildAndPackSolution(logger, solution);
-        });
-        
+            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Package restore failed");
+            return 20;
+        }
 
-        //if ()
-        //{
-        //    AnsiConsoleExt.ErrorMarkupLineInterpolated($"Building and packing failed");
-        //    return 50;
-        //}
+        if (!Format(solution))
+        {
+            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Code formatting failed");
+            return 30;
+        }
+        if (!Test(solution))
+        {
+            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Tests failed");
+            return 40;
+        }
+
+        if (!BuildAndPack(solution))
+        {
+            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Building and packing failed");
+            return 50;
+        }
 
         if (release.DryRun)
         {
@@ -71,12 +60,53 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
             var packagePath = Path.Combine(solutionPath, ".build", "pkg");
 
-            if (DotNetManager.NuGetPush(packagePath, release.ApiKey ?? string.Empty))
+            if (!Push(solution, packagePath, release.ApiKey ?? string.Empty))
             {
                 AnsiConsoleExt.ErrorMarkupLineInterpolated($"Pushing to NuGet failed");
             }
         }
 
         return 0;
+    }
+
+    private bool Restore(string solution)
+    {
+        return RunTask(solution, $"Restoring packages of {solution}", tracker => DotNetManager.Restore(tracker, solution));
+    }
+
+    private bool Format(string solution)
+    {
+        return RunTask(solution, $"Formatting {solution}", tracker => DotNetManager.Format(tracker, solution));
+    }
+
+    private bool Test(string solution)
+    {
+        return RunTask(solution, $"Testing {solution}", tracker => DotNetManager.Test(tracker, solution));
+    }
+
+    private bool Push(string solution, string packagePath, string apiKey)
+    {
+        return RunTask(solution, $"Publishing {solution}", tracker => DotNetManager.NuGetPush(tracker, packagePath, apiKey));
+    }
+
+    private bool BuildAndPack(string solution)
+    {
+        return RunTask(solution, $"Building {solution}", tracker => MSBuildManager.BuildAndPackSolution(tracker, solution));
+    }
+
+    private static bool RunTask(string solution, string message, Action<IProgressTracker> task)
+    {
+        var succeeded = false;
+        AnsiConsole.Status().Start(message, progress =>
+        {
+            var tracker = new SpectreProgressTracker(progress);
+            progress.Spinner(Spinner.Known.Dots);
+            task(tracker);
+
+            AnsiConsoleExt.WriteBuildResult(tracker.Warnings, tracker.Errors, tracker.Succeeded);
+            succeeded = tracker.Succeeded;
+        });
+
+        return succeeded;
     }
 }

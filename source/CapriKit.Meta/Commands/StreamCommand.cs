@@ -4,7 +4,7 @@ using Spectre.Console.Cli;
 namespace CapriKit.Meta.Commands;
 
 internal sealed class StreamCommand : Command<StreamCommand.Settings>
-{   
+{
     public override int Execute(CommandContext context, Settings settings)
     {
         AnsiConsole.Status()
@@ -43,19 +43,19 @@ internal sealed class StreamCommand : Command<StreamCommand.Settings>
                 var task = ctx.AddTask("[green]WIP #1[/]");
                 var ind = ctx.AddTask("indet", false);
 
-                while(!ctx.IsFinished)
+                while (!ctx.IsFinished)
                 {
                     task.Increment(0.1);
                     Thread.Sleep(100);
 
                     ind.StartTask();
-                    ind.IsIndeterminate = true;                   
+                    ind.IsIndeterminate = true;
                 }
             });
 
         return 0;
     }
     public sealed class Settings : CommandSettings
-    {        
+    {
     }
 }
