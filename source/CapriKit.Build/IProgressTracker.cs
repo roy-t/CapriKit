@@ -12,3 +12,10 @@ public interface IProgressTracker
     void HandleWarningMessage(string message);
     void HandleErrorMessage(string message);
 }
+
+public interface ISimpleProgressTracker
+{
+    void OnProgress(int progress);
+    void OnCompleted(string message);
+    void OnFailed(string message);
+}

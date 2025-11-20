@@ -65,6 +65,29 @@ public class MSBuildManager
 
     private static void BuildSolutionInternal(IProgressTracker tracker, string solutionPath, string configuration, params string[] targetsToBuild)
     {
+        SolutionFile solution = OpenSolution(solutionPath);
+        var projects = solution.ProjectsInOrder
+            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
+        
+        var solutionDirectory = Path.GetDirectoryName(solutionPath)!;
+        foreach (var project in projects)
+        {
+            var projectPath = Path.Combine(solutionDirectory, project.RelativePath);
+            BuildProjectInternal(tracker, projectPath, configuration, targetsToBuild);
+        }
+    }
+
+    public static int GetProjectCount(string solutionPath)
+    {
+        SolutionFile solution = OpenSolution(solutionPath);
+        var projects = solution.ProjectsInOrder
+            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
+
+        return projects.Count();
+    }
+
+    private static SolutionFile OpenSolution(string solutionPath)
+    {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         if (!File.Exists(solutionPath) || solutionDirectory == null)
         {
@@ -72,13 +95,6 @@ public class MSBuildManager
         }
 
         var solution = SolutionFile.Parse(solutionPath);
-        var projects = solution.ProjectsInOrder
-            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
-
-        foreach (var project in projects)
-        {
-            var projectPath = Path.Combine(solutionDirectory, project.RelativePath);
-            BuildProjectInternal(tracker, projectPath, configuration, targetsToBuild);
-        }
+        return solution;
     }
 }
