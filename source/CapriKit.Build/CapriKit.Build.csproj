@@ -1,8 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <!-- Exclude the runtime assets for Microsoft build to ensure it uses the system version
+         https://github.com/microsoft/MSBuildLocator/blob/55ff263d5a99f91a215c9ca5fbba8ccfa3371fe5/docs/diagnostics/MSBL001.md-->
     <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime" /> <!-- Use the system's installed MSBuild -->
-    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.1" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" />
+    <PackageReference Include="Microsoft.Build.Framework" Version="18.0.2" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime" />
+    
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.1" />    
     <PackageReference Include="Spectre.Console" Version="0.54.0" />
   </ItemGroup>
 </Project>

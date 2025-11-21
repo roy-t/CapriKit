@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>Exe</OutputType>    
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Spectre.Console.Cli" Version="0.51.1" />
