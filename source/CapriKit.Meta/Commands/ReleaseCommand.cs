@@ -3,6 +3,7 @@ using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
+using static CapriKit.Build.MSBuildManager2;
 
 namespace CapriKit.Meta.Commands;
 
@@ -20,39 +21,56 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
     }
 
 
-    //private static int ExecuteInternal(CommandContext _, Settings release)
-    //{
-    //    var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
-    //    if (solution == null)
-    //    {
-    //        AnsiConsoleExt.ErrorMarkupLineInterpolated($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
-    //        return 10;
-    //    }
+    private static int ExecuteInternal(CommandContext _, Settings release)
+    {
+        MSBuildManager2.InitializeMsBuild();
+        var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
+        if (solution == null)
+        {
+            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
+            return 10;
+        }
 
-    //    var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
-    //    var packagePath = Path.Combine(solutionPath, ".build", "pkg");
+        var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
+        var packagePath = Path.Combine(solutionPath, ".build", "pkg");
 
-    //    var succeeded = false;
-    //    AnsiConsole.Progress().Start(context =>
-    //    {
-    //        var restore = context.AddTask("Restore", true, 1);
-    //        var format = context.AddTask("Format", false, 1);
-    //        var test = context.AddTask("Test", false, 1);
-    //        var build = context.AddTask("Build", false, 1);
-    //        if(!release.DryRun)
-    //        {
-    //            var publish = context.AddTask("Publish", false, 1);
-    //        }
+        using var logStream = new MemoryStream();
+        using var logStreamWriter = new StreamWriter(logStream);
 
-    //        while(!context.IsFinished)
-    //        {
+        var result = new BuildTaskResult(true, null);
+        AnsiConsole.Progress()
+            .Columns([
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new SpinnerColumn(),
+                new OutcomeColumn()
+                ])
+            .Start(context =>
+        {
+            var buildTask = MSBuildManager2.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, [WellKnownTargets.Build]);
+            var buildProgress = context.AddAggregateTask("Build", buildTask);
 
-    //        }
-    //    });
-    //}
+            var packTask = MSBuildManager2.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, [WellKnownTargets.Pack]);
+            var packProgress = context.AddAggregateTask("Pack", packTask);
+            
+            context.RunAggregateTask(buildProgress, buildTask);
+            context.RunAggregateTask(packProgress, packTask);
+
+            // TODO: run each task one by one, stop on the first failure, print exception and provide link to logs
+        });
+
+        var logFilePath = Path.GetTempFileName(); // TODO: this creates two files and never removes them?
+        logFilePath = Path.ChangeExtension(logFilePath, ".log");
+        File.WriteAllBytes(logFilePath, logStream.ToArray());        
+        AnsiConsole.MarkupLineInterpolated($"Logs stored in: [link]{logFilePath}[/]");
+        return 0;
+    }
 
     public override int Execute(CommandContext context, Settings release)
     {
+        return ExecuteInternal(context, release);
+
         var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
         if (solution == null)
         {

@@ -1,5 +1,7 @@
 using CapriKit.Meta.Commands;
+using Spectre.Console;
 using Spectre.Console.Cli;
+using System.Text;
 
 namespace CapriKit.Meta;
 
@@ -21,16 +23,20 @@ internal partial class Program
 
     private static void Main(string[] args)
     {
+        // HACK to fix: https://github.com/spectreconsole/spectre.console/issues/1964
+        Console.OutputEncoding = Encoding.UTF8;
+
 #if DEBUG
         if (args.Length == 0)
         {
             RunCommand([]);
             while (true)
             {
-                Console.Write(":> ");
+                AnsiConsole.Markup(": ");                
                 var line = Console.ReadLine() ?? string.Empty;
                 var arguments = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 RunCommand(arguments);
+                
             }
         }
 #endif 

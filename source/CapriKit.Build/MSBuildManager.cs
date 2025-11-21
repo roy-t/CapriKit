@@ -1,6 +1,7 @@
 using CapriKit.Meta.Commands;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Execution;
+using Microsoft.Build.Framework;
 using Microsoft.Build.Locator;
 
 namespace CapriKit.Build;
@@ -47,6 +48,29 @@ public class MSBuildManager
         BuildSolutionInternal(tracker, solutionPath, configuration, "build", "pack");
     }
 
+
+    private static Task<BuildTaskResult> BuildProjectInternal(ILogger logger, string projectFullPath, string configuration, params string[] targetsToBuild)
+    {
+        var globalProperties = new Dictionary<string, string?>
+        {
+            { "Configuration", configuration }
+        };
+
+        var buildParameters = new BuildParameters
+        {
+            Loggers = [logger]
+        };
+
+        var buildRequest = new BuildRequestData(projectFullPath, globalProperties, null, targetsToBuild, null);
+        var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
+
+        return Task.Run(() =>
+        {
+            var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
+            return new BuildTaskResult(result.OverallResult == BuildResultCode.Success, result.Exception);
+        });
+    }
+
     private static void BuildProjectInternal(IProgressTracker tracker, string projectUrl, string configuration, params string[] targetsToBuild)
     {
         var globalProperties = new Dictionary<string, string?>
@@ -68,7 +92,7 @@ public class MSBuildManager
         SolutionFile solution = OpenSolution(solutionPath);
         var projects = solution.ProjectsInOrder
             .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
-        
+
         var solutionDirectory = Path.GetDirectoryName(solutionPath)!;
         foreach (var project in projects)
         {
