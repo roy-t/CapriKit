@@ -22,24 +22,26 @@ internal partial class Program
     }
 
     private static void Main(string[] args)
-    {
-        // HACK to fix: https://github.com/spectreconsole/spectre.console/issues/1964
+    {               
+        // Set the correct console output decoding so that Spectre.Console can render
+        // emoji and other glyphs. On Windows this does require that users use Windows Terminal
+        // https://github.com/spectreconsole/spectre.console/issues/1964
         Console.OutputEncoding = Encoding.UTF8;
 
-#if DEBUG
         if (args.Length == 0)
         {
             RunCommand([]);
             while (true)
             {
-                AnsiConsole.Markup(": ");                
+                AnsiConsole.Markup(": ");
                 var line = Console.ReadLine() ?? string.Empty;
                 var arguments = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 RunCommand(arguments);
-                
             }
         }
-#endif 
-        RunCommand(args);
+        else
+        {
+            RunCommand(args);
+        }
     }
 }

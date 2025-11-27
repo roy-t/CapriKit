@@ -42,9 +42,9 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             .Columns([
                 new TaskDescriptionColumn(),
                 new ProgressBarColumn(),
-                new PercentageColumn(),
+                new PercentageColumn(),                
+                new OutcomeColumn(),
                 new SpinnerColumn(),
-                new OutcomeColumn()
                 ])
             .Start(context =>
         {
@@ -60,7 +60,9 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             // TODO: run each task one by one, stop on the first failure, print exception and provide link to logs
         });
 
-        var logFilePath = Path.GetTempFileName(); // TODO: this creates two files and never removes them?
+        // TODO: this creates two files and never removes them?
+        // Better to just create an IO library for this that uses rotating file logs
+        var logFilePath = Path.GetTempFileName(); 
         logFilePath = Path.ChangeExtension(logFilePath, ".log");
         File.WriteAllBytes(logFilePath, logStream.ToArray());        
         AnsiConsole.MarkupLineInterpolated($"Logs stored in: [link]{logFilePath}[/]");

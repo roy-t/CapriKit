@@ -21,7 +21,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/roy-t/CapriKit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>gamedev, gamedevelopment, utilities, vectors, matrix, numerics, path, curve</PackageTags>
+    <PackageTags>gamedev, gamedevelopment, utilities, vectors, matrix, numerics, path, curve, io</PackageTags>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
   </PropertyGroup>
@@ -61,7 +61,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>        
   </PropertyGroup>
 
-  <!-- Outputsettings -->
+  <!-- Output settings -->
   <PropertyGroup>
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
     <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj</BaseIntermediateOutputPath>
