@@ -34,8 +34,11 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
         var packagePath = Path.Combine(solutionPath, ".build", "pkg");
 
-        using var logStream = new MemoryStream();
+        var logFile = FileRotator.CreateFile(Directory.GetCurrentDirectory(), "release", ".log", 10);
+        using var logStream = logFile.OpenWrite();
         using var logStreamWriter = new StreamWriter(logStream);
+
+        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logFile.FullName}]{logFile.Name}[/]");
 
         var result = new BuildTaskResult(true, null);
         AnsiConsole.Progress()
@@ -59,13 +62,8 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
             // TODO: run each task one by one, stop on the first failure, print exception and provide link to logs
         });
-
-        // TODO: this creates two files and never removes them?
-        // Better to just create an IO library for this that uses rotating file logs
-        var logFilePath = Path.GetTempFileName(); 
-        logFilePath = Path.ChangeExtension(logFilePath, ".log");
-        File.WriteAllBytes(logFilePath, logStream.ToArray());        
-        AnsiConsole.MarkupLineInterpolated($"Logs stored in: [link]{logFilePath}[/]");
+                
+        
         return 0;
     }
 
