@@ -1,16 +1,14 @@
-using CapriKit.Meta.Commands;
 using Microsoft.Build.Construction;
 using Microsoft.Build.Execution;
-using Microsoft.Build.Framework;
 using Microsoft.Build.Locator;
 
 namespace CapriKit.Build;
 
-public class MSBuildManager
+public static class MSBuildManager
 {
     // This method has to be called before any method that references any types from Microsoft.Build
     // https://learn.microsoft.com/en-us/visualstudio/msbuild/find-and-use-msbuild-versions?view=vs-2019#register-instance-before-calling-msbuild
-    private static void InitializeMsBuild()
+    public static void InitializeMsBuild()
     {
         if (!MSBuildLocator.IsRegistered)
         {
@@ -19,38 +17,25 @@ public class MSBuildManager
     }
 
     /// <summary>
-    /// Builds the given MSBuild project file. 
-    /// </summary>    
-    /// <returns>True if the build succeeded, false otherwise</returns>
-    public static void BuildProject(IProgressTracker tracker, string projectPath, string configuration = "Release")
-    {
-        InitializeMsBuild();
-        BuildProjectInternal(tracker, projectPath, configuration, "build");
-    }
-
-    /// <summary>
     /// Builds all MSBuild projects referenced in the given Visual Studio Solution file.
     /// </summary>    
-    /// <returns>True if the all builds succeeded, false otherwise</returns>
-    public static void BuildSolution(IProgressTracker tracker, string solutionPath, string configuration = "Release")
+    public static IReadOnlyList<BuildTask> BuildSolution(StreamWriter logStream, string solutionPath, string configuration, params string[] targetsToBuild)
     {
         InitializeMsBuild();
-        BuildSolutionInternal(tracker, solutionPath, configuration, "build");
+
+        var solution = LoadSolutionFile(solutionPath);
+        return [.. solution.ProjectsInOrder
+            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat)
+            .Select(p => BuildProject(logStream, p.AbsolutePath, configuration, targetsToBuild))];
     }
 
     /// <summary>
-    /// Packages all MSBuild projects referenced in the given Visual Studio Solution file.
+    /// Builds the given MSBuild project file. 
     /// </summary>    
-    /// <returns>True if the all builds succeeded, false otherwise</returns>
-    public static void BuildAndPackSolution(IProgressTracker tracker, string solutionPath, string configuration = "Release")
+    public static BuildTask BuildProject(StreamWriter logStream, string projectPath, string configuration, params string[] targetsToBuild)
     {
         InitializeMsBuild();
-        BuildSolutionInternal(tracker, solutionPath, configuration, "build", "pack");
-    }
 
-
-    private static Task<BuildTaskResult> BuildProjectInternal(ILogger logger, string projectFullPath, string configuration, params string[] targetsToBuild)
-    {
         var globalProperties = new Dictionary<string, string?>
         {
             { "Configuration", configuration }
@@ -58,67 +43,39 @@ public class MSBuildManager
 
         var buildParameters = new BuildParameters
         {
-            Loggers = [logger]
+            Loggers = [new MSBuildStreamLogger(logStream)]
         };
 
-        var buildRequest = new BuildRequestData(projectFullPath, globalProperties, null, targetsToBuild, null);
-        var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
+        var buildRequest = new BuildRequestData(projectPath, globalProperties, null, targetsToBuild, null);
 
-        return Task.Run(() =>
+        return () =>
         {
             var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
             return new BuildTaskResult(result.OverallResult == BuildResultCode.Success, result.Exception);
-        });
-    }
-
-    private static void BuildProjectInternal(IProgressTracker tracker, string projectUrl, string configuration, params string[] targetsToBuild)
-    {
-        var globalProperties = new Dictionary<string, string?>
-        {
-            { "Configuration", configuration }
         };
-
-        var buildParameters = new BuildParameters
-        {
-            Loggers = [new MSBuildLogger(tracker)]
-        };
-
-        var buildRequest = new BuildRequestData(projectUrl, globalProperties, null, targetsToBuild, null);
-        var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
     }
 
-    private static void BuildSolutionInternal(IProgressTracker tracker, string solutionPath, string configuration, params string[] targetsToBuild)
-    {
-        SolutionFile solution = OpenSolution(solutionPath);
-        var projects = solution.ProjectsInOrder
-            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
-
-        var solutionDirectory = Path.GetDirectoryName(solutionPath)!;
-        foreach (var project in projects)
-        {
-            var projectPath = Path.Combine(solutionDirectory, project.RelativePath);
-            BuildProjectInternal(tracker, projectPath, configuration, targetsToBuild);
-        }
-    }
-
-    public static int GetProjectCount(string solutionPath)
-    {
-        SolutionFile solution = OpenSolution(solutionPath);
-        var projects = solution.ProjectsInOrder
-            .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat);
-
-        return projects.Count();
-    }
-
-    private static SolutionFile OpenSolution(string solutionPath)
+    private static SolutionFile LoadSolutionFile(string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         if (!File.Exists(solutionPath) || solutionDirectory == null)
         {
-            throw new Exception($"Invalid solution path: {solutionPath}");
+            throw new FileNotFoundException("Could not find solution", solutionPath);
         }
 
         var solution = SolutionFile.Parse(solutionPath);
         return solution;
+    }
+
+    public static class WellKnownTargets
+    {
+        public const string Build = "build";
+        public const string Pack = "pack";
+    }
+
+    public static class WellKnownConfigurations
+    {
+        public const string Debug = "Debug";
+        public const string Release = "Release";
     }
 }

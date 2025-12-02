@@ -4,7 +4,7 @@ namespace CapriKit.Meta.Utilities;
 
 // TODO: move to IO library and use IVirtualFileSystem
 public static class FileRotator
-{    
+{
     public static FileInfo CreateFile(string folderPath, string fileNamePrefix, string fileExtension, int fileCount)
     {
         var directory = new DirectoryInfo(folderPath);

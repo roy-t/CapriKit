@@ -23,7 +23,7 @@ internal partial class Program
     }
 
     private static void Main(string[] args)
-    {               
+    {
         // Set the correct console output decoding so that Spectre.Console can render
         // emoji and other glyphs. On Windows this does require that users use Windows Terminal
         // https://github.com/spectreconsole/spectre.console/issues/1964

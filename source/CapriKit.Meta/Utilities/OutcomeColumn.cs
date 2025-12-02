@@ -11,7 +11,8 @@ internal sealed class OutcomeColumn : ProgressColumn
     {
         Indeterminate,
         Success,
-        Failure
+        Failure,
+        Skipped,
     }
 
     public override IRenderable Render(RenderOptions options, ProgressTask task, TimeSpan deltaTime)
@@ -20,6 +21,7 @@ internal sealed class OutcomeColumn : ProgressColumn
         {
             Outcome.Success => new Markup(Emoji.Known.CheckMark),
             Outcome.Failure => new Markup(Emoji.Known.CrossMark),
+            Outcome.Skipped => new Markup(Emoji.Known.FastForwardButton),
             _ => new Markup(string.Empty),
         };
     }

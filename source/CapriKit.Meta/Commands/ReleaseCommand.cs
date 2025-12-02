@@ -2,8 +2,9 @@ using CapriKit.Build;
 using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System;
 using System.ComponentModel;
-using static CapriKit.Build.MSBuildManager2;
+using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
@@ -17,13 +18,13 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
         [Description("The api key required for uploading the package to NuGet")]
         [CommandOption("--key", true)]
-        public string? ApiKey { get; init; }
+        public string ApiKey { get; init; } = string.Empty;
     }
 
 
     private static int ExecuteInternal(CommandContext _, Settings release)
     {
-        MSBuildManager2.InitializeMsBuild();
+        MSBuildManager.InitializeMsBuild();
         var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
         if (solution == null)
         {
@@ -40,123 +41,67 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
         AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logFile.FullName}]{logFile.Name}[/]");
 
-        var result = new BuildTaskResult(true, null);
+        var result = new BuildTaskResult(true);
         AnsiConsole.Progress()
             .Columns([
                 new TaskDescriptionColumn(),
                 new ProgressBarColumn(),
-                new PercentageColumn(),                
+                new PercentageColumn(),
                 new OutcomeColumn(),
                 new SpinnerColumn(),
                 ])
             .Start(context =>
         {
-            var buildTask = MSBuildManager2.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, [WellKnownTargets.Build]);
-            var buildProgress = context.AddAggregateTask("Build", buildTask);
+            // TODO: its a bit messy have to manually do all this administration here.
+            // Can we make a fire and forget mechanism?
+            var restoreTask = DotNetManager.Restore(logStreamWriter, solutionPath);
+            var restoreProgress = context.AddBuildTask("Restore", restoreTask);
 
-            var packTask = MSBuildManager2.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, [WellKnownTargets.Pack]);
-            var packProgress = context.AddAggregateTask("Pack", packTask);
-            
-            context.RunAggregateTask(buildProgress, buildTask);
-            context.RunAggregateTask(packProgress, packTask);
+            var formatTask = DotNetManager.Format(logStreamWriter, solutionPath);
+            var formatProgress = context.AddBuildTask("Format", formatTask);
 
-            // TODO: run each task one by one, stop on the first failure, print exception and provide link to logs
+            var testTask = DotNetManager.Test(logStreamWriter, solutionPath);
+            var testProgress = context.AddBuildTask("Test", testTask);
+
+            var buildTask = MSBuildManager.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, WellKnownTargets.Build);
+            var buildProgress = context.AddBuildTask("Build", buildTask);
+
+            var packTask = MSBuildManager.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, WellKnownTargets.Pack);
+            var packProgress = context.AddBuildTask("Pack", packTask);
+
+            ProgressTask? publishProgress = null;
+            BuildTask? publishTask = null;
+
+            if (release.DryRun)
+            {
+                publishProgress = context.AddTask("Publish");
+                publishProgress.State.Update<OutcomeColumn.Outcome>(OutcomeColumn.OutcomeKey, _ => OutcomeColumn.Outcome.Skipped);
+                publishProgress.StopTask();
+            }
+            else
+            {
+                publishTask = DotNetManager.NuGetPush(logStreamWriter, packagePath, release.ApiKey);
+                publishProgress = context.AddBuildTask("Publish", publishTask);
+            }
+
+            context.RunBuildTask(restoreProgress, restoreTask);
+            context.RunBuildTask(formatProgress, formatTask);
+            context.RunBuildTask(testProgress, testTask);
+            context.RunBuildTask(buildProgress, buildTask);
+            context.RunBuildTask(packProgress, packTask);
+
+            if (publishTask != null)
+            {
+                context.RunBuildTask(publishProgress, publishTask);
+            }
         });
-                
-        
+
+
         return 0;
     }
 
     public override int Execute(CommandContext context, Settings release)
     {
         return ExecuteInternal(context, release);
-
-        var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
-        if (solution == null)
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
-            return 10;
-        }
-
-        if (!Restore(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Package restore failed");
-            return 20;
-        }
-
-        if (!Format(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Code formatting failed");
-            return 30;
-        }
-        if (!Test(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Tests failed");
-            return 40;
-        }
-
-        if (!BuildAndPack(solution))
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Building and packing failed");
-            return 50;
-        }
-
-        if (release.DryRun)
-        {
-            AnsiConsoleExt.WarningMarkupLineInterpolated($"Dry run, skipping NuGet push");
-        }
-        else
-        {
-            var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
-            var packagePath = Path.Combine(solutionPath, ".build", "pkg");
-
-            if (!Push(solution, packagePath, release.ApiKey ?? string.Empty))
-            {
-                AnsiConsoleExt.ErrorMarkupLineInterpolated($"Pushing to NuGet failed");
-            }
-        }
-
-        return 0;
-    }
-
-    private bool Restore(string solution)
-    {
-        return RunTask(solution, $"Restoring packages of {solution}", tracker => DotNetManager.Restore(tracker, solution));
-    }
-
-    private bool Format(string solution)
-    {
-        return RunTask(solution, $"Formatting {solution}", tracker => DotNetManager.Format(tracker, solution));
-    }
-
-    private bool Test(string solution)
-    {
-        return RunTask(solution, $"Testing {solution}", tracker => DotNetManager.Test(tracker, solution));
-    }
-
-    private bool Push(string solution, string packagePath, string apiKey)
-    {
-        return RunTask(solution, $"Publishing {solution}", tracker => DotNetManager.NuGetPush(tracker, packagePath, apiKey));
-    }
-
-    private bool BuildAndPack(string solution)
-    {
-        return RunTask(solution, $"Building {solution}", tracker => MSBuildManager.BuildAndPackSolution(tracker, solution));
-    }
-
-    private static bool RunTask(string solution, string message, Action<IProgressTracker> task)
-    {
-        var succeeded = false;
-        AnsiConsole.Status().Start(message, progress =>
-        {
-            var tracker = new SpectreProgressTracker(progress);
-            progress.Spinner(Spinner.Known.Dots);
-            task(tracker);
-
-            AnsiConsoleExt.WriteBuildResult(tracker.Warnings, tracker.Errors, tracker.Succeeded);
-            succeeded = tracker.Succeeded;
-        });
-
-        return succeeded;
     }
 }

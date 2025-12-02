@@ -5,20 +5,20 @@ namespace CapriKit.Meta.Utilities;
 
 public static class ProgressExt
 {
-    public static ProgressTask AddAggregateTask(this ProgressContext context, string description, IReadOnlyList<BuildTask> aggregateTask)
+    public static ProgressTask AddBuildTask(this ProgressContext context, string description, params IReadOnlyList<BuildTask> steps)
     {
-        return context.AddTask(description, false, aggregateTask.Count);
+        return context.AddTask(description, false, steps.Count);
     }
 
-    public static BuildTaskResult RunAggregateTask(this ProgressContext context, ProgressTask progress, IReadOnlyList<BuildTask> aggregateTask)
+    public static BuildTaskResult RunBuildTask(this ProgressContext context, ProgressTask progress, params IReadOnlyList<BuildTask> steps)
     {
         progress.StartTask();
         progress.State.Update<OutcomeColumn.Outcome>(OutcomeColumn.OutcomeKey, _ => OutcomeColumn.Outcome.Indeterminate);
-        foreach (var task in aggregateTask)
-        {            
+        foreach (var task in steps)
+        {
             var result = task();
             if (result.Success)
-            {                
+            {
                 progress.Increment(1.0);
             }
             else
@@ -26,11 +26,11 @@ public static class ProgressExt
                 progress.StopTask();
                 progress.State.Update<OutcomeColumn.Outcome>(OutcomeColumn.OutcomeKey, _ => OutcomeColumn.Outcome.Failure);
                 return new BuildTaskResult(false, result.Exception);
-            }            
+            }
         }
 
         progress.StopTask();
         progress.State.Update<OutcomeColumn.Outcome>(OutcomeColumn.OutcomeKey, _ => OutcomeColumn.Outcome.Success);
-        return new BuildTaskResult(true, null);
+        return new BuildTaskResult(true);
     }
 }
