@@ -19,10 +19,8 @@ public static class MSBuildManager
     /// <summary>
     /// Builds all MSBuild projects referenced in the given Visual Studio Solution file.
     /// </summary>    
-    public static IReadOnlyList<BuildTask> BuildSolution(StreamWriter logStream, string solutionPath, string configuration, params string[] targetsToBuild)
+    public static IReadOnlyList<Action> BuildSolution(StreamWriter logStream, string solutionPath, string configuration, params string[] targetsToBuild)
     {
-        InitializeMsBuild();
-
         var solution = LoadSolutionFile(solutionPath);
         return [.. solution.ProjectsInOrder
             .Where(p => p.ProjectType == SolutionProjectType.KnownToBeMSBuildFormat)
@@ -32,10 +30,8 @@ public static class MSBuildManager
     /// <summary>
     /// Builds the given MSBuild project file. 
     /// </summary>    
-    public static BuildTask BuildProject(StreamWriter logStream, string projectPath, string configuration, params string[] targetsToBuild)
+    public static Action BuildProject(StreamWriter logStream, string projectPath, string configuration, params string[] targetsToBuild)
     {
-        InitializeMsBuild();
-
         var globalProperties = new Dictionary<string, string?>
         {
             { "Configuration", configuration }
@@ -51,7 +47,10 @@ public static class MSBuildManager
         return () =>
         {
             var result = BuildManager.DefaultBuildManager.Build(buildParameters, buildRequest);
-            return new BuildTaskResult(result.OverallResult == BuildResultCode.Success, result.Exception);
+            if (result.OverallResult != BuildResultCode.Success)
+            {
+                throw result.Exception ?? new Exception("Build failed");
+            }
         };
     }
 

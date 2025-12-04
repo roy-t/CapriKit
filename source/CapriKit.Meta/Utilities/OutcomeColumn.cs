@@ -9,7 +9,7 @@ internal sealed class OutcomeColumn : ProgressColumn
 
     public enum Outcome
     {
-        Indeterminate,
+        Unknown,
         Success,
         Failure,
         Skipped,

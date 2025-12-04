@@ -7,7 +7,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet restore` on all projects in the solution.
     /// </summary>    
-    public static BuildTask Restore(StreamWriter logStream, string solutionPath)
+    public static Action Restore(StreamWriter logStream, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -22,7 +22,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet format --no-restore` on all projects in the solution.
     /// </summary>    
-    public static BuildTask Format(StreamWriter logStream, string solutionPath)
+    public static Action Format(StreamWriter logStream, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -37,7 +37,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet test --no-restore` on all projects in the solution.
     /// </summary>    
-    public static BuildTask Test(StreamWriter logStream, string solutionPath)
+    public static Action Test(StreamWriter logStream, string solutionPath)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -52,7 +52,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet nuget push *.nupkg` in the directory.
     /// </summary>    
-    public static BuildTask NuGetPush(StreamWriter logStream, string packageDirectory, string apiKey)
+    public static Action NuGetPush(StreamWriter logStream, string packageDirectory, string apiKey)
     {
         var argumentList = new List<string>();
 
@@ -76,9 +76,9 @@ public static class DotNetManager
         argumentList.Add("normal");
     }
 
-    private static BuildTask CreateTask(StreamWriter writer, IReadOnlyCollection<string> argumentList, string? workingDirectory, string message)
+    private static Action CreateTask(StreamWriter writer, IReadOnlyCollection<string> argumentList, string? workingDirectory, string message)
     {
-        return new BuildTask(() =>
+        return () =>
         {
             writer.WriteLine($"Started {message}");
             using var process = BootstrapDotNetProcess(writer, workingDirectory);
@@ -97,20 +97,21 @@ public static class DotNetManager
                 if (exitCode == 0)
                 {
                     writer.WriteLine($"Completed {message}.");
-                    return new BuildTaskResult(true);
+                    return;
                 }
                 {
                     writer.WriteLine($"Failed {message}, exit code: {exitCode}");
-                    return new BuildTaskResult(false, new Exception($"Process failed with exit code {exitCode}"));
+                    throw new Exception($"Process failed with exit code {exitCode}");
                 }
             }
             else
             {
                 writer.WriteLine("Could not start process");
-                return new BuildTaskResult(false, new Exception("Could not start process"));
+                throw new Exception($"Could not start process");
             }
-        });
+        };
     }
+
     private static Process BootstrapDotNetProcess(StreamWriter logStream, string? workingDirectory)
     {
         var process = new Process();
@@ -126,5 +127,4 @@ public static class DotNetManager
 
         return process;
     }
-
 }

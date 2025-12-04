@@ -32,9 +32,10 @@ internal partial class Program
         if (args.Length == 0)
         {
             RunCommand([]);
+            Console.WriteLine();
             while (true)
             {
-                AnsiConsole.Markup(": ");
+                AnsiConsole.Markup("> ");
                 var line = Console.ReadLine() ?? string.Empty;
                 var arguments = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 RunCommand(arguments);
