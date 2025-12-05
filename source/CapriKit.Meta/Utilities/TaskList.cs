@@ -23,16 +23,19 @@ internal class TaskList
         Tasks.Add(new ProgressableTask(tasks, progress, description));
     }
 
-    public IReadOnlyList<TaskExecutionResult> Execute()
+    public IReadOnlyList<TaskExecutionResult> Execute(CancellationToken cancellationToken)
     {
         var results = new List<TaskExecutionResult>();
         foreach (var task in Tasks)
         {
-            var exception = Execute(task);
-            results.Add(new TaskExecutionResult(task.Description, exception));
-            if (exception != null)
+            if (!cancellationToken.IsCancellationRequested)
             {
-                break;
+                var exception = Execute(task);
+                results.Add(new TaskExecutionResult(task.Description, exception));
+                if (exception != null)
+                {
+                    break;
+                }
             }
         }
 

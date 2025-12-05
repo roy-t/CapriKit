@@ -5,7 +5,7 @@ namespace CapriKit.Meta.Commands;
 
 internal sealed class TestCommand : Command<TestCommand.Settings>
 {
-    public override int Execute(CommandContext context, Settings settings)
+    public override int Execute(CommandContext context, Settings settings, CancellationToken _)
     {
         //using var stream = FileRotator.CreateFile(@"C:\Users\Roy-T\Desktop", "log-file", ".log", 3);
         //using var writer = new StreamWriter(stream);

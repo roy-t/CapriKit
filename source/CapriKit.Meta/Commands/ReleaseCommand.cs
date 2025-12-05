@@ -20,25 +20,26 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         public string ApiKey { get; init; } = string.Empty;
     }
 
-    private static int ExecuteInternal(CommandContext _, Settings release)
+    public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
         MSBuildManager.InitializeMsBuild();
 
-        var solution = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
-        if (solution == null)
+        var solutionPath = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
+        if (solutionPath == null)
         {
             AnsiConsoleExt.ErrorMarkupLineInterpolated($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
             return 10;
         }
 
-        var solutionPath = Path.GetDirectoryName(solution) ?? Environment.CurrentDirectory;
-        var packagePath = Path.Combine(solutionPath, ".build", "pkg");
+        var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
+        var packagePath = Path.Combine(solutionDirectory, ".build", "pkg");
+        var testResultsPath = Path.Combine(solutionDirectory, ".test");
 
         var logFile = FileRotator.CreateFile(Directory.GetCurrentDirectory(), "release", ".log", 10);
         using var logStream = logFile.OpenWrite();
         using var logStreamWriter = new StreamWriter(logStream);
 
-        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logFile.FullName}]{logFile.Name}[/]");
+        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logFile.FullName}]{logFile.FullName}[/]");
 
         var results = new List<TaskExecutionResult>();
 
@@ -51,25 +52,26 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
                 new SpinnerColumn(),
                 ])
             .Start(context =>
-        {
-            var taskList = new TaskList(context);
-            taskList.AddTask("Restore", DotNetManager.Restore(logStreamWriter, solutionPath));
-            taskList.AddTask("Format", DotNetManager.Format(logStreamWriter, solutionPath));
-            taskList.AddTask("Test", DotNetManager.Test(logStreamWriter, solutionPath));
-            taskList.AddTask("Build", MSBuildManager.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, WellKnownTargets.Build));
-            taskList.AddTask("Pack", MSBuildManager.BuildSolution(logStreamWriter, solution, WellKnownConfigurations.Release, WellKnownTargets.Pack));
-
-            if (release.DryRun)
             {
-                taskList.AddTask("Publish", []);
-            }
-            else
-            {
-                taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logStreamWriter, packagePath, release.ApiKey));
-            }
+                var taskList = new TaskList(context);
+                taskList.AddTask("Restore", DotNetManager.Restore(logStreamWriter, solutionPath));
+                taskList.AddTask("Format", DotNetManager.Format(logStreamWriter, solutionPath));
+                taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
+                taskList.AddTask("Test", DotNetManager.Test(logStreamWriter, solutionPath, testResultsPath));
+                taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
+                taskList.AddTask("Pack", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
 
-            results.AddRange(taskList.Execute());
-        });
+                if (release.DryRun)
+                {
+                    taskList.AddTask("Publish", []);
+                }
+                else
+                {
+                    taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logStreamWriter, packagePath, release.ApiKey));
+                }
+
+                results.AddRange(taskList.Execute(cancellationToken));
+            });
 
         foreach (var result in results)
         {
@@ -81,10 +83,5 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         }
 
         return 0;
-    }
-
-    public override int Execute(CommandContext context, Settings release)
-    {
-        return ExecuteInternal(context, release);
     }
 }

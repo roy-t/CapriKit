@@ -9,6 +9,30 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
+    <Configurations>Debug;Release;Test</Configurations>
+  </PropertyGroup>
+
+  <!-- Test configuration -->
+  <!-- Inspired by https://canvascodebw.medium.com/unit-tests-where-do-you-put-em-c-example-38bd916f8d80 -->
+  <ItemGroup Condition="'$(Configuration)' == 'Release'">
+    <Compile Remove="**\*.Test.cs" />    
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)' != 'Release'">
+    <Content Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
+    <PackageReference Include="xunit.v3" Version="2.0.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" />
+  </ItemGroup>
+
+  <!-- We are mixing Microsoft.Testing.Platform and the old VSTest so that we can embed
+       the tests in our library and it doesn't have to become an executable. We might need
+       to separate our tests into separate projects, but in that case it could be better
+       to move to TUNit instead.
+      https://xunit.net/docs/getting-started/v3/microsoft-testing-platform-->
+  <PropertyGroup>
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
 
   <!--Nuget package info-->
@@ -17,7 +41,7 @@
     <PackageId>$(MSBuildProjectName)</PackageId>
     <Authors>Roy Triesscheijn</Authors>
     <Description>$(MSBuildProjectName), part of Roy Triesscheijn's collection of code libraries</Description>
-    <PackageProjectUrl>https://github.com/roy-t/CapriKit</PackageProjectUrl>        
+    <PackageProjectUrl>https://github.com/roy-t/CapriKit</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/roy-t/CapriKit</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -48,17 +72,17 @@
     </ReadLinesFromFile>
     <Message Importance="High"
       Text="Using version %(VersionLines.Identity) from $(MSBuildThisFileDirectory)version.txt for $(MSBuildProjectName)" />
-    <PropertyGroup>      
+    <PropertyGroup>
       <Version>%(VersionLines.Identity)</Version>
       <PackageVersion>%(VersionLines.Identity)</PackageVersion>
       <FileVersion>%(VersionLines.Identity)</FileVersion>
-      <AssemblyInformationalVersion>%(VersionLines.Identity)</AssemblyInformationalVersion >      
+      <AssemblyInformationalVersion>%(VersionLines.Identity)</AssemblyInformationalVersion >
     </PropertyGroup>
   </Target>
-  
+
   <!-- Documentation -->
   <PropertyGroup>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>        
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <!-- Output settings -->
@@ -67,7 +91,7 @@
     <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)</IntermediateOutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>        
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == ''">
@@ -85,5 +109,5 @@
     <NoWarn>7035;1591</NoWarn>
   </PropertyGroup>
 
-  
+
 </Project>

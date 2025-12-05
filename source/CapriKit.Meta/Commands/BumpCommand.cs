@@ -30,7 +30,7 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         public string? BuildMetaData { get; init; }
     }
 
-    public override int Execute(CommandContext context, Settings bump)
+    public override int Execute(CommandContext context, Settings bump, CancellationToken _)
     {
         // Find the path to the .git directory
         var rootDirectory = FileSearchUtilities.SearchDirectoryUp(".git", Environment.CurrentDirectory)
@@ -99,7 +99,6 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         return version;
     }
 
-    // TODO: msbuild and NuGet do not support SEMVER, so store version without the prerelease and buildmetadata and use those somewhere else?
     private static void WriteVersionToFile(string path, SemVer version)
     {
         File.WriteAllText(path, version.ToString());

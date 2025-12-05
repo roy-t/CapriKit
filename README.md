@@ -1,6 +1,5 @@
 CapriKit, Roy Triesscheijn's collection of code libraries
 
-
-
-# TODO
-Use for both coloring/prettifying as well as instead of our own CLI generator: https://spectreconsole.net/cli/getting-started?
+GitHub: https://github.com/roy-t/
+LinkedIn: https://www.linkedin.com/in/roy-triesscheijn/
+Blog: https://roy-t.nl
