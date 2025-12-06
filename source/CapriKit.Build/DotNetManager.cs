@@ -42,21 +42,18 @@ public static class DotNetManager
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
         argumentList.Add("test");
+        argumentList.Add("--solution");
         argumentList.Add(solutionPath);
         argumentList.Add("--no-build");
         argumentList.Add("--no-restore");
         argumentList.Add("--configuration");
         argumentList.Add(MSBuildManager.WellKnownConfigurations.Test);
-        AppendLogArguments(argumentList);
-
-        // We are using dotnet test with Microsoft.Testing.Platform
-        // so we have to pass the test arguments separately
-        argumentList.Add("--");
         argumentList.Add("--results-directory");
         argumentList.Add(testReportDirectory);
-        argumentList.Add("--report-xunit-trx");
-        argumentList.Add("--report-xunit-trx-filename");
+        argumentList.Add("--report-trx");
+        argumentList.Add("--report-trx-filename");
         argumentList.Add("test-report.trx");
+        AppendLogArguments(argumentList);
 
         return CreateTask(logStream, argumentList, solutionDirectory, $"dotnet test for {solutionPath}");
     }

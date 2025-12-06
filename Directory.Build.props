@@ -10,30 +10,7 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <Configurations>Debug;Release;Test</Configurations>
-  </PropertyGroup>
-
-  <!-- Test configuration -->
-  <!-- Inspired by https://canvascodebw.medium.com/unit-tests-where-do-you-put-em-c-example-38bd916f8d80 -->
-  <ItemGroup Condition="'$(Configuration)' == 'Release'">
-    <Compile Remove="**\*.Test.cs" />    
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)' != 'Release'">
-    <Content Include="$(MSBuildThisFileDirectory)xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />
-    <PackageReference Include="xunit.v3" Version="2.0.3" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.1" />
-  </ItemGroup>
-
-  <!-- We are mixing Microsoft.Testing.Platform and the old VSTest so that we can embed
-       the tests in our library and it doesn't have to become an executable. We might need
-       to separate our tests into separate projects, but in that case it could be better
-       to move to TUNit instead.
-      https://xunit.net/docs/getting-started/v3/microsoft-testing-platform-->
-  <PropertyGroup>
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
-    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
-  </PropertyGroup>
+  </PropertyGroup> 
 
   <!--Nuget package info-->
   <!-- https://learn.microsoft.com/en-us/nuget/reference/msbuild-targets -->
@@ -47,11 +24,11 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>gamedev, gamedevelopment, utilities, vectors, matrix, numerics, path, curve, io</PackageTags>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>    
   </PropertyGroup>
 
-  <!-- Copy nupgk files to a different output directory -->
-  <Target Name="CopyPackage" AfterTargets="Pack">
+  <!--Copy nupgk files to a different output directory-->
+  <Target Name="CopyPackage" AfterTargets="Pack"  Condition="Exists('$(OutputPath)\$(PackageId).$(PackageVersion).nupkg')">
     <Copy
       SourceFiles="$(OutputPath)\$(PackageId).$(PackageVersion).nupkg"
       DestinationFolder="$(OutputPath)\..\..\pkg\"

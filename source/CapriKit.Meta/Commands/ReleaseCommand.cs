@@ -33,7 +33,7 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
         var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
         var packagePath = Path.Combine(solutionDirectory, ".build", "pkg");
-        var testResultsPath = Path.Combine(solutionDirectory, ".test");
+        var testResultsPath = Path.Combine(solutionDirectory, ".build", "tst");
 
         var logFile = FileRotator.CreateFile(Directory.GetCurrentDirectory(), "release", ".log", 10);
         using var logStream = logFile.OpenWrite();

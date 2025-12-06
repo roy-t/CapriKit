@@ -4,9 +4,10 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
+    <PackageReference Include="TUnit" Version="1.4.0" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
-  </ItemGroup>  
+    <ProjectReference Include="..\CapriKit.Meta\CapriKit.Meta.csproj" />
+  </ItemGroup>
 </Project>
