@@ -1,7 +1,6 @@
-using CapriKit.Build;
 using Microsoft.Build.Framework;
 
-namespace CapriKit.Meta.Commands;
+namespace CapriKit.Build;
 
 internal sealed class MSBuildLogger(IProgressTracker tracker) : ILogger
 {

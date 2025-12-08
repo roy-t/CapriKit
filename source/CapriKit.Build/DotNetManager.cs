@@ -37,7 +37,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet test --no-restore` on all projects in the solution.
     /// </summary>    
-    public static Action Test(StreamWriter logStream, string solutionPath, string testReportDirectory)
+    public static Action Test(StreamWriter logStream, string solutionPath, string testReportDirectory, string testReportFileName)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -52,7 +52,7 @@ public static class DotNetManager
         argumentList.Add(testReportDirectory);
         argumentList.Add("--report-trx");
         argumentList.Add("--report-trx-filename");
-        argumentList.Add("test-report.trx");
+        argumentList.Add(testReportFileName);
         AppendLogArguments(argumentList);
 
         return CreateTask(logStream, argumentList, solutionDirectory, $"dotnet test for {solutionPath}");

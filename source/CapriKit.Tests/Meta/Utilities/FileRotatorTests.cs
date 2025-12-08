@@ -8,4 +8,11 @@ internal class FileRotatorTests
         var result = 3 + 2;
         await Assert.That(result).IsEqualTo(5);
     }
+
+    //[Test]
+    //public async Task Bar()
+    //{
+    //    var result = 3 + 2;
+    //    await Assert.That(result).IsEqualTo(9);
+    //}
 }

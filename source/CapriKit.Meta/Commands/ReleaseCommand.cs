@@ -23,23 +23,10 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
         MSBuildManager.InitializeMsBuild();
+        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName) = BuildUtilities.GatherBuildInputs();
+        using var logger = BuildUtilities.CreateBuildLogger();
 
-        var solutionPath = FileSearchUtilities.SearchFileUp("*.sln").FirstOrDefault();
-        if (solutionPath == null)
-        {
-            AnsiConsoleExt.ErrorMarkupLineInterpolated($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
-            return 10;
-        }
-
-        var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
-        var packagePath = Path.Combine(solutionDirectory, ".build", "pkg");
-        var testResultsPath = Path.Combine(solutionDirectory, ".build", "tst");
-
-        var logFile = FileRotator.CreateFile(Directory.GetCurrentDirectory(), "release", ".log", 10);
-        using var logStream = logFile.OpenWrite();
-        using var logStreamWriter = new StreamWriter(logStream);
-
-        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logFile.FullName}]{logFile.FullName}[/]");
+        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
 
         var results = new List<TaskExecutionResult>();
 
@@ -54,12 +41,12 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
             .Start(context =>
             {
                 var taskList = new TaskList(context);
-                taskList.AddTask("Restore", DotNetManager.Restore(logStreamWriter, solutionPath));
-                taskList.AddTask("Format", DotNetManager.Format(logStreamWriter, solutionPath));
-                taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
-                taskList.AddTask("Test", DotNetManager.Test(logStreamWriter, solutionPath, testResultsPath));
-                taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
-                taskList.AddTask("Pack", MSBuildManager.BuildSolution(logStreamWriter, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
+                taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
+                taskList.AddTask("Format", DotNetManager.Format(logger.Writer, solutionPath));
+                taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
+                taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
+                taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
+                taskList.AddTask("Pack", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
 
                 if (release.DryRun)
                 {
@@ -67,7 +54,7 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
                 }
                 else
                 {
-                    taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logStreamWriter, packagePath, release.ApiKey));
+                    taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
                 }
 
                 results.AddRange(taskList.Execute(cancellationToken));
