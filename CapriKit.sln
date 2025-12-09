@@ -10,13 +10,17 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		Directory.Build.props = Directory.Build.props
-		README.md = README.md
 		global.json = global.json
+		README.md = README.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Build", "source\CapriKit.Build\CapriKit.Build.csproj", "{67AF248B-C74D-4637-9AD8-5431235EFA34}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Tests", "source\CapriKit.Tests\CapriKit.Tests.csproj", "{E1B47362-D39B-4F10-B92A-FB618523A6AD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Benchmarks", "source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj", "{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FDBE1BF3-A33F-4918-A21E-74E14258C669}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,9 +47,19 @@ Global
 		{E1B47362-D39B-4F10-B92A-FB618523A6AD}.Release|x64.Build.0 = Release|x64
 		{E1B47362-D39B-4F10-B92A-FB618523A6AD}.Test|x64.ActiveCfg = Test|x64
 		{E1B47362-D39B-4F10-B92A-FB618523A6AD}.Test|x64.Build.0 = Test|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Debug|x64.ActiveCfg = Debug|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Debug|x64.Build.0 = Debug|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Release|x64.ActiveCfg = Release|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Release|x64.Build.0 = Release|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Test|x64.ActiveCfg = Test|x64
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Test|x64.Build.0 = Test|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E1B47362-D39B-4F10-B92A-FB618523A6AD} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
+		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF91BE50-7986-48A2-9280-B42EA8551B73}

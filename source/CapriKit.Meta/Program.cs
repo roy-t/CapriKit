@@ -16,8 +16,9 @@ internal partial class Program
                 .WithDescription("Bumps the package version, in line with semantic versioning 2.0");
             configure.AddCommand<ReleaseCommand>("release")
                 .WithDescription("Runs formatting, test, build and pack steps before pushing to NuGet");
-            configure.AddCommand<TestCommand>("tc")
-                .WithDescription("TEMP: test command to quickly try out something");
+            configure.AddCommand<TestCommand>("test")
+                .WithDescription("Run all unit tests");
+            // TODO: add Benchmark step and generate a diff with previous well know results, store one report per version in git.
         });
         app.Run(args);
     }
