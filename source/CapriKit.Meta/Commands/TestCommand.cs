@@ -12,43 +12,19 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         MSBuildManager.InitializeMsBuild();
-        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName) = BuildUtilities.GatherBuildInputs();
+        var startTime = DateTime.Now;
+
+        var (solutionPath, _, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
         var testResultsPath = Path.Combine(testResultsDirectory, testResultsFileName);
 
         using var logger = BuildUtilities.CreateBuildLogger();
 
-        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
+        var taskList = new TaskList();
+        taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
+        taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
+        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
 
-        var results = new List<TaskExecutionResult>();
-
-        var startTime = DateTime.Now;
-
-        AnsiConsole.Progress()
-            .Columns([
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new OutcomeColumn(),
-                new SpinnerColumn(),
-                ])
-            .Start(context =>
-            {
-                var taskList = new TaskList(context);
-                taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
-                taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
-                taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
-
-                results.AddRange(taskList.Execute(cancellationToken));
-            });
-
-        foreach (var result in results)
-        {
-            if (result.Exception != null)
-            {
-                AnsiConsoleExt.ErrorMarkupLineInterpolated($"Task {result.Description} failed");
-                AnsiConsole.WriteException(result.Exception);
-            }
-        }
+        var results = taskList.Execute(cancellationToken);
 
         var testFile = new FileInfo(testResultsPath);
         if (!testFile.Exists)
@@ -91,7 +67,7 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
         var failed = testResults.Count() - passed;
         AnsiConsole.MarkupLineInterpolated($"Test results: [bold green]{passed} Passed [/], [bold red]{failed} Failed[/]");
 
-        return 0;
+        return TaskList.ExitCodeFromResult(results);
     }
 
 

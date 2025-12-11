@@ -1,7 +1,7 @@
 namespace CapriKit.Meta.Utilities;
 
 
-internal record BuildInputs(string SolutionPath, string PackagePath, string TestResultsDirectory, string TestResultsFileName);
+internal record BuildInputs(string SolutionPath, string PackagePath, string TestResultsDirectory, string TestResultsFileName, string BenchmarkResultsFileName);
 
 internal sealed class BuildLogger : IDisposable
 {
@@ -36,8 +36,8 @@ internal static class BuildUtilities
         var testResultsDirectory = Path.Combine(solutionDirectory, ".build", "tst");
         var testResultsFileName = "test-report.trx";
 
-
-        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName);
+        var benchmarkResultsFileName = Path.Combine(testResultsDirectory, "results", "CapriKit.Benchmarks.TestBenchmark-report-full-compressed.json");
+        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName, benchmarkResultsFileName);
     }
 
     public static BuildLogger CreateBuildLogger()

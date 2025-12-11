@@ -5,6 +5,32 @@ namespace CapriKit.Build;
 public static class DotNetManager
 {
     /// <summary>
+    /// Runs `dotnet run` on one projects in the solution.
+    /// Assumes the project has already been built
+    /// </summary>    
+    public static Action Run(StreamWriter logStream, string solutionPath, string projectPath, string configuration, params string[] args)
+    {
+        var solutionDirectory = Path.GetDirectoryName(solutionPath);
+        var argumentList = new List<string>();
+        argumentList.Add("run");
+        argumentList.Add("--project");
+        argumentList.Add(projectPath);
+        argumentList.Add("--no-restore");
+        argumentList.Add("--no-build");
+        argumentList.Add("--configuration");
+        argumentList.Add(configuration);
+        AppendLogArguments(argumentList);
+        if (args.Length > 0)
+        {
+            argumentList.Add("--");
+            argumentList.AddRange(args);
+        }
+
+        return CreateTask(logStream, argumentList, solutionDirectory, $"dotnet run for {projectPath}");
+    }
+
+
+    /// <summary>
     /// Runs `dotnet restore` on all projects in the solution.
     /// </summary>    
     public static Action Restore(StreamWriter logStream, string solutionPath)

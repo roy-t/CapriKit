@@ -23,52 +23,28 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
         MSBuildManager.InitializeMsBuild();
-        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName) = BuildUtilities.GatherBuildInputs();
+
+        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
         using var logger = BuildUtilities.CreateBuildLogger();
 
-        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
+        var taskList = new TaskList();
+        taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
+        taskList.AddTask("Format", DotNetManager.Format(logger.Writer, solutionPath));
+        taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
+        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
+        taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
+        taskList.AddTask("Pack", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
 
-        var results = new List<TaskExecutionResult>();
-
-        AnsiConsole.Progress()
-            .Columns([
-                new TaskDescriptionColumn(),
-                new ProgressBarColumn(),
-                new PercentageColumn(),
-                new OutcomeColumn(),
-                new SpinnerColumn(),
-                ])
-            .Start(context =>
-            {
-                var taskList = new TaskList(context);
-                taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
-                taskList.AddTask("Format", DotNetManager.Format(logger.Writer, solutionPath));
-                taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
-                taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
-                taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
-                taskList.AddTask("Pack", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
-
-                if (release.DryRun)
-                {
-                    taskList.AddTask("Publish", []);
-                }
-                else
-                {
-                    taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
-                }
-
-                results.AddRange(taskList.Execute(cancellationToken));
-            });
-
-        foreach (var result in results)
+        if (release.DryRun)
         {
-            if (result.Exception != null)
-            {
-                AnsiConsoleExt.ErrorMarkupLineInterpolated($"Task {result.Description} failed");
-                AnsiConsole.WriteException(result.Exception);
-            }
+            taskList.AddTask("Publish", []);
+        }
+        else
+        {
+            taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
         }
 
-        return 0;
+        var results = taskList.Execute(cancellationToken);        
+        return TaskList.ExitCodeFromResult(results);
     }
 }

@@ -18,7 +18,9 @@ internal partial class Program
                 .WithDescription("Runs formatting, test, build and pack steps before pushing to NuGet");
             configure.AddCommand<TestCommand>("test")
                 .WithDescription("Run all unit tests");
-            // TODO: add Benchmark step and generate a diff with previous well know results, store one report per version in git.
+            configure.AddCommand<BenchmarkCommand>("benchmark")
+                .WithDescription("Run all unit benchmarks");
+            // TODO: generate a diff with previous well know results, store one report per version in git.
         });
         app.Run(args);
     }

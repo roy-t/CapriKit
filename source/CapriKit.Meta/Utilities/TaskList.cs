@@ -6,31 +6,71 @@ public record TaskExecutionResult(string Description, Exception? Exception);
 
 internal class TaskList
 {
-    private record ProgressableTask(IReadOnlyList<Action> Steps, ProgressTask Progress, string Description);
+    private record ProgressableTask(IReadOnlyList<Action> Steps, string Description);
 
-    private readonly ProgressContext Context;
     private readonly List<ProgressableTask> Tasks;
 
-    public TaskList(ProgressContext context)
+    public TaskList()
     {
-        Context = context;
         Tasks = [];
     }
 
     public void AddTask(string description, params IReadOnlyList<Action> tasks)
-    {
-        var progress = Context.AddTask(description, false, tasks.Count);
-        Tasks.Add(new ProgressableTask(tasks, progress, description));
+    {        
+        Tasks.Add(new ProgressableTask(tasks, description));
     }
 
     public IReadOnlyList<TaskExecutionResult> Execute(CancellationToken cancellationToken)
     {
+        using var logger = BuildUtilities.CreateBuildLogger();
+
+        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
+
         var results = new List<TaskExecutionResult>();
-        foreach (var task in Tasks)
+
+
+        AnsiConsole.Progress()
+            .Columns([
+                new TaskDescriptionColumn(),
+                new ProgressBarColumn(),
+                new PercentageColumn(),
+                new OutcomeColumn(),
+                new SpinnerColumn(),
+                ])
+            .Start(context =>
+            {
+                results.AddRange(Execute(context, cancellationToken));
+            });
+
+        foreach (var result in results)
+        {
+            if (result.Exception != null)
+            {
+                AnsiConsoleExt.ErrorMarkupLineInterpolated($"Task {result.Description} failed");
+                AnsiConsole.WriteException(result.Exception);
+            }
+        }
+        return results;
+    }
+
+    private List<TaskExecutionResult> Execute(ProgressContext context, CancellationToken cancellationToken)
+    {
+        var results = new List<TaskExecutionResult>();
+        var progressList = new ProgressTask[Tasks.Count];
+        for (var i = 0; i < Tasks.Count; i++)
+        {
+            var task = Tasks[i];
+            progressList[i] = context.AddTask(task.Description, false, task.Steps.Count);
+        }
+
+        for (var i = 0; i < Tasks.Count; i++)
         {
             if (!cancellationToken.IsCancellationRequested)
             {
-                var exception = Execute(task);
+                var progress = progressList[i];
+                var task = Tasks[i];
+
+                var exception = Execute(context, progress, task);
                 results.Add(new TaskExecutionResult(task.Description, exception));
                 if (exception != null)
                 {
@@ -42,9 +82,9 @@ internal class TaskList
         return results;
     }
 
-    private Exception? Execute(ProgressableTask task)
+    private static Exception? Execute(ProgressContext context, ProgressTask progress, ProgressableTask task)
     {
-        var (steps, progress, _) = task;
+        var (steps, _) = task;
         try
         {
             if (steps.Count == 0)
@@ -77,5 +117,15 @@ internal class TaskList
         {
             progress.StopTask();
         }
+    }
+
+    public static int ExitCodeFromResult(params IReadOnlyList<TaskExecutionResult> results)
+    {
+        if (results.Any(r => r.Exception != null))
+        {
+            return 1;
+        }
+
+        return 0;
     }
 }
