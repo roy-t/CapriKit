@@ -46,7 +46,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         table.AddColumn("Class");
         table.AddColumn("Test");
         table.AddColumn("Mean");
-        table.AddColumn("StdError");
+        table.AddColumn("Margin of Error"); // 99.9% sure the real mean is the estimated margin plus or minus this error
         table.AddColumn("StdDev");
 
         foreach (var result in benchmarkResults.Benchmarks)
@@ -65,8 +65,6 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         // if we want to do this correctly this means doing a Welch two-sample t-test
         // for example: https://github.com/accord-net/framework/blob/development/Sources/Accord.Statistics/Testing/TwoSample/TwoSampleTTest.cs#L195
         // note variance = (standard deviation)^2
-
-        TTest
 
         return TaskList.ExitCodeFromResult(results);
     }
