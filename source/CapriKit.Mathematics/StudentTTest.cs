@@ -1,4 +1,3 @@
-using MathNet.Numerics.Statistics;
 using MathNet.Numerics.Distributions;
 
 namespace CapriKit.Mathematics;

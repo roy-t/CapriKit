@@ -18,7 +18,7 @@ internal class StudentTTestTests
 
     [Test]
     public async Task ComputeTwoTailedProbabilityOfT_ReturnsP()
-    {
+    {        
         await Assert.That(StudentTTest.ComputeTwoTailedProbabilityOfT(1.4142, 4)).IsEqualTo(0.230).Within(0.001);
     }
 
