@@ -8,6 +8,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
-    <ProjectReference Include="..\CapriKit.Meta\CapriKit.Meta.csproj" />
+    <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
   </ItemGroup>
 </Project>

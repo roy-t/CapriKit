@@ -22,6 +22,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Benchmarks", "sour
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FDBE1BF3-A33F-4918-A21E-74E14258C669}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Mathematics", "source\CapriKit.Mathematics\CapriKit.Mathematics.csproj", "{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -53,6 +55,12 @@ Global
 		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Release|x64.Build.0 = Release|x64
 		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Test|x64.ActiveCfg = Test|x64
 		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB}.Test|x64.Build.0 = Test|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Debug|x64.ActiveCfg = Debug|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Debug|x64.Build.0 = Debug|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Release|x64.ActiveCfg = Release|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Release|x64.Build.0 = Release|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Test|x64.ActiveCfg = Test|x64
+		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Test|x64.Build.0 = Test|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
