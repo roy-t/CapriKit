@@ -11,9 +11,7 @@ internal class StudentTTestTests
         var sd = 1.581;
         var count = 5;
         var altMean = 2.0;
-        await Assert.That(StudentTTest.ForOneSample(mean, sd, count, altMean)).IsEqualTo(1.414).Within(0.001);
-        
-        // P: 0,23019964
+        await Assert.That(StudentTTest.ForOneSample(mean, sd, count, altMean)).IsEqualTo(1.414).Within(0.001);                
     }
 
     [Test]
@@ -25,8 +23,6 @@ internal class StudentTTestTests
     [Test]
     public async Task ForIndepentnSamples_ReturnsT()
     {
-        // TODO: results depent on variance being equal or not see: 
-        // https://www.omnicalculator.com/statistics/t-test
         var mean = 3.0;        
         var sd = 1.581;
         var count = 5;
@@ -36,5 +32,12 @@ internal class StudentTTestTests
         var altCount = 7;
         await Assert.That(StudentTTest.ForIndependentSamples(mean, sd, count, altMean, altSd, altCount))
             .IsEqualTo(1.148).Within(0.001);
+    }
+
+    [Test]
+    public async Task GetDegreesOfFreedom_ForTwoPairedTest_ReturnsDF()
+    {
+        // TODO: this should use the GetDegreesOfFreedom test
+        Assert.Fail("TODO: use the new DoF calculator!");
     }
 }

@@ -21,6 +21,7 @@ public static class StudentTTest
 
     /// <summary>
     /// Determines if two surveys with unrelated subjects are significantly different.
+    /// Uses the Welch's t-tests, which assumes the variances are not equal or unknown.
     /// For example: to compare the effectiveness of two different schools by measuring final exam scores.
     /// </summary>
     public static double ForIndependentSamples(
@@ -59,20 +60,39 @@ public static class StudentTTest
         return mean / error;
     }
 
+    /// <summary>
+    /// Calculates the degrees of freedom for a one-sample or paired t-test.
+    /// </summary>
     public static int GetDegreesOfFreedom(int count)
     {
         return count - 1;
     }
 
-    public static int GetDegreesOfFreedom(int countA, int countB)
+    /// <summary>
+    /// Calculates the degrees of freedom for Wekch's two-sample t-test in which the variances are not equal or unknown.
+    /// Uses the Welch-Satterthwaite equation.
+    /// </summary>
+    public static double GetDegreesOfFreedom(double standardDeviationA, int countA, double standardDeviationB, int countB)
     {
-        return countA + countB  - 2;
+        double varianceA = standardDeviationA * standardDeviationA;
+        double varianceB = standardDeviationB * standardDeviationB;
+
+        double termA = varianceA / countA;
+        double termB = varianceB / countB;
+
+        double numerator = Math.Pow(termA + termB, 2);
+
+        double denominator =
+            (Math.Pow(termA, 2) / (countA - 1)) +
+            (Math.Pow(termB, 2) / (countB - 1));
+
+        return numerator / denominator;
     }    
 
     /// <summary>
     /// Computes the probability of seeing this t-value if the means of the two surveys are equal.
     /// </summary>    
-    public static double ComputeTwoTailedProbabilityOfT(double tValue, int degreesOfFreedom)
+    public static double ComputeTwoTailedProbabilityOfT(double tValue, double degreesOfFreedom)
     {
         var cdf = StudentT.CDF(0.0, 1.0, degreesOfFreedom, Math.Abs(tValue));
         return 2 - 2 * cdf;
