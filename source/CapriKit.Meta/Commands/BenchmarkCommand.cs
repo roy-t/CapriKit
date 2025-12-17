@@ -42,6 +42,13 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var json = File.ReadAllText(benchmarkResultsFileName);
         var benchmarkResults = JsonSerializer.Deserialize<BenchmarkResults>(json)!;
 
+        // TODO: use the new math/statistics stuff to ensure we always compute the SD and Mean and .. in the same way
+        //if (benchmarkResults != null)
+        //{
+        //    var mean = CapriKit.Mathematics.Statistics.Mean(benchmarkResults.Benchmarks[0].Statistics.OriginalValues.Select(f => (double)f);
+        //}
+
+
         var table = new Table();
         table.AddColumn("Class");
         table.AddColumn("Test");

@@ -5,6 +5,11 @@
     </PackageReference>
   </ItemGroup>
 
+  <!-- Generators -->
+  <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
   <!-- HACK: ensures that even though MathNet.Numerics is not transitively available for users of our library, the DLL is still copied to the output directory
        otherwise the unit tests cannot -->
   <PropertyGroup>

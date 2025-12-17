@@ -1,0 +1,27 @@
+<Project>
+  <!-- Shared properties for source generatores, refer to the following guide for inspiration:
+       https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md#generated-class -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Platforms>AnyCPU</Platforms>
+    <ImplicitUsings>true</ImplicitUsings>
+		<LangVersion>Latest</LangVersion>    
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- Allows better debugging through Visual Studio,
+         see: https://learn.microsoft.com/en-us/visualstudio/releases/2019/release-notes-v16.10
+         and search for "Debugger support for Source Generators" -->
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

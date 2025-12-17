@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Generate Types for CapriKit.Mathematics": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\CapriKit.Mathematics\\CapriKit.Mathematics.csproj"
+    }
+  }
+}

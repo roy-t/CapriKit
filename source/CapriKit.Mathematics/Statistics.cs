@@ -12,7 +12,7 @@ public static class Statistics
         {
             sum += values[i];
         }
-
+        
         return sum / values.Length;
     }
 

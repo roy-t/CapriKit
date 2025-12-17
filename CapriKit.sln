@@ -24,6 +24,10 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{FDBE1BF3
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Mathematics", "source\CapriKit.Mathematics\CapriKit.Mathematics.csproj", "{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Generators", "Generators", "{4ECB6237-E7E4-410E-817A-C37E66F178C2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Generators.PrecisionVariants", "source\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj", "{006D65D3-7A30-DADB-2984-F576BEEEC3B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -61,6 +65,12 @@ Global
 		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Release|x64.Build.0 = Release|x64
 		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Test|x64.ActiveCfg = Test|x64
 		{AF9684EF-5BC4-4C4D-8918-E787ECA3F247}.Test|x64.Build.0 = Test|x64
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Debug|x64.Build.0 = Debug|Any CPU
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Release|x64.ActiveCfg = Release|Any CPU
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Release|x64.Build.0 = Release|Any CPU
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Test|x64.ActiveCfg = Test|Any CPU
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5}.Test|x64.Build.0 = Test|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -68,6 +78,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{E1B47362-D39B-4F10-B92A-FB618523A6AD} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
 		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
+		{006D65D3-7A30-DADB-2984-F576BEEEC3B5} = {4ECB6237-E7E4-410E-817A-C37E66F178C2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF91BE50-7986-48A2-9280-B42EA8551B73}
