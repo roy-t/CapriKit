@@ -1,7 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <PackageReference Include="MathNet.Numerics" Version="5.0.0">
-      <PrivateAssets>all</PrivateAssets>
+      <PrivateAssets>all</PrivateAssets>      
     </PackageReference>
   </ItemGroup>
+
+  <!-- HACK: ensures that even though MathNet.Numerics is not transitively available for users of our library, the DLL is still copied to the output directory
+       otherwise the unit tests cannot -->
+  <PropertyGroup>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
 </Project>

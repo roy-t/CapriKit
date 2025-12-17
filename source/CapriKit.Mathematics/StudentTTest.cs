@@ -10,9 +10,12 @@ namespace CapriKit.Mathematics;
 public static class StudentTTest
 {
     /// <summary>
-    /// Determines if the results of a survey are significantly different from a known value. 
+    /// Determines if the results of a survey are likely given a known value. 
     /// For example: to compare the results of weighing 50 items to a manufacturer's claimed average weight.
-    /// </summary>    
+    /// </summary>
+    /// <returns>
+    /// The t-score
+    /// </returns>
     public static double ForOneSample(double mean, double standardDeviation, int count, double referenceMean)
     {
         var standardError = Statistics.StandardError(standardDeviation, count);
@@ -20,10 +23,13 @@ public static class StudentTTest
     }
 
     /// <summary>
-    /// Determines if two surveys with unrelated subjects are significantly different.
+    /// Determines if it is likely that two surveys with unrelated subjects have similar properties.
     /// Uses the Welch's t-tests, which assumes the variances are not equal or unknown.
     /// For example: to compare the effectiveness of two different schools by measuring final exam scores.
     /// </summary>
+    /// <returns>
+    /// The t-score
+    /// </returns>
     public static double ForIndependentSamples(
         double meanA, double standardDeviationA, int countA,
         double meanB, double standardDeviationB, int countB)
@@ -37,10 +43,13 @@ public static class StudentTTest
     }
 
     /// <summary>
-    /// Determines if two dependent surveys are significantly different. The before and after samples
-    /// need to be exactly the same length.
-    /// For example: to compare the weight of exactly the same people before and after a diet.
-    /// </summary>    
+    /// Determines if it is likely that the results of two dependent surveys are smilar.
+    /// The before and after samples need to be exactly the same length (you are surveying the same subjects)
+    /// For example: to compare the weight of a group of people before and after a diet.
+    /// </summary>
+    /// <returns>
+    /// The t-score
+    /// </returns>
     public static double ForPairedSamples(ReadOnlySpan<double> before, ReadOnlySpan<double> after)
     {
         if (before.Length != after.Length)
@@ -90,7 +99,9 @@ public static class StudentTTest
     }    
 
     /// <summary>
-    /// Computes the probability of seeing this t-value if the means of the two surveys are equal.
+    /// Computes the probability of seeing this t-value if the H0 hypothesis is true
+    /// Usually you reject the H0 hypothesis in favor of the H1 hypothesis
+    /// if this function returns a value smaller than 0.05
     /// </summary>    
     public static double ComputeTwoTailedProbabilityOfT(double tValue, double degreesOfFreedom)
     {
