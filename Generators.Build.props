@@ -1,6 +1,6 @@
 <Project>
   <!-- Shared properties for source generatores, refer to the following guide for inspiration:
-       https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md#generated-class -->
+       https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.cookbook.md -->
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Platforms>AnyCPU</Platforms>
