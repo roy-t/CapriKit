@@ -7,7 +7,7 @@ public static partial class Statistics
     /// <summary>
     /// Calculates the mean (average)
     /// </summary>
-//    [GenerateFloatVariant]
+    [GenerateFloatVariant]
     public static double Mean(params ReadOnlySpan<double> values)
     {
         var sum = 0.0;
@@ -55,7 +55,7 @@ public static partial class Statistics
     /// <summary>
     /// Calculates the standard error, also known as standard deviation from the mean
     /// </summary>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double StandardError(double standardDeviation, double count)
     {
         return standardDeviation / Math.Sqrt(count);

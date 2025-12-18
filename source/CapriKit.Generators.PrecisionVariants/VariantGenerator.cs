@@ -66,8 +66,8 @@ public class VariantGenerator : IIncrementalGenerator
         var rewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
         var rewritten = rewriter.Visit(template.MethodDeclaration);
         var methodText = rewritten.NormalizeWhitespace().ToFullString();
-
-        throw new Exception("Eek");
+        throw new Exception("Add class and stuff around!");
+        return ($"{template.ClassName}_{template.Method.Name}_{template.Variant}.g.cs", methodText);
     }
 
     private static string? GetNamespace(INamespaceSymbol? symbol)

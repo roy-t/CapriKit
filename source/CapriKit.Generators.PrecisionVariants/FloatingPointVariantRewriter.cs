@@ -11,39 +11,89 @@ namespace CapriKit.Generators.PrecisionVariants
 
         public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
-            if (IsReplacableKeyword(node.ReturnType))
-            {
-                node = node.WithReturnType(SyntaxFactory.PredefinedType(SyntaxFactory.Token(To)));
-            }
+            node = node.WithReturnType(RewriteType(node.ReturnType));
+            node = node.WithParameterList(RewriteParameterList(node.ParameterList));
 
-            var oldParameters = node.ParameterList.Parameters;
-            var newParameters = new List<ParameterSyntax>();
-            foreach (var parameter in oldParameters)
-            {
-                // TODO: add support for arrays and generic type parameters
-                if (parameter.Type != null && IsReplacableKeyword(parameter.Type))
-                {
-                    var targetType = SyntaxFactory.PredefinedType(SyntaxFactory.Token(To));
-                    newParameters.Add(parameter.WithType(targetType));
-                }
-                else
-                {
-                    newParameters.Add(parameter);
-                }
-            }
-            node = node.WithParameterList(node.ParameterList.WithParameters(SyntaxFactory.SeparatedList(newParameters)));
+            //var oldParameters = node.ParameterList.Parameters;
+            //var newParameters = new List<ParameterSyntax>();
+
+            //foreach (var parameter in oldParameters)
+            //{
+            //    // TODO: add support for arrays and generic type parameters
+
+            //    // Plain argument
+            //    if (parameter.Type != null)
+            //    {
+            //        newParameters.Add(parameter.WithType(RewriteType(parameter.Type)));
+            //    }
+            //    else
+            //    {
+            //        newParameters.Add(parameter);
+            //    }
+
+            //    //GenericNameSyntax
+            //}
+            //node = node.WithParameterList(node.ParameterList.WithParameters(SyntaxFactory.SeparatedList(newParameters)));
 
             return base.VisitMethodDeclaration(node);
         }
 
-
-        private bool IsReplacableKeyword(TypeSyntax syntax)
+        private ParameterListSyntax RewriteParameterList(ParameterListSyntax syntax)
         {
-            if (syntax.IsKind(SyntaxKind.PredefinedType) && syntax is PredefinedTypeSyntax predefined)
+            var oldParameters = syntax.Parameters;
+            var newParameters = new List<ParameterSyntax>();
+
+            foreach (var parameter in oldParameters)
             {
-                return from.Contains(predefined.Keyword.Kind());
+                newParameters.Add(RewriteParameter(parameter));
             }
-            return false;
+
+            return syntax.WithParameters(SyntaxFactory.SeparatedList(newParameters));
+        }
+
+        private ParameterSyntax RewriteParameter(ParameterSyntax syntax)
+        {
+            if (syntax.Type != null)
+            {
+                return syntax.WithType(RewriteType(syntax.Type));
+            }
+            return syntax;
+        }
+
+        private TypeSyntax RewriteType(TypeSyntax syntax)
+        {
+            switch(syntax)
+            {
+                case GenericNameSyntax genericName:
+                    return RewriteType(genericName);
+                // TODO: arrays
+            }
+            
+            if (syntax.IsKind(SyntaxKind.PredefinedType) &&
+                syntax is PredefinedTypeSyntax predefined &&
+                from.Contains(predefined.Keyword.Kind()))
+            {
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(To));
+            }
+
+            return syntax;
+        }
+
+        private GenericNameSyntax RewriteType(GenericNameSyntax syntax)
+        {
+            return syntax.WithTypeArgumentList(RewriteTypeArgumentList(syntax.TypeArgumentList));            
+        }
+
+        private TypeArgumentListSyntax RewriteTypeArgumentList(TypeArgumentListSyntax syntax)
+        {
+            var oldArguments = syntax.Arguments;
+            var newArguments = new List<TypeSyntax>();
+            foreach (var argument in oldArguments)
+            {
+                newArguments.Add(RewriteType(argument));
+            }
+
+            return syntax.WithArguments(SyntaxFactory.SeparatedList(newArguments));
         }
     }
 }
