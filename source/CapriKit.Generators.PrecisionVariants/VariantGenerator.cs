@@ -9,7 +9,7 @@ namespace CapriKit.Generators.PrecisionVariants;
 [Generator]
 public class VariantGenerator : IIncrementalGenerator
 {
-    private record MethodTemplate(string? Namespace, string ClassName, IMethodSymbol Method, MethodDeclarationSyntax MethodDeclaration, string Variant);
+    private record MethodTemplate(string? Namespace, string Usings, string ClassName, IMethodSymbol Method, MethodDeclarationSyntax MethodDeclaration, string Variant);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
@@ -51,28 +51,46 @@ public class VariantGenerator : IIncrementalGenerator
     {        
         var symbol = context.SemanticModel.GetDeclaredSymbol(context.TargetNode, cancellationToken);
         if (symbol is IMethodSymbol method && context.TargetNode is MethodDeclarationSyntax methodDeclaration)
-        {
+        {            
             var @class = context.TargetSymbol.ContainingType;
-            var @namespace = GetNamespace(@class.ContainingNamespace);
+            var @namespace = GetNamespace(@class.ContainingNamespace);            
             
             return new MethodTemplate(@namespace, @class.Name, method, methodDeclaration, variant);
         }
         
         return null;
     }
-
+    
     private static (string hintName, string source) EmitVariant(MethodTemplate template)
     {
         var rewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
         var rewritten = rewriter.Visit(template.MethodDeclaration);
-        var methodText = rewritten.NormalizeWhitespace().ToFullString();
-        throw new Exception("Add class and stuff around!");
-        return ($"{template.ClassName}_{template.Method.Name}_{template.Variant}.g.cs", methodText);
+        var methodText = rewritten.NormalizeWhitespace().ToFullString();        
+
+        // TODO: I somehow have to get the exact usings as before. 
+        var fileText = $$"""
+            {{template.Usings}}
+            namespace {{template.Namespace ?? "CapriKit.Generated"}}
+            {
+                partial class {{template.ClassName}}
+                {
+            {{IndentString("        ", methodText)}}
+                }
+            }
+            """;
+
+        return ($"{template.ClassName}_{template.Method.Name}_{template.Variant}.g.cs", fileText);
     }
 
     private static string? GetNamespace(INamespaceSymbol? symbol)
     {
         return symbol?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
+    }
+
+    private static string IndentString(string indent, string text)
+    {
+        var lines = text.Split('\n');
+        return indent + String.Join("\n" + indent, lines);
     }
 }
 

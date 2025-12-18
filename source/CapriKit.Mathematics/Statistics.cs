@@ -4,10 +4,17 @@ namespace CapriKit.Mathematics;
 
 public static partial class Statistics
 {
+
+    [GenerateFloatVariant]
+    public static double AltMean(double[] values)
+    {
+        return 0.0;
+    }
+
     /// <summary>
     /// Calculates the mean (average)
     /// </summary>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double Mean(params ReadOnlySpan<double> values)
     {
         var sum = 0.0;
