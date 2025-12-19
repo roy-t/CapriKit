@@ -4,55 +4,42 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CapriKit.Generators.PrecisionVariants
 {
-    internal class FloatingPointVariantRewriter(IReadOnlyList<SyntaxKind> from, SyntaxKind to) : CSharpSyntaxRewriter
+    internal class FloatingPointVariantRewriter : CSharpSyntaxRewriter
     {
-        public override SyntaxNode? VisitMethodDeclaration(MethodDeclarationSyntax node)
+        private readonly IReadOnlyList<SyntaxKind> From;
+        private readonly SyntaxKind To;
+
+        public FloatingPointVariantRewriter(IReadOnlyList<SyntaxKind> from, SyntaxKind to)
         {
-            node = node.WithReturnType(RewriteType(node.ReturnType));
-            node = node.WithParameterList(RewriteParameterList(node.ParameterList));
-         
-            return base.VisitMethodDeclaration(node);
+            this.From = from;
+            this.To = to;
         }
 
-        private ParameterListSyntax RewriteParameterList(ParameterListSyntax syntax)
+        public override SyntaxNode? Visit(SyntaxNode? node)
         {
-            var oldParameters = syntax.Parameters;
-            var newParameters = new List<ParameterSyntax>();
-
-            foreach (var parameter in oldParameters)
+            if (node is TypeSyntax type && SyntaxFacts.IsInTypeOnlyContext(type))
             {
-                newParameters.Add(RewriteParameter(parameter));
+                node = RewriteType(type);
             }
-
-            return syntax.WithParameters(SyntaxFactory.SeparatedList(newParameters));
-        }
-
-        private ParameterSyntax RewriteParameter(ParameterSyntax syntax)
-        {
-            if (syntax.Type != null)
-            {
-                return syntax.WithType(RewriteType(syntax.Type));
-            }
-            return syntax;
-        }
+            return base.Visit(node);
+        }        
 
         private TypeSyntax RewriteType(TypeSyntax syntax)
         {
-            switch(syntax)
+            switch (syntax)
             {
                 case GenericNameSyntax genericName:
                     return RewriteGenericType(genericName);
 
                 case ArrayTypeSyntax arrayType:
                     return RewriteArrayType(arrayType);
-                // TODO: arrays
             }
-            
+
             if (syntax.IsKind(SyntaxKind.PredefinedType) &&
                 syntax is PredefinedTypeSyntax predefined &&
-                from.Contains(predefined.Keyword.Kind()))
+                From.Contains(predefined.Keyword.Kind()))
             {
-                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(to));
+                return SyntaxFactory.PredefinedType(SyntaxFactory.Token(To));
             }
 
             return syntax;
@@ -65,7 +52,7 @@ namespace CapriKit.Generators.PrecisionVariants
 
         private GenericNameSyntax RewriteGenericType(GenericNameSyntax syntax)
         {
-            return syntax.WithTypeArgumentList(RewriteTypeArgumentList(syntax.TypeArgumentList));            
+            return syntax.WithTypeArgumentList(RewriteTypeArgumentList(syntax.TypeArgumentList));
         }
 
         private TypeArgumentListSyntax RewriteTypeArgumentList(TypeArgumentListSyntax syntax)

@@ -4,25 +4,18 @@ namespace CapriKit.Mathematics;
 
 public static partial class Statistics
 {
-
-    [GenerateFloatVariant]
-    public static double AltMean(double[] values)
-    {
-        return 0.0;
-    }
-
     /// <summary>
     /// Calculates the mean (average)
     /// </summary>
-    //[GenerateFloatVariant]
+    [GenerateFloatVariant]
     public static double Mean(params ReadOnlySpan<double> values)
     {
-        var sum = 0.0;
+        var sum = (double)0.0;
         for (var i = 0; i < values.Length; i++)
         {
             sum += values[i];
         }
-        
+
         return sum / values.Length;
     }
 
@@ -30,9 +23,10 @@ public static partial class Statistics
     /// Calculates the standard deviation for a survey that covers the entire population.
     /// For example: the height of all German professional football players.
     /// </summary>
+    [GenerateFloatVariant]
     public static double PopulationStandardDeviation(double mean, params ReadOnlySpan<double> values)
     {        
-        var sum = 0.0;
+        var sum = (double)0.0;
         for (var i = 0; i < values.Length; i++)
         {
             var difference = values[i] - mean;
@@ -46,9 +40,10 @@ public static partial class Statistics
     /// Calculates the standard deviation for a survey that covers only a sample of a population
     /// For example: in a clinical study.
     /// </summary>
+    [GenerateFloatVariant]
     public static double SampleStandardDeviation(double mean, params ReadOnlySpan<double> values)
     {
-        var sum = 0.0;
+        var sum = (double)0.0;
         for (var i = 0; i < values.Length; i++)
         {
             var difference = values[i] - mean;
@@ -62,7 +57,7 @@ public static partial class Statistics
     /// <summary>
     /// Calculates the standard error, also known as standard deviation from the mean
     /// </summary>
-    //[GenerateFloatVariant]
+    [GenerateFloatVariant]
     public static double StandardError(double standardDeviation, double count)
     {
         return standardDeviation / Math.Sqrt(count);
