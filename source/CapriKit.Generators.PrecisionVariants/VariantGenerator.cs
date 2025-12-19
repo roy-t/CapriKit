@@ -2,6 +2,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace CapriKit.Generators.PrecisionVariants;
@@ -28,7 +29,7 @@ public class VariantGenerator : IIncrementalGenerator
                 try
                 {
                     var semanticModel = compilation.GetSemanticModel(model.MethodDeclaration.SyntaxTree);
-                    var (hintName, source) = EmitVariant(semanticModel, model);
+                    var (hintName, source) = EmitVariant(semanticModel, model, compilation);
                     producer.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
                 }
                 catch (Exception ex)
@@ -65,12 +66,17 @@ public class VariantGenerator : IIncrementalGenerator
         return null;
     }
 
-    private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template)
+    private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template, Compilation compilation)
     {
+        var mathRewriter = new MathToMathFRewriter(semanticModel, compilation);
         var formatRewriter = new TypeQualificationRewriter(semanticModel);
         var typeRewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
 
-        var fullyQualifiedMethod = formatRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
+        // TODO: probably need to rewrite everything in one go!
+        var adjustedMathMethod = mathRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
+        //semanticModel = compilation.GetSemanticModel(adjustedMathMethod.SyntaxTree);
+
+        var fullyQualifiedMethod = formatRewriter.Visit(adjustedMathMethod) ?? throw new Exception("Invalid rewrite");        
         var variantMethod = typeRewriter.Visit(fullyQualifiedMethod) ?? throw new Exception("Invalid rewrite");
         var methodText = variantMethod.NormalizeWhitespace().ToFullString();
 

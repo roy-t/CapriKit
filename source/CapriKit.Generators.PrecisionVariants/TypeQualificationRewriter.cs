@@ -10,15 +10,8 @@ namespace CapriKit.Generators.PrecisionVariants;
 /// For example: `Span` is converted to `global::System.Span`
 /// </summary>
 internal sealed class TypeQualificationRewriter : CSharpSyntaxRewriter
-{
-    private readonly SemanticModel SemanticModel;
-    private readonly SymbolDisplayFormat Format;
-
-    public TypeQualificationRewriter(SemanticModel semanticModel)
-        : base(false)
-    {
-        SemanticModel = semanticModel;
-        Format = new SymbolDisplayFormat(
+{    
+    public static SymbolDisplayFormat FullyQualifiedTypeFormat = new(
             globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
             typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
             genericsOptions:
@@ -28,6 +21,12 @@ internal sealed class TypeQualificationRewriter : CSharpSyntaxRewriter
                 SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
                 SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
                 SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
+
+    private readonly SemanticModel SemanticModel;
+
+    public TypeQualificationRewriter(SemanticModel semanticModel)
+    {
+        SemanticModel = semanticModel;
     }    
 
     public override SyntaxNode? Visit(SyntaxNode? node)
@@ -58,7 +57,7 @@ internal sealed class TypeQualificationRewriter : CSharpSyntaxRewriter
                 return base.Visit(node);
             }
 
-            var qualifiedType = typeSymbol.ToDisplayString(Format);
+            var qualifiedType = typeSymbol.ToDisplayString(FullyQualifiedTypeFormat);
             var parsed = SyntaxFactory.ParseTypeName(qualifiedType)
                                       .WithTriviaFrom(typeSyntax);
 
@@ -75,7 +74,7 @@ internal sealed class TypeQualificationRewriter : CSharpSyntaxRewriter
 
         if (attrType != null)
         {
-            var fq = attrType.ToDisplayString(Format);
+            var fq = attrType.ToDisplayString(FullyQualifiedTypeFormat);
             var newName = SyntaxFactory.ParseName(fq).WithTriviaFrom(node.Name);
             node = node.WithName(newName);
         }
