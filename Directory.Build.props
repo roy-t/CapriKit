@@ -86,5 +86,8 @@
     <NoWarn>7035;1591</NoWarn>
   </PropertyGroup>
 
-
+  <!-- Test support-->
+  <ItemGroup>
+    <InternalsVisibleTo Include="CapriKit.Tests" />
+  </ItemGroup>
 </Project>

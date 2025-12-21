@@ -32,7 +32,7 @@ public class AttributeGenerator : IIncrementalGenerator
                 """);
             }
 
-            builder.AppendLine("""
+            builder.Append("""
             }
             """);
 

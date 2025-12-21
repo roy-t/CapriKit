@@ -73,10 +73,10 @@ public class VariantGenerator : IIncrementalGenerator
         var typeRewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
 
         // TODO: probably need to rewrite everything in one go!
-        var adjustedMathMethod = mathRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
+        //var adjustedMathMethod = mathRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
         //semanticModel = compilation.GetSemanticModel(adjustedMathMethod.SyntaxTree);
 
-        var fullyQualifiedMethod = formatRewriter.Visit(adjustedMathMethod) ?? throw new Exception("Invalid rewrite");        
+        var fullyQualifiedMethod = formatRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");        
         var variantMethod = typeRewriter.Visit(fullyQualifiedMethod) ?? throw new Exception("Invalid rewrite");
         var methodText = variantMethod.NormalizeWhitespace().ToFullString();
 
