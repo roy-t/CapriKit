@@ -12,24 +12,28 @@ internal static class SourceGeneratorExtensions
     internal record GeneratedFile(SourceText Source, string FileName);
 
     internal record SourceGeneratorResult(ImmutableArray<GeneratedFile> GeneratedFiles, ImmutableArray<Diagnostic> Diagnostics);
-    
+
     public static SourceGeneratorResult Execute(this IIncrementalGenerator generator, string source, params ImmutableArray<AdditionalText> additionalTexts)
-    {        
+    {
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
 
         var assembly = GetRandomAssemblyName();
         var sourcePath = GetRandomPath();
 
         var syntaxTree = CSharpSyntaxTree.ParseText(source, null, sourcePath);
-        var metadataReferences = MetadataReference.CreateFromFile(System.Reflection.Assembly.GetExecutingAssembly().Location);
+        var metadataReferences = AppDomain.CurrentDomain.GetAssemblies()
+            .Where(a => !a.IsDynamic)
+            .Select(a => MetadataReference.CreateFromFile(a.Location))
+            .ToArray();
+
         var options = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
-        var compilation = CSharpCompilation.Create(assembly, [syntaxTree], [metadataReferences], options);
+        var compilation = CSharpCompilation.Create(assembly, [syntaxTree], metadataReferences, options);
 
         driver = driver.AddAdditionalTexts(additionalTexts);
 
         driver = driver.RunGeneratorsAndUpdateCompilation(compilation,
             out Compilation outputCompilation,
-            out ImmutableArray<Diagnostic> diagnostics);        
+            out ImmutableArray<Diagnostic> diagnostics);
 
         var generatedFiles = outputCompilation.SyntaxTrees
             .Where(st => st.FilePath != sourcePath)
@@ -47,5 +51,5 @@ internal static class SourceGeneratorExtensions
     private static string GetRandomPath()
     {
         return Path.Join("CapriKit.Tests.GeneratedFiles", Path.GetRandomFileName());
-    }    
+    }
 }

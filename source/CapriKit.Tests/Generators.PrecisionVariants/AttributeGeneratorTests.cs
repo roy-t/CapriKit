@@ -8,7 +8,7 @@ internal class AttributeGeneratorTests
     [Test]
     public async Task Execute_GeneratesAttributes()
     {
-        var attributeGenerator = new AttributeGenerator();        
+        var attributeGenerator = new AttributeGenerator();
         var result = attributeGenerator.Execute(string.Empty);
 
         // The source generator can add other files, like the embedded attribute definition

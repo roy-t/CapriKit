@@ -67,7 +67,7 @@ public class VariantGenerator : IIncrementalGenerator
 
     private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template, Compilation compilation)
     {
-        var mathRewriter = new MathToMathFRewriter(semanticModel, compilation);
+        //var mathRewriter = new MathToMathFRewriter(semanticModel, compilation);
         var formatRewriter = new TypeQualificationRewriter(semanticModel);
         var typeRewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
 

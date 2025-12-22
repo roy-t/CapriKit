@@ -4,8 +4,8 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="TUnit" Version="1.6.5" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageReference Include="TUnit" Version="1.6.15" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
