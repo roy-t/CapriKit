@@ -13,7 +13,7 @@ internal static class SourceGeneratorExtensions
 
     internal record SourceGeneratorResult(ImmutableArray<GeneratedFile> GeneratedFiles, ImmutableArray<Diagnostic> Diagnostics);
     
-    public static SourceGeneratorResult Execute(this IIncrementalGenerator generator, SourceText source, params ImmutableArray<AdditionalText> additionalTexts)
+    public static SourceGeneratorResult Execute(this IIncrementalGenerator generator, string source, params ImmutableArray<AdditionalText> additionalTexts)
     {        
         GeneratorDriver driver = CSharpGeneratorDriver.Create(generator);
 

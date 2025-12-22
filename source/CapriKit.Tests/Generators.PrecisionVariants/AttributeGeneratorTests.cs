@@ -1,7 +1,5 @@
 using CapriKit.Generators.PrecisionVariants;
 using CapriKit.Tests.TestUtilities;
-using Microsoft.CodeAnalysis.Text;
-using System.Text;
 
 namespace CapriKit.Tests.Generators.PrecisionVariants;
 
@@ -10,10 +8,8 @@ internal class AttributeGeneratorTests
     [Test]
     public async Task Execute_GeneratesAttributes()
     {
-        var attributeGenerator = new AttributeGenerator();
-        var source = SourceText.From(string.Empty, Encoding.UTF8);
-
-        var result = attributeGenerator.Execute(source);
+        var attributeGenerator = new AttributeGenerator();        
+        var result = attributeGenerator.Execute(string.Empty);
 
         // The source generator can add other files, like the embedded attribute definition
         await Assert.That(result.GeneratedFiles.Length).IsGreaterThanOrEqualTo(1);
