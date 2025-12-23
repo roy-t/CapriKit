@@ -67,24 +67,20 @@ public class VariantGenerator : IIncrementalGenerator
 
     private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template, Compilation compilation)
     {
-        //var mathRewriter = new MathToMathFRewriter(semanticModel, compilation);
-        var formatRewriter = new TypeQualificationRewriter(semanticModel);
-        var typeRewriter = new FloatingPointVariantRewriter([SyntaxKind.DoubleKeyword], SyntaxKind.FloatKeyword);
+        var nameRule = new FullyQualifiedNameRewriterRule();
+        var doubleToFloatRule = new DoubleToFloatRewriteRule(compilation);
+        var mathToMathFRule = new MathRewriteRule(compilation);
 
-        // TODO: probably need to rewrite everything in one go!
-        //var adjustedMathMethod = mathRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
-        //semanticModel = compilation.GetSemanticModel(adjustedMathMethod.SyntaxTree);
-
-        var fullyQualifiedMethod = formatRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");        
-        var variantMethod = typeRewriter.Visit(fullyQualifiedMethod) ?? throw new Exception("Invalid rewrite");
-        var methodText = variantMethod.NormalizeWhitespace().ToFullString();
+        var typeRewriter = new TypeRewriter(semanticModel, nameRule, doubleToFloatRule, mathToMathFRule);
+        var rewritten = typeRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
+        var rewrittenText = rewritten.NormalizeWhitespace().ToFullString();
 
         var fileText = $$"""            
             namespace {{template.Namespace ?? "CapriKit.Generated"}}
             {
                 partial class {{template.ClassName}}
                 {
-            {{IndentString("        ", methodText)}}
+            {{IndentString("        ", rewrittenText)}}
                 }
             }
             """;

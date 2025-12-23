@@ -12,6 +12,7 @@ internal class VariantGeneratorTests
         var variantGenerator = new VariantGenerator();
         var source = """
             using System;
+            using System.Collections.Generic;
             using Microsoft.CodeAnalysis;
 
             namespace CapriKit.PrecisionVariants
@@ -19,13 +20,12 @@ internal class VariantGeneratorTests
                 [Embedded]
                 [AttributeUsage(AttributeTargets.Method)]
                 internal sealed class GenerateFloatVariant : Attribute { }
-
-                internal static partial class Statistics
+                internal static partial class TestClass
                 {
                     [CapriKit.PrecisionVariants.GenerateFloatVariant]
-                    public static double StandardError(double standardDeviation, double count)
+                    public static double TestMethod(List<double> argument)
                     {
-                        return standardDeviation / Math.Sqrt(count);
+                        return Math.Sin(1.0);                        
                     }
                 }
             }                     
