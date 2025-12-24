@@ -17,7 +17,7 @@ public static partial class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double ForOneSample(double mean, double standardDeviation, int count, double referenceMean)
     {
         var standardError = Statistics.StandardError(standardDeviation, count);
@@ -32,7 +32,7 @@ public static partial class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double ForIndependentSamples(
         double meanA, double standardDeviationA, int countA,
         double meanB, double standardDeviationB, int countB)
@@ -53,7 +53,7 @@ public static partial class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double ForPairedSamples(ReadOnlySpan<double> before, ReadOnlySpan<double> after)
     {
         if (before.Length != after.Length)
@@ -85,7 +85,7 @@ public static partial class StudentTTest
     /// Calculates the degrees of freedom for Wekch's two-sample t-test in which the variances are not equal or unknown.
     /// Uses the Welch-Satterthwaite equation.
     /// </summary>
-    [GenerateFloatVariant]
+    //[GenerateFloatVariant]
     public static double GetDegreesOfFreedom(double standardDeviationA, int countA, double standardDeviationB, int countB)
     {
         double varianceA = standardDeviationA * standardDeviationA;

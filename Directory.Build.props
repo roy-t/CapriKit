@@ -35,13 +35,6 @@
     />
   </Target>
 
-  <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
-
   <!-- Versioning-->
   <Target Name="ReadVersion" BeforeTargets="BeforeBuild;GenerateNuspec">
     <ReadLinesFromFile File="$(MSBuildThisFileDirectory)version.txt">

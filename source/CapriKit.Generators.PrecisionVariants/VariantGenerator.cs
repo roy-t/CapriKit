@@ -75,6 +75,11 @@ public class VariantGenerator : IIncrementalGenerator
     {
         SyntaxNode? syntaxRoot = template.MethodDeclaration;
 
+        // TODO: Can the type annotator help to become better at guessing types?
+        // test by adding a second annotations like [MethodImpl(..)]
+        //var annotator = new TypeAnnotator(semanticModel);
+        //syntaxRoot = annotator.Visit(syntaxRoot);
+
         // Rewrite doubles to floats
         var nameRule = new FullyQualifiedNameRewriterRule();
         var doubleToFloatRule = new DoubleToFloatRewriteRule(compilation);
