@@ -1,91 +1,13 @@
+using CapriKit.Generators.PrecisionVariants.RewriteRules;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CapriKit.Generators.PrecisionVariants;
 
-internal interface ITypeRewriterRule
-{
-    public (TypeSyntax, ITypeSymbol) Rewrite(TypeSyntax syntax, ITypeSymbol symbol);
-}
-
-internal sealed class FullyQualifiedNameRewriterRule : ITypeRewriterRule
-{
-    private static readonly SymbolDisplayFormat FullyQualifiedTypeFormat = new(
-        globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
-        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-        genericsOptions:
-            SymbolDisplayGenericsOptions.IncludeTypeParameters |
-            SymbolDisplayGenericsOptions.IncludeVariance,
-        miscellaneousOptions:
-            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
-            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
-            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-
-    public (TypeSyntax, ITypeSymbol) Rewrite(TypeSyntax syntax, ITypeSymbol symbol)
-    {
-        if (SyntaxFacts.IsPredefinedType(syntax.Kind()))
-        {
-            return (syntax, symbol);
-        }
-
-        var qualifiedName = symbol.ToDisplayString(FullyQualifiedTypeFormat);
-        var qualifiedTypeSyntax = SyntaxFactory.ParseTypeName(qualifiedName)
-                                      .WithTriviaFrom(syntax);
-
-        return (qualifiedTypeSyntax, symbol);
-    }
-}
-
-internal sealed class DoubleToFloatRewriteRule : ITypeRewriterRule
-{
-    private readonly ITypeSymbol FloatTypeSymbol;
-
-    public DoubleToFloatRewriteRule(Compilation compilation)
-    {
-        FloatTypeSymbol = compilation.GetTypeByMetadataName("System.Single") ?? throw new Exception("Cannot find type float");
-    }
-
-    public (TypeSyntax, ITypeSymbol) Rewrite(TypeSyntax syntax, ITypeSymbol symbol)
-    {
-        if (syntax is not PredefinedTypeSyntax predefinedSyntax ||
-            !predefinedSyntax.Keyword.IsKind(SyntaxKind.DoubleKeyword))
-        {
-            return (syntax, symbol);
-        }
-
-        var floatSyntax = SyntaxFactory.PredefinedType(SyntaxFactory.Token(SyntaxKind.FloatKeyword))
-            .WithTriviaFrom(syntax);
-
-        return (floatSyntax, FloatTypeSymbol);
-    }
-}
-
-internal sealed class MathRewriteRule : ITypeRewriterRule
-{
-    private readonly ITypeSymbol MathFTypeSymbol;
-
-
-    public MathRewriteRule(Compilation compilation)
-    {
-        MathFTypeSymbol = compilation.GetTypeByMetadataName("System.MathF") ?? throw new Exception("Cannot find System.MathF");
-    }
-
-    public (TypeSyntax, ITypeSymbol) Rewrite(TypeSyntax syntax, ITypeSymbol symbol)
-    {
-        // TODO: doesn't work after rerwite to GLOBAL
-        if (syntax is not IdentifierNameSyntax identifierNameSyntax)
-        {
-            return (syntax, symbol);
-        }
-
-        var mathFSyntax = SyntaxFactory.IdentifierName("global::Systam::MathF")
-            .WithTriviaFrom(syntax);
-
-        return (mathFSyntax, MathFTypeSymbol);
-    }
-}
-
+/// <summary>
+/// Analyzes each type in the syntax tree and rewrites it according to the given type rewrite rules.
+/// </summary>
 internal sealed class TypeRewriter : CSharpSyntaxRewriter
 {
     private readonly SemanticModel SemanticModel;
@@ -100,8 +22,14 @@ internal sealed class TypeRewriter : CSharpSyntaxRewriter
 
     public override SyntaxNode? Visit(SyntaxNode? node)
     {
-        var position = node?.FullSpan.Start ?? 0;
+        var position = node?.SpanStart ?? 0;
         node = base.Visit(node);
+
+        if (node is AttributeListSyntax attributeList)
+        {
+            node = RewriteAttributeList(attributeList);
+        }
+
 
         if (node == null || node is not TypeSyntax typeSyntax)
         {
@@ -133,6 +61,7 @@ internal sealed class TypeRewriter : CSharpSyntaxRewriter
         var typeSymbol = typeInfo.Type;
         if (typeSymbol == null ||
             typeSymbol.TypeKind == TypeKind.TypeParameter ||
+            typeSymbol.TypeKind == TypeKind.Array ||
             typeSymbol.TypeKind == TypeKind.Dynamic)
         {
             return node;
@@ -144,5 +73,44 @@ internal sealed class TypeRewriter : CSharpSyntaxRewriter
         }
 
         return typeSyntax;
+    }
+
+    private SyntaxNode RewriteAttributeList(AttributeListSyntax attributeList)
+    {
+        var list = new List<AttributeSyntax>();
+        foreach (var attribute in attributeList.Attributes)
+        {
+            var position = attribute.SpanStart;
+            var attributeSymbol = attribute.SyntaxTree.HasCompilationUnitRoot
+                ? SemanticModel.GetSymbolInfo(attribute)
+                : SemanticModel.GetSpeculativeSymbolInfo(position, attribute, SpeculativeBindingOption.BindAsExpression);
+
+            if (attributeSymbol.Symbol != null && attributeSymbol.Symbol.ContainingType != null)
+            {
+                ITypeSymbol typeSymbol = attributeSymbol.Symbol.ContainingType;
+                TypeSyntax typeSyntax = attribute.Name;
+
+                foreach (var rule in Rules)
+                {
+                    (typeSyntax, typeSymbol) = rule.Rewrite(typeSyntax, typeSymbol);
+                }
+
+                if (typeSyntax is NameSyntax name)
+                {
+                    list.Add(attribute.WithName(name));
+                }
+                else
+                {
+                    var nameBestGuess = SyntaxFactory.ParseName(typeSyntax.ToFullString()).WithTriviaFrom(attribute.Name);
+                    list.Add(attribute.WithName(nameBestGuess));
+                }
+            }
+            else
+            {
+                list.Add(attribute);
+            }
+        }
+
+        return attributeList.WithAttributes(SyntaxFactory.SeparatedList(list));
     }
 }

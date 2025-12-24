@@ -21,7 +21,9 @@ public class AttributeGenerator : IIncrementalGenerator
             {
             """);
 
-            string[] types = ["SByte", "Byte", "Short", "UShort", "Int", "UInt", "Long", "ULong", "NInt", "NUInt", "Float", "Double", "Decimal"];
+            // TODO: add support for more primitive types
+            //string[] types = ["SByte", "Byte", "Short", "UShort", "Int", "UInt", "Long", "ULong", "NInt", "NUInt", "Float", "Double", "Decimal"];
+            string[] types = ["Float"];
             foreach (var t in types)
             {
                 builder.AppendLine($$"""

@@ -1,3 +1,4 @@
+using CapriKit.Generators.PrecisionVariants.RewriteRules;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -6,6 +7,11 @@ using System.Text;
 
 namespace CapriKit.Generators.PrecisionVariants;
 
+/// <summary>
+/// Generates new variants for methods attributed with a "CapriKit.PrecisionVariants.GenerateXYZVariant" attribute.
+/// For example, for the method `double Sum(double a, double b){ return a + b; }` we can generate a variant that
+/// works with floats, `float Sum(float a, float b){ return a + b; }`
+/// </summary>
 [Generator]
 public class VariantGenerator : IIncrementalGenerator
 {
@@ -67,13 +73,26 @@ public class VariantGenerator : IIncrementalGenerator
 
     private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template, Compilation compilation)
     {
+        SyntaxNode? syntaxRoot = template.MethodDeclaration;
+
+        // Rewrite doubles to floats
         var nameRule = new FullyQualifiedNameRewriterRule();
         var doubleToFloatRule = new DoubleToFloatRewriteRule(compilation);
-        var mathToMathFRule = new MathRewriteRule(compilation);
+        var mathToMathFRule = new MathRewriteRule(compilation);        
 
         var typeRewriter = new TypeRewriter(semanticModel, nameRule, doubleToFloatRule, mathToMathFRule);
-        var rewritten = typeRewriter.Visit(template.MethodDeclaration) ?? throw new Exception("Invalid rewrite");
-        var rewrittenText = rewritten.NormalizeWhitespace().ToFullString();
+        syntaxRoot = typeRewriter.Visit(syntaxRoot);
+
+        // Rewrite double literals to floats
+        var literalRewriter = new LiteralRewriter(semanticModel);
+        syntaxRoot = literalRewriter.Visit(syntaxRoot);
+
+        if (syntaxRoot == null)
+        {
+            throw new Exception("Invalid rewrite");
+        }
+
+        var rewrittenText = syntaxRoot.NormalizeWhitespace().ToFullString();
 
         var fileText = $$"""            
             namespace {{template.Namespace ?? "CapriKit.Generated"}}
@@ -96,7 +115,7 @@ public class VariantGenerator : IIncrementalGenerator
     private static string IndentString(string indent, string text)
     {
         var lines = text.Split('\n');
-        return indent + String.Join("\n" + indent, lines);
+        return indent + string.Join("\n" + indent, lines);
     }
 }
 

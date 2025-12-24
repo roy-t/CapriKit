@@ -1,25 +1,31 @@
 using CapriKit.Generators.PrecisionVariants;
 using CapriKit.Tests.TestUtilities;
 using Microsoft.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace CapriKit.Tests.Generators.PrecisionVariants;
 
 internal class VariantGeneratorTests
 {
-    [Test]
+    [Test]    
     public async Task Execute_MethodWithAttribute_IsRewritten()
     {
-        var variantGenerator = new VariantGenerator();
-        var source = """
+        var attributeSource = """
             using System;
-            using System.Collections.Generic;
-            using Microsoft.CodeAnalysis;
-
+            using System.Collections.Generic;            
+            
             namespace CapriKit.PrecisionVariants
             {
                 [Embedded]
                 [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateFloatVariant : Attribute { }
+                internal sealed class GenerateFloatVariant : Attribute { }            
+            }                     
+            """;
+
+        var variantGenerator = new VariantGenerator();
+        var source = attributeSource + """            
+            namespace Test.Namespace
+            {                
                 internal static partial class TestClass
                 {
                     [CapriKit.PrecisionVariants.GenerateFloatVariant]
@@ -30,11 +36,28 @@ internal class VariantGeneratorTests
                 }
             }                     
             """;
-
         var result = variantGenerator.Execute(source);
-        // The source generator can add other files, like the embedded attribute definition
-        await Assert.That(result.GeneratedFiles.Length).IsGreaterThanOrEqualTo(1);
-    }
+        
+        await Assert.That(result.Diagnostics.Length).IsZero();
+        await Assert.That(result.GeneratedFiles.Length).IsEqualTo(1);
+
+        var expected = """
+            namespace Test.Namespace
+            {
+                partial class TestClass
+                {
+                    [global::CapriKit.PrecisionVariants.GenerateFloatVariant]
+                    public static float TestMethod(global::System.Collections.Generic.List<float> argument)
+                    {
+                        return global::System.MathF.Sin(1f);
+                    }
+                }
+            }
+            """;
+
+        var generatedFile = result.GeneratedFiles[0].Source.ToString();
+        await Assert.That(generatedFile).IsEqualTo(expected).IgnoringWhitespace();
+    }    
 
     // TODO: it would be easier to test source generators using Microsoft.CodeAnalysis.Testing
     // but that doesn't work with the latest source generators

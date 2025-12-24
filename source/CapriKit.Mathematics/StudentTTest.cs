@@ -1,3 +1,4 @@
+using CapriKit.PrecisionVariants;
 using MathNet.Numerics.Distributions;
 
 namespace CapriKit.Mathematics;
@@ -7,7 +8,7 @@ namespace CapriKit.Mathematics;
 /// For all tests the null hypothesis is that there is no difference (t is close to zero). The alternative
 /// hypothesis is that there is a difference (t becomes larger).
 /// </summary>
-public static class StudentTTest
+public static partial class StudentTTest
 {
     /// <summary>
     /// Determines if the results of a survey are likely given a known value. 
@@ -16,6 +17,7 @@ public static class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
+    [GenerateFloatVariant]
     public static double ForOneSample(double mean, double standardDeviation, int count, double referenceMean)
     {
         var standardError = Statistics.StandardError(standardDeviation, count);
@@ -30,6 +32,7 @@ public static class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
+    [GenerateFloatVariant]
     public static double ForIndependentSamples(
         double meanA, double standardDeviationA, int countA,
         double meanB, double standardDeviationB, int countB)
@@ -50,6 +53,7 @@ public static class StudentTTest
     /// <returns>
     /// The t-score
     /// </returns>
+    [GenerateFloatVariant]
     public static double ForPairedSamples(ReadOnlySpan<double> before, ReadOnlySpan<double> after)
     {
         if (before.Length != after.Length)
@@ -81,6 +85,7 @@ public static class StudentTTest
     /// Calculates the degrees of freedom for Wekch's two-sample t-test in which the variances are not equal or unknown.
     /// Uses the Welch-Satterthwaite equation.
     /// </summary>
+    [GenerateFloatVariant]
     public static double GetDegreesOfFreedom(double standardDeviationA, int countA, double standardDeviationB, int countB)
     {
         double varianceA = standardDeviationA * standardDeviationA;

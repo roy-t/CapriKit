@@ -25,55 +25,8 @@ internal class AttributeGeneratorTests
             {
                 [Embedded]
                 [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateSByteVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateByteVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateShortVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateUShortVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateIntVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateUIntVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateLongVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateULongVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateNIntVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateNUIntVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
                 internal sealed class GenerateFloatVariant : Attribute { }
 
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateDoubleVariant : Attribute { }
-
-                [Embedded]
-                [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateDecimalVariant : Attribute { }
             }            
             """;
 
