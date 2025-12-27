@@ -75,6 +75,21 @@ public class VariantGenerator : IIncrementalGenerator
     {
         SyntaxNode? syntaxRoot = template.MethodDeclaration;
 
+        var fqn = new FullyQualifiedTypeNameAnnotator();
+        var prc = new TypePrecisionAnnotator();
+
+        var annotator = new TreeAnnotator(semanticModel, fqn, prc);
+        var annotatedRoot = annotator.Visit(syntaxRoot);
+
+        var rewriter = new TreeRewriter(fqn, prc);
+        var rewrittenRoot = rewriter.Visit(annotatedRoot);
+        if (rewrittenRoot != null)
+        { 
+            var text = rewrittenRoot.NormalizeWhitespace().ToFullString();
+            var f = "";
+        }
+
+
         // TODO: Can the type annotator help to become better at guessing types?
         // test by adding a second annotations like [MethodImpl(..)]
         //var annotator = new TypeAnnotator(semanticModel);
