@@ -43,41 +43,105 @@ internal abstract class ATreeVisitor(string annotationKey) : ITreeAnnotator, ITr
 
 internal sealed class FullyQualifiedTypeNameAnnotator() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NAME")
 {
-    private static readonly SymbolDisplayFormat Format = new(
-    globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
-    typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
-    genericsOptions:
-        SymbolDisplayGenericsOptions.IncludeTypeParameters |
-        SymbolDisplayGenericsOptions.IncludeVariance,
-    miscellaneousOptions:
-        SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
-        SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
-        SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
-
+    private static readonly SymbolDisplayFormat IdentifierFormat = new(
+        globalNamespaceStyle: SymbolDisplayGlobalNamespaceStyle.Included,
+        typeQualificationStyle: SymbolDisplayTypeQualificationStyle.NameAndContainingTypesAndNamespaces,
+        genericsOptions: SymbolDisplayGenericsOptions.None,
+        miscellaneousOptions:
+            SymbolDisplayMiscellaneousOptions.UseSpecialTypes |
+            SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers |
+            SymbolDisplayMiscellaneousOptions.IncludeNotNullableReferenceTypeModifier |
+            SymbolDisplayMiscellaneousOptions.IncludeNullableReferenceTypeModifier);
 
     public override SyntaxNode Annotate(SyntaxNode node, ISymbol symbol)
     {
-        // TODO: this might require special care for Attributes/AttributeLists
-
-        if (!SyntaxFacts.IsPredefinedType(node.Kind()) && symbol is ITypeSymbol typeSymbol)
+        if (SyntaxFacts.IsPredefinedType(node.Kind()))
         {
-            var name = typeSymbol.ToDisplayString(Format);
-            return Annotate(node, name);
+            return node;
+        }
+
+        if(node is NullableTypeSyntax n)
+        { }
+
+        switch (node)
+        {
+            // TODO: test with arrays, generics, nullables, pointers, tuples
+            case AttributeSyntax attribute:
+                return AnnotateAttribute(attribute, symbol);
+            case ArrayTypeSyntax:
+            case GenericNameSyntax:
+            case NullableTypeSyntax:
+            case PointerTypeSyntax:
+            case TupleTypeSyntax:
+            default:
+                if (symbol is ITypeSymbol typeSymbol)
+                {
+                    var name = typeSymbol.ToDisplayString(IdentifierFormat);
+                    return Annotate(node, name);
+                }
+                break;
         }
 
         return node;
+    }
+
+    private SyntaxNode AnnotateAttribute(AttributeSyntax attribute, ISymbol symbol)
+    {
+        var type = symbol.ContainingType;
+        var name = type.ToDisplayString(IdentifierFormat);
+        return Annotate(attribute, name);
     }
 
     public override SyntaxNode Execute(SyntaxNode node)
     {
         if (TryGetAnnotation(node, out string data))
         {
-            var typeNode = SyntaxFactory.ParseTypeName(data);
-            typeNode = node.CopyAnnotationsTo(typeNode);
-            return typeNode.WithTriviaFrom(node);
+            switch (node)
+            {
+                case AttributeSyntax attribute:
+                    return RewriteAttribute(attribute, data);
+                case GenericNameSyntax generic:
+                    return RewriteGenericName(generic, data);
+                case NullableTypeSyntax nullable:
+                    return RewriteNullableType(nullable, data);
+
+                case ArrayTypeSyntax:
+                case PointerTypeSyntax:
+                case TupleTypeSyntax:
+                default:
+                    var typeNode = SyntaxFactory.ParseTypeName(data);
+                    typeNode = node.CopyAnnotationsTo(typeNode);
+                    return typeNode.WithTriviaFrom(node);
+            }
         }
 
         return node;
+    }
+
+    private AttributeSyntax RewriteAttribute(AttributeSyntax attribute, string data)
+    {
+        var name = SyntaxFactory.ParseName(data);
+        var rewritten = attribute.WithName(name);
+        attribute.CopyAnnotationsTo(rewritten);
+        return rewritten.WithTriviaFrom(attribute);
+    }
+
+    private NullableTypeSyntax RewriteNullableType(NullableTypeSyntax nullable, string data)
+    {
+        var name = SyntaxFactory.ParseName(data);
+        var rewritten = nullable.WithElementType(name);
+        nullable.CopyAnnotationsTo(rewritten);
+        return rewritten.WithTriviaFrom(nullable);
+    }
+
+    private GenericNameSyntax RewriteGenericName(GenericNameSyntax generic, string data)
+    {
+        var identifier = SyntaxFactory.Identifier(data)
+                        .WithTriviaFrom(generic.Identifier);
+
+        var rewritten = generic.WithIdentifier(identifier);
+        generic.CopyAnnotationsTo(rewritten);
+        return rewritten.WithTriviaFrom(generic);
     }
 }
 
@@ -155,21 +219,24 @@ internal sealed class TreeAnnotator : CSharpSyntaxRewriter
 internal sealed class TreeRewriter(params IReadOnlyList<ITreeRewriter> Rewriters)
     : CSharpSyntaxRewriter
 {
-    public override SyntaxNode? Visit(SyntaxNode? node)
+    public override SyntaxNode? Visit(SyntaxNode? originalNode)
     {
-        if (node == null)
+        if (originalNode == null)
         {
             return null;
         }
 
-        // TODO: there is a bug somewhere that causes a float that is a generic type arugment to not be
-        // picked up
+        var rewrittenNode = base.Visit(originalNode);
+        if (rewrittenNode == null)
+        {
+            return null;
+        }
 
         foreach (var rewriter in Rewriters)
         {
-            node = rewriter.Execute(node);
+            rewrittenNode = rewriter.Execute(rewrittenNode);
         }
 
-        return base.Visit(node);
+        return rewrittenNode;
     }
 }

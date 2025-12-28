@@ -1,6 +1,7 @@
 using CapriKit.Generators.PrecisionVariants;
 using CapriKit.Tests.TestUtilities;
 using Microsoft.CodeAnalysis;
+using System.Reflection;
 
 namespace CapriKit.Tests.Generators.PrecisionVariants;
 
@@ -16,7 +17,68 @@ internal class VariantGeneratorTests
                 [AttributeUsage(AttributeTargets.Method)]
                 internal sealed class GenerateFloatVariant : Attribute { }            
             }                     
+            """;    
+
+    [Test]
+    public async Task Execute_AllTypeVariants_RewritesAllTypesToFullyQualifiedNames()
+    {
+        // Covers all type syntaxes:
+
+        // Simple	IdentifierNameSyntax, PredefinedTypeSyntax
+        // Generic  GenericNameSyntax
+        // Nullable NullableTypeSyntax
+        // Array    ArrayTypeSyntax
+        // Tuple    TupleTypeSyntax
+        // Pointer  PointerTypeSyntax
+
+
+        var variantGenerator = new VariantGenerator();
+        var source = AttributeSource + """            
+            namespace Test.Namespace
+            {
+                using CapriKit.PrecisionVariants;
+
+                internal static partial class TestClass
+                {
+                    [GenerateFloatVariant]
+                    internal static Array? TestMethod(object obj, List<Array> generic, Array[] array, (Array a, Array b) tuple)
+                    {
+                        unsafe
+                        {
+                            Array* pointer = null;
+                        }
+                        return null;
+                    }
+                }
+            }                     
             """;
+        var result = variantGenerator.Execute(source);
+
+        await Assert.That(result.Diagnostics.Length).IsZero();
+        await Assert.That(result.GeneratedFiles.Length).IsEqualTo(1);
+
+        var expected = """
+            namespace Test.Namespace
+            {
+                partial class TestClass
+                {
+                    [global::CapriKit.PrecisionVariants.GenerateFloatVariant]
+                    internal static global::System.Array? TestMethod(object obj, global::System.Collections.Generic.List<global::System.Array> generic, global::System.Array[] array, (global::System.Array a, global::System.Array b) tuple)
+                    {
+                        unsafe
+                        {
+                            global::System.Array* pointer = null;
+                        }
+
+                        return null;
+                    }
+                }
+            }
+            """;
+
+        var generatedFile = result.GeneratedFiles[0].Source.ToString();
+        await Assert.That(generatedFile).IsEqualTo(expected).IgnoringWhitespace();
+    }
 
     [Test]    
     public async Task Execute_IsRewritten()
@@ -24,10 +86,12 @@ internal class VariantGeneratorTests
         var variantGenerator = new VariantGenerator();
         var source = AttributeSource + """            
             namespace Test.Namespace
-            {                
+            {
+                using CapriKit.PrecisionVariants;
+
                 internal static partial class TestClass
                 {
-                    [CapriKit.PrecisionVariants.GenerateFloatVariant]
+                    [GenerateFloatVariant]
                     public static double TestMethod(List<double> argument)
                     {
                         return Math.Sin(1.0);                        
