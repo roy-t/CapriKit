@@ -40,7 +40,7 @@ internal sealed class TypeNameRewriter() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NA
             case AttributeSyntax attribute:
                 return AnnotateAttribute(attribute, symbol);
             default:
-                if (symbol is ITypeSymbol typeSymbol)
+                if (node is TypeSyntax && symbol is ITypeSymbol typeSymbol)
                 {
                     if (IsNullableValueType(typeSymbol, out ITypeSymbol typeArgument))
                     {

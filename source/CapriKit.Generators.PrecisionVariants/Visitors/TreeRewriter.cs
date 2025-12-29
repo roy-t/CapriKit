@@ -22,24 +22,14 @@ internal sealed class TreeRewriter
         return rewrittenNode;
     }
 
-    private sealed class InternalTreeWriter(ITreeRewriter Rewriter) : CSharpSyntaxRewriter
+    private sealed class InternalTreeWriter(ITreeRewriter Rewriter)
     {
-        public override SyntaxNode? Visit(SyntaxNode? originalNode)
+        public SyntaxNode Visit(SyntaxNode originalNode)
         {
-            if (originalNode == null)
-            {
-                return null;
-            }
+            var rewrittenNode = originalNode
+                .ReplaceNodes(originalNode.ChildNodes(), (originalChild, _) => Visit(originalChild));
 
-            var rewrittenNode = base.Visit(originalNode);
-            if (rewrittenNode == null)
-            {
-                return null;
-            }
-
-            rewrittenNode = Rewriter.Execute(rewrittenNode);
-
-            return rewrittenNode;
+            return Rewriter.Execute(rewrittenNode);
         }
     }
 }

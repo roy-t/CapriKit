@@ -43,7 +43,7 @@ internal class VariantGeneratorTests
                     [GenerateFloatVariant]
                     internal static Array? TestMethod(object obj, List<Array> generic, Array[] array, (Array a, Array b) tuple)
                     {
-                        double? x = null;
+                        double? x = Math.Sin(1.0);
                         unsafe
                         {
                             Array* pointer = null;

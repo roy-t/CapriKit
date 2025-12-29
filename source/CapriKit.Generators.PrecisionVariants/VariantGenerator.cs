@@ -78,9 +78,11 @@ public class VariantGenerator : IIncrementalGenerator
 
         var fqn = new TypeNameRewriter();
         var prc = PredefinedTypeRewriter.DoubleToFloat();
-        
-        var annotatedRoot = TreeAnnotator.Annotate(syntaxRoot, semanticModel, fqn, prc);
-        var rewrittenRoot = TreeRewriter.Rewrite(annotatedRoot, fqn, prc);
+        var lit = new Visitors.LiteralRewriter(LiteralRewriteRule.DoubleToFloat);
+        var mth = new MathRewriter();
+
+        var annotatedRoot = TreeAnnotator.Annotate(syntaxRoot, semanticModel, fqn, prc, lit, mth);
+        var rewrittenRoot = TreeRewriter.Rewrite(annotatedRoot, fqn, prc, lit, mth);
         
         if (rewrittenRoot != null)
         {

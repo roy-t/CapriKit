@@ -13,7 +13,7 @@ internal sealed class PredefinedTypeRewriter : ATreeVisitor
     private readonly SyntaxKind ToKind;
     private readonly string Id;
 
-    private PredefinedTypeRewriter(SyntaxKind fromKind, SyntaxKind toKind) : base("NUMERIC_VARIANT_TARGET")
+    private PredefinedTypeRewriter(SyntaxKind fromKind, SyntaxKind toKind) : base("PREDEFINED_TYPE_VARIANT_TARGET")
     {
         FromKind = fromKind;
         ToKind = toKind;

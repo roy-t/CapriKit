@@ -1,32 +1,61 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Globalization;
 
 namespace CapriKit.Generators.PrecisionVariants.Visitors
 {
+    public enum LiteralRewriteRule
+    {
+        DoubleToFloat
+    };
+
     internal class LiteralRewriter : ATreeVisitor
     {
-        public LiteralRewriter() : base("LITERAL_VARIANT_TARGET")
-        {
+        private readonly string Id;
+        private readonly LiteralRewriteRule Rule;
 
+        public LiteralRewriter(LiteralRewriteRule rule) : base("LITERAL_VARIANT_TARGET")
+        {
+            Id = Guid.NewGuid().ToString();
+            Rule = rule;
         }
 
         public override SyntaxNode Annotate(SyntaxNode node, ISymbol symbol)
         {
-            if (node.IsKind(SyntaxKind.NumericLiteralExpression) && node is LiteralExpressionSyntax literal)
+            if (node.IsKind(SyntaxKind.NumericLiteralExpression)
+                && node is LiteralExpressionSyntax literal
+                && ShouldAnnotate(literal.Token.Value))
             {
-                // TODO: assumes double to float
-                var value = literal.Token.Value;
-                var fValue = Convert.ToSingle(value);
-                var data = fValue.ToString("R", CultureInfo.InvariantCulture) + "f";
-                Annotate(node, data);
+                return Annotate(node, Id);
             }
+
+            return node;
+        }
+
+        private bool ShouldAnnotate(object? value)
+        {
+            return Rule switch
+            {
+                LiteralRewriteRule.DoubleToFloat => value is double,
+                _ => throw new ArgumentOutOfRangeException($"Unexpected rule {Rule}"),
+            };
         }
 
         public override SyntaxNode Execute(SyntaxNode node)
         {
-            throw new NotImplementedException();
+            if (TryGetAnnotation(node, out string data) && data.Equals(Id)
+                && node is LiteralExpressionSyntax literalNode)
+            {
+                var value = literalNode.Token.Value;
+                var targetValue = Convert.ToSingle(value);
+                var literal = SyntaxFactory.Literal(targetValue);
+
+                var expression = SyntaxFactory.LiteralExpression(SyntaxKind.NumericLiteralExpression, literal);
+                expression = node.CopyAnnotationsTo(expression);
+                return expression.WithTriviaFrom(node);
+            }
+
+            return node;
         }
     }
 }

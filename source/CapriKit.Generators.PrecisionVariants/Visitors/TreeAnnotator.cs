@@ -17,29 +17,23 @@ internal sealed class TreeAnnotator
     }
 
     private sealed class InternalTreeAnnotator(SemanticModel SemanticModel, IReadOnlyList<ITreeAnnotator> Annotators)
-        : CSharpSyntaxRewriter
     {
-        public override SyntaxNode? Visit(SyntaxNode? originalNode)
+        public SyntaxNode Visit(SyntaxNode originalNode)
         {
-            if (originalNode == null)
-            {
-                return null;
-            }
-
             var symbolInfo = SemanticModel.GetSymbolInfo(originalNode);
+            var typeInfo = SemanticModel.GetTypeInfo(originalNode);
 
-            var rewrittenNode = base.Visit(originalNode);
+            // Handles literals that do not have their own symbol
+            var symbol = symbolInfo.Symbol ?? typeInfo.Type;
 
-            if (rewrittenNode == null)
-            {
-                return null;
-            }
+            var rewrittenNode = originalNode
+                .ReplaceNodes(originalNode.ChildNodes(), (originalChild, _) => Visit(originalChild));
 
-            if (symbolInfo.Symbol != null)
+            if (symbol != null)
             {
                 foreach (var annotator in Annotators)
                 {
-                    rewrittenNode = annotator.Annotate(rewrittenNode, symbolInfo.Symbol);
+                    rewrittenNode = annotator.Annotate(rewrittenNode, symbol);
                 }
             }
 
