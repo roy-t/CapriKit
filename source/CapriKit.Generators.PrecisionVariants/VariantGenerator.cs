@@ -1,4 +1,5 @@
 using CapriKit.Generators.PrecisionVariants.RewriteRules;
+using CapriKit.Generators.PrecisionVariants.Visitors;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -75,16 +76,14 @@ public class VariantGenerator : IIncrementalGenerator
     {
         SyntaxNode? syntaxRoot = template.MethodDeclaration;
 
-        var fqn = new FullyQualifiedTypeNameAnnotator();
-        var prc = new TypePrecisionAnnotator();
-
-        var annotator = new TreeAnnotator(semanticModel, fqn, prc);
-        var annotatedRoot = annotator.Visit(syntaxRoot);
-
-        var rewriter = new TreeRewriter(fqn, prc);
-        var rewrittenRoot = rewriter.Visit(annotatedRoot);
+        var fqn = new TypeNameRewriter();
+        var prc = PredefinedTypeRewriter.DoubleToFloat();
+        
+        var annotatedRoot = TreeAnnotator.Annotate(syntaxRoot, semanticModel, fqn, prc);
+        var rewrittenRoot = TreeRewriter.Rewrite(annotatedRoot, fqn, prc);
+        
         if (rewrittenRoot != null)
-        { 
+        {
             var text = rewrittenRoot.NormalizeWhitespace().ToFullString();
             var f = "";
         }
@@ -98,7 +97,7 @@ public class VariantGenerator : IIncrementalGenerator
         // Rewrite doubles to floats
         var nameRule = new FullyQualifiedNameRewriterRule();
         var doubleToFloatRule = new DoubleToFloatRewriteRule(compilation);
-        var mathToMathFRule = new MathRewriteRule(compilation);        
+        var mathToMathFRule = new MathRewriteRule(compilation);
 
         var typeRewriter = new TypeRewriter(semanticModel, nameRule, doubleToFloatRule, mathToMathFRule);
         syntaxRoot = typeRewriter.Visit(syntaxRoot);

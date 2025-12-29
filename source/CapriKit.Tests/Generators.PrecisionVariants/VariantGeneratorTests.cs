@@ -43,6 +43,7 @@ internal class VariantGeneratorTests
                     [GenerateFloatVariant]
                     internal static Array? TestMethod(object obj, List<Array> generic, Array[] array, (Array a, Array b) tuple)
                     {
+                        double? x = null;
                         unsafe
                         {
                             Array* pointer = null;
