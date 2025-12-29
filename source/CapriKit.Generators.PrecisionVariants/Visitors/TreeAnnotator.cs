@@ -3,15 +3,16 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace CapriKit.Generators.PrecisionVariants.Visitors;
 
+/// <summary>
+/// Allows ITreeAnnotators to make annotations to the tree, while having access to the full semantic model.
+/// This annotation step is usually the precursor for a rewrite step. In which information from the annotations
+/// is used to determin if and how to rewrite a node. This is nccessary because the semantic model is invalidated
+/// as soon as a node or its child nodes are replaced.
+/// </summary>
 internal sealed class TreeAnnotator
 {
-    public static SyntaxNode? Annotate(SyntaxNode? tree, SemanticModel semanticModel, params IReadOnlyList<ITreeAnnotator> annotators)
+    public static SyntaxNode Annotate(SyntaxNode tree, SemanticModel semanticModel, params IReadOnlyList<ITreeAnnotator> annotators)
     {
-        if (tree == null)
-        {
-            return null;
-        }
-
         var treeAnnotator = new InternalTreeAnnotator(semanticModel, annotators);
         return treeAnnotator.Visit(tree);
     }

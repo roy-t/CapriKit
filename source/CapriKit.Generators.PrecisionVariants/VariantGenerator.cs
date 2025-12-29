@@ -1,4 +1,3 @@
-using CapriKit.Generators.PrecisionVariants.RewriteRules;
 using CapriKit.Generators.PrecisionVariants.Visitors;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -16,14 +15,14 @@ namespace CapriKit.Generators.PrecisionVariants;
 [Generator]
 public class VariantGenerator : IIncrementalGenerator
 {
-    private record MethodTemplate(string? Namespace, string ClassName, IMethodSymbol Method, MethodDeclarationSyntax MethodDeclaration, string Variant);
+    private record RewriteTemplate(string? Namespace, string ClassName, IMethodSymbol Symbol, MethodDeclarationSyntax Syntax, RewriteRule RewriteRule);
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var pipeline = context.SyntaxProvider.ForAttributeWithMetadataName(
             "CapriKit.PrecisionVariants.GenerateFloatVariant",
             static (syntaxNode, cancellationToken) => syntaxNode is BaseMethodDeclarationSyntax,
-            static (context, cancellationToken) => TransformToTemplate(context, cancellationToken, "float"));
+            static (context, cancellationToken) => TransformToTemplate(context, cancellationToken, RewriteRule.DoubleToFloat));
 
         var pipelineWithComp = pipeline.Combine(context.CompilationProvider);
 
@@ -34,7 +33,7 @@ public class VariantGenerator : IIncrementalGenerator
             {
                 try
                 {
-                    var semanticModel = compilation.GetSemanticModel(model.MethodDeclaration.SyntaxTree);
+                    var semanticModel = compilation.GetSemanticModel(model.Syntax.SyntaxTree);
                     var (hintName, source) = EmitVariant(semanticModel, model, compilation);
                     producer.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
                 }
@@ -49,7 +48,7 @@ public class VariantGenerator : IIncrementalGenerator
                         DiagnosticSeverity.Error,
                         true
                     );
-                    var location = model.Method.Locations.FirstOrDefault();
+                    var location = model.Symbol.Locations.FirstOrDefault();
                     var diagnostic = Diagnostic.Create(description, location, ex.Message);
 
                     producer.ReportDiagnostic(diagnostic);
@@ -58,7 +57,7 @@ public class VariantGenerator : IIncrementalGenerator
         });
     }
 
-    private static MethodTemplate? TransformToTemplate(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken, string variant)
+    private static RewriteTemplate? TransformToTemplate(GeneratorAttributeSyntaxContext context, CancellationToken cancellationToken, RewriteRule rewriteRule)
     {
         var symbol = context.SemanticModel.GetDeclaredSymbol(context.TargetNode, cancellationToken);
         if (symbol is IMethodSymbol method && context.TargetNode is MethodDeclarationSyntax methodDeclaration)
@@ -66,66 +65,39 @@ public class VariantGenerator : IIncrementalGenerator
             var @class = context.TargetSymbol.ContainingType;
             var @namespace = GetNamespace(@class.ContainingNamespace);
 
-            return new MethodTemplate(@namespace, @class.Name, method, methodDeclaration, variant);
+            return new RewriteTemplate(@namespace, @class.Name, method, methodDeclaration, rewriteRule);
         }
 
         return null;
     }
 
-    private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, MethodTemplate template, Compilation compilation)
+    private static (string hintName, string source) EmitVariant(SemanticModel semanticModel, RewriteTemplate template, Compilation compilation)
     {
-        SyntaxNode? syntaxRoot = template.MethodDeclaration;
-
-        var fqn = new TypeNameRewriter();
-        var prc = PredefinedTypeRewriter.DoubleToFloat();
-        var lit = new Visitors.LiteralRewriter(LiteralRewriteRule.DoubleToFloat);
-        var mth = new MathRewriter();
-
-        var annotatedRoot = TreeAnnotator.Annotate(syntaxRoot, semanticModel, fqn, prc, lit, mth);
-        var rewrittenRoot = TreeRewriter.Rewrite(annotatedRoot, fqn, prc, lit, mth);
-        
-        if (rewrittenRoot != null)
+        var visitors = new ATreeVisitor[]
         {
-            var text = rewrittenRoot.NormalizeWhitespace().ToFullString();
-            var f = "";
-        }
+            new TypeNameRewriter(),
+            new PredefinedTypeRewriter(template.RewriteRule),
+            new LiteralRewriter(template.RewriteRule),
+            new MathRewriter(template.RewriteRule)
+        };
 
+        var syntaxRoot = template.Syntax;
+        var annotatedRoot = TreeAnnotator.Annotate(syntaxRoot, semanticModel, visitors);
+        var rewrittenRoot = TreeRewriter.Rewrite(annotatedRoot, visitors);
 
-        // TODO: Can the type annotator help to become better at guessing types?
-        // test by adding a second annotations like [MethodImpl(..)]
-        //var annotator = new TypeAnnotator(semanticModel);
-        //syntaxRoot = annotator.Visit(syntaxRoot);
+        var methodText = rewrittenRoot.NormalizeWhitespace().ToFullString();
 
-        // Rewrite doubles to floats
-        var nameRule = new FullyQualifiedNameRewriterRule();
-        var doubleToFloatRule = new DoubleToFloatRewriteRule(compilation);
-        var mathToMathFRule = new MathRewriteRule(compilation);
-
-        var typeRewriter = new TypeRewriter(semanticModel, nameRule, doubleToFloatRule, mathToMathFRule);
-        syntaxRoot = typeRewriter.Visit(syntaxRoot);
-
-        // Rewrite double literals to floats
-        var literalRewriter = new LiteralRewriter(semanticModel);
-        syntaxRoot = literalRewriter.Visit(syntaxRoot);
-
-        if (syntaxRoot == null)
-        {
-            throw new Exception("Invalid rewrite");
-        }
-
-        var rewrittenText = syntaxRoot.NormalizeWhitespace().ToFullString();
-
-        var fileText = $$"""            
+        var fileText = $$"""
             namespace {{template.Namespace ?? "CapriKit.Generated"}}
             {
                 partial class {{template.ClassName}}
                 {
-            {{IndentString("        ", rewrittenText)}}
+            {{IndentString("        ", methodText)}}
                 }
             }
             """;
 
-        return ($"{template.ClassName}_{template.Method.Name}_{template.Variant}.g.cs", fileText);
+        return ($"{template.ClassName}_{template.Symbol.Name}_{template.RewriteRule}.g.cs", fileText);
     }
 
     private static string? GetNamespace(INamespaceSymbol? symbol)

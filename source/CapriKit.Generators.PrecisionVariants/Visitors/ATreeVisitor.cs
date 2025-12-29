@@ -3,11 +3,14 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace CapriKit.Generators.PrecisionVariants.Visitors;
 
+/// <summary>
+/// Helper class that makes sure annotators and rewrites use the correct key to store and request data
+/// </summary>
 internal abstract class ATreeVisitor(string annotationKey) : ITreeAnnotator, ITreeRewriter
 {
     public abstract SyntaxNode Annotate(SyntaxNode node, ISymbol symbol);
 
-    public abstract SyntaxNode Execute(SyntaxNode node);
+    public abstract SyntaxNode Rewrite(SyntaxNode node);
 
     protected string AnnotationKey { get; } = annotationKey;
 

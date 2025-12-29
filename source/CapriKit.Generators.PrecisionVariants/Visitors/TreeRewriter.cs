@@ -3,15 +3,15 @@ using Microsoft.CodeAnalysis.CSharp;
 
 namespace CapriKit.Generators.PrecisionVariants.Visitors;
 
+/// <summary>
+/// Allows ITreeRewriters to rewrite nodes in the tree. This is usually done after adding annotations
+/// with rewrite instructions to the tree/syntax nodes, using the TreeAnnotator. As rewriters do not have access
+/// to any other information than the syntax node themselves.
+/// </summary>
 internal sealed class TreeRewriter
 {
-    public static SyntaxNode? Rewrite(SyntaxNode? tree, params IReadOnlyList<ITreeRewriter> rewriters)
+    public static SyntaxNode Rewrite(SyntaxNode tree, params IReadOnlyList<ITreeRewriter> rewriters)
     {
-        if (tree == null)
-        {
-            return null;
-        }
-
         var rewrittenNode = tree;
         foreach (var rewriteRule in rewriters)
         {
@@ -29,7 +29,7 @@ internal sealed class TreeRewriter
             var rewrittenNode = originalNode
                 .ReplaceNodes(originalNode.ChildNodes(), (originalChild, _) => Visit(originalChild));
 
-            return Rewriter.Execute(rewrittenNode);
+            return Rewriter.Rewrite(rewrittenNode);
         }
     }
 }

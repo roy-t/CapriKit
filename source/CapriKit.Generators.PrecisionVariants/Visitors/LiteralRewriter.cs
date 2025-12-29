@@ -4,18 +4,19 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CapriKit.Generators.PrecisionVariants.Visitors
 {
-    public enum LiteralRewriteRule
-    {
-        DoubleToFloat
-    };
-
+    /// <summary>
+    /// Rewrites literals (e.g. 1.0) to literals of a different type (e.g. 1.0f)
+    /// </summary>
     internal class LiteralRewriter : ATreeVisitor
     {
         private readonly string Id;
-        private readonly LiteralRewriteRule Rule;
+        private readonly RewriteRule Rule;
 
-        public LiteralRewriter(LiteralRewriteRule rule) : base("LITERAL_VARIANT_TARGET")
+        public LiteralRewriter(RewriteRule rule) : base("LITERAL_VARIANT_TARGET")
         {
+            // Use a guid to uniquely identify the rewriter with this rule
+            // so that we do not accidentaly rewrite nodes that another instance,
+            // with a different rule, would like to change.
             Id = Guid.NewGuid().ToString();
             Rule = rule;
         }
@@ -36,12 +37,12 @@ namespace CapriKit.Generators.PrecisionVariants.Visitors
         {
             return Rule switch
             {
-                LiteralRewriteRule.DoubleToFloat => value is double,
+                RewriteRule.DoubleToFloat => value is double,
                 _ => throw new ArgumentOutOfRangeException($"Unexpected rule {Rule}"),
             };
         }
 
-        public override SyntaxNode Execute(SyntaxNode node)
+        public override SyntaxNode Rewrite(SyntaxNode node)
         {
             if (TryGetAnnotation(node, out string data) && data.Equals(Id)
                 && node is LiteralExpressionSyntax literalNode)

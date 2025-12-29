@@ -36,11 +36,15 @@ internal sealed class TypeNameRewriter() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NA
 
         switch (node)
         {
-            // Attributes do not implement ITypeSymbol and when walking            
+            // Attributes do not implement ITypeSymbol and when walking
             case AttributeSyntax attribute:
                 return AnnotateAttribute(attribute, symbol);
+            case ArrayTypeSyntax array:
+                return AnnotateArray(array, symbol);
             default:
-                if (node is TypeSyntax && symbol is ITypeSymbol typeSymbol)
+                if (node is TypeSyntax typeSyntax &&
+                    !typeSyntax.IsVar &&
+                    symbol is ITypeSymbol typeSymbol)
                 {
                     if (IsNullableValueType(typeSymbol, out ITypeSymbol typeArgument))
                     {
@@ -79,7 +83,20 @@ internal sealed class TypeNameRewriter() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NA
         return Annotate(attribute, name);
     }
 
-    public override SyntaxNode Execute(SyntaxNode node)
+    private SyntaxNode AnnotateArray(ArrayTypeSyntax array, ISymbol symbol)
+    {
+        // Note: this does not handle jagged arrays
+        if (symbol is IArrayTypeSymbol arrayType)
+        {
+            var type = arrayType.ElementType;
+            var name = type.ToDisplayString(TypeNameFormat);
+            return Annotate(array, name);
+        }
+
+        throw new NotSupportedException("Cannot handle an ArrayTypSyntax without a corresponding IArrayTypeSymbol");
+    }
+
+    public override SyntaxNode Rewrite(SyntaxNode node)
     {
         if (TryGetAnnotation(node, out string data))
         {
@@ -88,6 +105,8 @@ internal sealed class TypeNameRewriter() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NA
                 // Take special care when rewriting syntax nodes that 'wrap' a type
                 case AttributeSyntax attribute:
                     return RewriteAttribute(attribute, data);
+                case ArrayTypeSyntax array:
+                    return RewriteArray(array, data);
                 case GenericNameSyntax generic:
                     return RewriteGenericName(generic, data);
                 case NullableTypeSyntax nullable:
@@ -101,6 +120,15 @@ internal sealed class TypeNameRewriter() : ATreeVisitor("FULLY_QUALIFIED_TYPE_NA
         }
 
         return node;
+    }
+
+    private SyntaxNode RewriteArray(ArrayTypeSyntax array, string data)
+    {
+        var elementType = SyntaxFactory.ParseTypeName(data);
+        elementType = array.ElementType.CopyAnnotationsTo(elementType)
+                        .WithTriviaFrom(array.ElementType);
+
+        return array.WithElementType(elementType);
     }
 
     private AttributeSyntax RewriteAttribute(AttributeSyntax attribute, string data)

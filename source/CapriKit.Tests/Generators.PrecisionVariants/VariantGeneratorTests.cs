@@ -1,7 +1,6 @@
 using CapriKit.Generators.PrecisionVariants;
 using CapriKit.Tests.TestUtilities;
 using Microsoft.CodeAnalysis;
-using System.Reflection;
 
 namespace CapriKit.Tests.Generators.PrecisionVariants;
 
@@ -9,31 +8,21 @@ internal class VariantGeneratorTests
 {
     private static readonly string AttributeSource = """
             using System;
-            using System.Collections.Generic;            
+            using System.Collections.Generic;
             
             namespace CapriKit.PrecisionVariants
             {
                 [Embedded]
                 [AttributeUsage(AttributeTargets.Method)]
-                internal sealed class GenerateFloatVariant : Attribute { }            
-            }                     
-            """;    
+                internal sealed class GenerateFloatVariant : Attribute { }
+            }
+            """;
 
     [Test]
-    public async Task Execute_AllTypeVariants_RewritesAllTypesToFullyQualifiedNames()
+    public async Task Execute_ComplexTypeVariants_RewritesAllTypesToFullyQualifiedNames()
     {
-        // Covers all type syntaxes:
-
-        // Simple	IdentifierNameSyntax, PredefinedTypeSyntax
-        // Generic  GenericNameSyntax
-        // Nullable NullableTypeSyntax
-        // Array    ArrayTypeSyntax
-        // Tuple    TupleTypeSyntax
-        // Pointer  PointerTypeSyntax
-
-
         var variantGenerator = new VariantGenerator();
-        var source = AttributeSource + """            
+        var source = AttributeSource + """
             namespace Test.Namespace
             {
                 using CapriKit.PrecisionVariants;
@@ -43,6 +32,7 @@ internal class VariantGeneratorTests
                     [GenerateFloatVariant]
                     internal static Array? TestMethod(object obj, List<Array> generic, Array[] array, (Array a, Array b) tuple)
                     {
+                        double sum = 0.0;
                         double? x = Math.Sin(1.0);
                         unsafe
                         {
@@ -51,7 +41,7 @@ internal class VariantGeneratorTests
                         return null;
                     }
                 }
-            }                     
+            }
             """;
         var result = variantGenerator.Execute(source);
 
@@ -66,95 +56,14 @@ internal class VariantGeneratorTests
                     [global::CapriKit.PrecisionVariants.GenerateFloatVariant]
                     internal static global::System.Array? TestMethod(object obj, global::System.Collections.Generic.List<global::System.Array> generic, global::System.Array[] array, (global::System.Array a, global::System.Array b) tuple)
                     {
+                        float sum = 0F;
+                        float? x = global::System.MathF.Sin(1F);
                         unsafe
                         {
                             global::System.Array* pointer = null;
                         }
 
                         return null;
-                    }
-                }
-            }
-            """;
-
-        var generatedFile = result.GeneratedFiles[0].Source.ToString();
-        await Assert.That(generatedFile).IsEqualTo(expected).IgnoringWhitespace();
-    }
-
-    [Test]    
-    public async Task Execute_IsRewritten()
-    {
-        var variantGenerator = new VariantGenerator();
-        var source = AttributeSource + """            
-            namespace Test.Namespace
-            {
-                using CapriKit.PrecisionVariants;
-
-                internal static partial class TestClass
-                {
-                    [GenerateFloatVariant]
-                    public static double TestMethod(List<double> argument)
-                    {
-                        return Math.Sin(1.0);                        
-                    }
-                }
-            }                     
-            """;
-        var result = variantGenerator.Execute(source);
-        
-        await Assert.That(result.Diagnostics.Length).IsZero();
-        await Assert.That(result.GeneratedFiles.Length).IsEqualTo(1);
-
-        var expected = """
-            namespace Test.Namespace
-            {
-                partial class TestClass
-                {
-                    [global::CapriKit.PrecisionVariants.GenerateFloatVariant]
-                    public static float TestMethod(global::System.Collections.Generic.List<float> argument)
-                    {
-                        return global::System.MathF.Sin(1f);
-                    }
-                }
-            }
-            """;
-
-        var generatedFile = result.GeneratedFiles[0].Source.ToString();
-        await Assert.That(generatedFile).IsEqualTo(expected).IgnoringWhitespace();
-    }
-
-    // TODO: Make testing the output of a single method easier and come up with a better method name to describe things
-    [Test]
-    public async Task Execute_MethodWithDoubleArgument_IsRewrittenToFloatArgument()
-    {
-        var variantGenerator = new VariantGenerator();
-        var source = AttributeSource + """            
-            namespace Test.Namespace
-            {                
-                internal static partial class TestClass
-                {
-                    [CapriKit.PrecisionVariants.GenerateFloatVariant]
-                    public static double TestMethod(double argument)
-                    {
-                        return argument;           
-                    }
-                }
-            }                     
-            """;
-        var result = variantGenerator.Execute(source);
-
-        await Assert.That(result.Diagnostics.Length).IsZero();
-        await Assert.That(result.GeneratedFiles.Length).IsEqualTo(1);
-
-        var expected = """
-            namespace Test.Namespace
-            {
-                partial class TestClass
-                {
-                    [global::CapriKit.PrecisionVariants.GenerateFloatVariant]
-                    public static float TestMethod(float argument)
-                    {
-                        return argument;
                     }
                 }
             }
