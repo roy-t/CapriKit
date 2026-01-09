@@ -7,6 +7,9 @@ using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
+// TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
+// This works like `dotnet test --treenode-filter /*/*/*/SampleStandardDeviation_OfArray_ReturnsSD`
+
 internal sealed class TestCommand : Command<TestCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)

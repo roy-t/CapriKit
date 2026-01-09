@@ -7,6 +7,8 @@ using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
+// TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
+
 internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
