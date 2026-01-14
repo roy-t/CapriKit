@@ -2,18 +2,10 @@
   <ItemGroup>
     <!-- Exclude the runtime assets for Microsoft build to ensure it uses the system version
          https://github.com/microsoft/MSBuildLocator/blob/55ff263d5a99f91a215c9ca5fbba8ccfa3371fe5/docs/diagnostics/MSBL001.md-->
-    <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime" /> <!-- Use the system's installed MSBuild -->
-    <PackageReference Include="Microsoft.Build.Framework" Version="18.0.2" ExcludeAssets="runtime" />
-    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime" />
+    <PackageReference Include="Microsoft.Build" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all" /> <!-- Use the system's installed MSBuild -->
+    <PackageReference Include="Microsoft.Build.Framework" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all"/>
+    <PackageReference Include="Microsoft.Build.Utilities.Core" Version="18.0.2" ExcludeAssets="runtime" PrivateAssets="all"/>
     
-    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <PackageReference Update="Microsoft.NET.Test.Sdk" Version="18.0.1" />
-    <PackageReference Update="xunit.runner.visualstudio" Version="3.1.5">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Update="xunit.v3" Version="3.2.1" />
+    <PackageReference Include="Microsoft.Build.Locator" Version="1.11.2" PrivateAssets="all"/>
   </ItemGroup>
 </Project>
