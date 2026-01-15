@@ -22,6 +22,12 @@ internal class VariantGeneratorTests
         // Use chaining to automatically add the embedded attribute and add the input and output stuff
         // See: https://tunit.dev/docs/assertions/extensibility/extensibility-chaining-and-converting
         await Assert.That(emptySource).GeneratesFiles<AttributeGenerator>(generatedFiles);
+
+
+        // await Assert.That(SourceGenerator.OfType<X>())
+        //  .WithInputSourceFiles(emptySource)
+        //  .WithInputAdditionalFiles(emptySource)
+        //  .Generates(generatedFiles, generatedDiagnostics);
     }
 
 
