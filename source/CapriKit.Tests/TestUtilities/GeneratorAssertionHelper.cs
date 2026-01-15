@@ -5,6 +5,7 @@ using Microsoft.CodeAnalysis.Text;
 using Mono.Cecil;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using TUnit.Assertions.Conditions;
 using TUnit.Assertions.Core;
 
 namespace CapriKit.Tests.TestUtilities;
@@ -62,21 +63,43 @@ internal sealed class SourceGeneratorGeneratesFilesAssertion<T> : Assertion<Sour
     }
 }
 
+//internal sealed class SourceGeneratorWithInputsGeneratesFilesAssertion<T> : Assertion<SourceGenerator<T>>
+//    where T : IIncrementalGenerator, new()
+//{
+//    public SourceGeneratorWithInputsGeneratesFilesAssertion(
+//        AssertionContext<SourceGenerator<T>> context,
+//        SourceGeneratorInput input)
+//        : base(context.Map(context => SourceGeneratorAssertionExtensions.AddFiles(context, input))){ }
+
+//    protected override string GetExpectation() => "with inputs";
+
+//    protected override async Task<AssertionResult> CheckAsync(EvaluationMetadata<SourceGenerator<T>> metadata)
+//    {
+//        return AssertionResult.Passed;
+//    }
+//}
+
 internal static class SourceGeneratorAssertionExtensions
 {
     public static IAssertionSource<SourceGenerator<T>> WithAdditionalFiles<T>(
-        this IAssertionSource<SourceGenerator<T>> source)
+        this IAssertionSource<SourceGenerator<T>> source,
+        SourceGeneratorInput input)
         where T : IIncrementalGenerator, new()
     {
+
+        var value = source.Context.Map(x => AddFiles(x, input));
+        return new AssertionSourceAdapter<SourceGenerator<T>>(value);
+
         // TODO: somehow access the generator in the IAssertionSource and add context
-        var value = source.Context.Map(AddFiles);
+        
         
     }
 
-    private static SourceGenerator<T>? AddFiles<T>(SourceGenerator<T>? original)
+    public static SourceGenerator<T>? AddFiles<T>(SourceGenerator<T>? original, SourceGeneratorInput input)
         where T : IIncrementalGenerator, new()
     {
-        return original;
+        // TODO: incorporate original
+        return new SourceGeneratorWithInputs<T>(input);
     }
 
     public static SourceGeneratorGeneratesFilesAssertion<T> GeneratesFiles<T>(
