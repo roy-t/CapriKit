@@ -72,7 +72,7 @@ internal class VariantGeneratorTests
 
         IEnumerable<(string fileName, SourceText content)> inputFiles =
         [
-            new (@"PrecisionVariants.cs", SourceText.From(attributeSource, Encoding.UTF8)),
+            new (@"Attribute.cs", SourceText.From(attributeSource, Encoding.UTF8)),
             new (@"Input.cs", SourceText.From(inputSource, Encoding.UTF8))
         ];
 
