@@ -107,8 +107,36 @@ public class VariantGenerator : IIncrementalGenerator
 
     private static string IndentString(string indent, string text)
     {
-        var lines = text.Split('\n');
-        return indent + string.Join("\n" + indent, lines);
+        if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(indent))
+        {
+            return text;
+        }
+
+        var builder = new StringBuilder();
+        var atLineStart = true;
+        var i = 0;
+
+        while (i < text.Length)
+        {
+            if (atLineStart)
+            {
+                // Do not indent empty lines
+                if (text[i] != '\r' && text[i] != '\n')
+                {
+                    builder.Append(indent);
+                }
+                atLineStart = false;
+            }
+
+            var c = text[i++];
+            builder.Append(c);
+            if (c == '\n')
+            {
+                atLineStart = true;
+            }
+        }
+
+        return builder.ToString();
     }
 }
 
