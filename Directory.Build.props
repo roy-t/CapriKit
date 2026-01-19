@@ -55,6 +55,19 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
+  <!-- Include a specific README.md file if possible, otherwise choose the generic one -->
+  <PropertyGroup>
+    <LocalReadme>$(MSBuildProjectDirectory)\README.md</LocalReadme>
+    <BackupReadme>$(MSBuildThisFileDirectory)README.md</BackupReadme>
+
+    <ChosenReadme Condition="Exists('$(LocalReadme)')">$(LocalReadme)</ChosenReadme>
+    <ChosenReadme Condition="!Exists('$(LocalReadme)')">$(BackupReadme)</ChosenReadme>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(ChosenReadme)" Pack="true" PackagePath="" />
+  </ItemGroup>
+
   <!-- Output settings -->
   <PropertyGroup>
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>

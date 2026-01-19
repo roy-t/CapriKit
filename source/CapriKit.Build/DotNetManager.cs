@@ -5,6 +5,51 @@ namespace CapriKit.Build;
 public static class DotNetManager
 {
     /// <summary>
+    /// Runs `dotnet build --no-restore` on a solution or project. Defaults to the build targets if none specified    
+    /// </summary>    
+    public static Action Build(StreamWriter logStream, string path, string configuration, params string[] targets)
+    {
+        var workingDirectory = Path.GetDirectoryName(path);
+
+        var argumentList = new List<string>();
+        argumentList.Add("build");
+        argumentList.Add(path);
+        argumentList.Add("--no-restore");
+        argumentList.Add("--configuration");
+        argumentList.Add(configuration);
+        if (targets.Length > 0)
+        {
+            argumentList.Add($"-t:{string.Join(',', targets)}");
+        }
+        AppendLogArguments(argumentList);
+
+        return CreateTask(logStream, argumentList, workingDirectory, $"dotnet build for {path}");
+
+    }
+
+    /// <summary>
+    /// Runs `dotnet pack --no-restore` on a solution or project. Defaults to the build targets if none specified    
+    /// </summary>    
+    public static Action Pack(StreamWriter logStream, string path, string configuration)
+    {
+        var workingDirectory = Path.GetDirectoryName(path);
+
+        var argumentList = new List<string>();
+        argumentList.Add("pack");
+        argumentList.Add(path);
+        argumentList.Add("--no-restore");
+        argumentList.Add("--no-build");
+        argumentList.Add("--include-symbols");
+        argumentList.Add("--include-source");
+        argumentList.Add("--configuration");
+        argumentList.Add(configuration);
+        AppendLogArguments(argumentList);
+
+        return CreateTask(logStream, argumentList, workingDirectory, $"dotnet build for {path}");
+
+    }
+
+    /// <summary>
     /// Runs `dotnet run` on one projects in the solution.
     /// Assumes the project has already been built
     /// </summary>    
@@ -63,7 +108,7 @@ public static class DotNetManager
     /// <summary>
     /// Runs `dotnet test --no-restore` on all projects in the solution.
     /// </summary>    
-    public static Action Test(StreamWriter logStream, string solutionPath, string testReportDirectory, string testReportFileName)
+    public static Action Test(StreamWriter logStream, string solutionPath, string configuration, string testReportDirectory, string testReportFileName)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -73,7 +118,7 @@ public static class DotNetManager
         argumentList.Add("--no-build");
         argumentList.Add("--no-restore");
         argumentList.Add("--configuration");
-        argumentList.Add(MSBuildManager.WellKnownConfigurations.Test);
+        argumentList.Add(configuration);
         argumentList.Add("--results-directory");
         argumentList.Add(testReportDirectory);
         argumentList.Add("--report-trx");

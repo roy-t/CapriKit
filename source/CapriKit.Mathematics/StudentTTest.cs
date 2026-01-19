@@ -101,7 +101,7 @@ public static partial class StudentTTest
             (Math.Pow(termB, 2) / (countB - 1));
 
         return numerator / denominator;
-    }    
+    }
 
     /// <summary>
     /// Computes the probability of seeing this t-value if the H0 hypothesis is true

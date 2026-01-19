@@ -3,7 +3,6 @@ using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Text.Json;
-using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
@@ -13,7 +12,6 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        MSBuildManager.InitializeMsBuild();
         var startTime = DateTime.Now;
 
         var (solutionPath, _, testResultsDirectory, _, benchmarkResultsFileName) = BuildUtilities.GatherBuildInputs();
@@ -23,7 +21,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         using var logger = BuildUtilities.CreateBuildLogger();
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
-        taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
+        taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));
         taskList.AddTask("Benchmark", DotNetManager.Run(logger.Writer, solutionPath, projectPath, WellKnownConfigurations.Release, testResultsDirectory));
 
         var results = taskList.Execute(cancellationToken);

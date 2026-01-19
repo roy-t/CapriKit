@@ -7,8 +7,8 @@ internal class StatisticsTests
     [Test]
     public async Task Mean_OfArray_ReturnsAverage()
     {
-        double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];        
-        await Assert.That(Statistics.Mean(values)).IsEqualTo(3.0);        
+        double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];
+        await Assert.That(Statistics.Mean(values)).IsEqualTo(3.0);
     }
 
     [Test]

@@ -8,7 +8,7 @@ internal class StudentTTestTests
 {
     [Test]
     public async Task ForOneSample_ReturnsT()
-    {        
+    {
         var mean = 3.0;
         var sd = 1.581;
         var count = 5;

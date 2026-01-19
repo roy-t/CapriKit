@@ -25,7 +25,7 @@ public static partial class Statistics
     /// </summary>
     [GenerateFloatVariant]
     public static double PopulationStandardDeviation(double mean, params ReadOnlySpan<double> values)
-    {        
+    {
         var sum = 0.0;
         for (var i = 0; i < values.Length; i++)
         {

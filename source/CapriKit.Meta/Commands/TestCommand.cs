@@ -3,7 +3,6 @@ using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using TrxFileParser;
-using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
@@ -14,7 +13,6 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        MSBuildManager.InitializeMsBuild();
         var startTime = DateTime.Now;
 
         var (solutionPath, _, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
@@ -24,8 +22,8 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
-        taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
-        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
+        taskList.AddTask("Build Test", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Test));
+        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, WellKnownConfigurations.Test, testResultsDirectory, testResultsFileName));
 
         var results = taskList.Execute(cancellationToken);
 

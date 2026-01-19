@@ -8,7 +8,7 @@ namespace CapriKit.Generators.PrecisionVariants;
 public class AttributeGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
-    { 
+    {
         context.RegisterPostInitializationOutput(static postInitializationContext =>
         {
             postInitializationContext.AddEmbeddedAttributeDefinition();

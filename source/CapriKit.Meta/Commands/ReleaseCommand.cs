@@ -1,9 +1,7 @@
 using CapriKit.Build;
 using CapriKit.Meta.Utilities;
-using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
-using static CapriKit.Build.MSBuildManager;
 
 namespace CapriKit.Meta.Commands;
 
@@ -22,29 +20,27 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
-        MSBuildManager.InitializeMsBuild();
-
         var (solutionPath, packagePath, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
         using var logger = BuildUtilities.CreateBuildLogger();
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
         taskList.AddTask("Format", DotNetManager.Format(logger.Writer, solutionPath));
-        taskList.AddTask("Build Test", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Test, WellKnownTargets.Build));
-        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, testResultsDirectory, testResultsFileName));
-        taskList.AddTask("Build Release", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Build));
-        taskList.AddTask("Pack", MSBuildManager.BuildSolution(logger.Writer, solutionPath, WellKnownConfigurations.Release, WellKnownTargets.Pack));
+        taskList.AddTask("Build Test", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Test));
+        taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, WellKnownConfigurations.Test, testResultsDirectory, testResultsFileName));
+        taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));
+        taskList.AddTask("Pack", DotNetManager.Pack(logger.Writer, solutionPath, WellKnownConfigurations.Release));
 
         if (release.DryRun)
         {
-            taskList.AddTask("Publish", []);
+            taskList.AddTask("Push", []);
         }
         else
         {
-            taskList.AddTask("Publish", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
+            taskList.AddTask("Push", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
         }
 
-        var results = taskList.Execute(cancellationToken);        
+        var results = taskList.Execute(cancellationToken);
         return TaskList.ExitCodeFromResult(results);
     }
 }

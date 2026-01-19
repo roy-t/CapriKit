@@ -16,7 +16,7 @@ internal class TaskList
     }
 
     public void AddTask(string description, params IReadOnlyList<Action> tasks)
-    {        
+    {
         Tasks.Add(new ProgressableTask(tasks, description));
     }
 

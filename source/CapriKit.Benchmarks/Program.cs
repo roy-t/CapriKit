@@ -24,10 +24,10 @@ namespace CapriKit.Benchmarks
             }
 
             var config = DefaultConfig.Instance
-                .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0))                
+                .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0))
                 .AddExporter(JsonExporter.Default)
                 .WithArtifactsPath(outputPath);
-           
+
             BenchmarkRunner.Run<TestBenchmark>(config);
         }
 
@@ -37,7 +37,7 @@ namespace CapriKit.Benchmarks
                 .Any(directory.Contains) || directory.Equals("con", StringComparison.OrdinalIgnoreCase);
             return !invalid;
         }
-    }   
+    }
 }
 
-    
+

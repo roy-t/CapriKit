@@ -21,7 +21,7 @@ public static class AnsiConsoleExt
     {
         WriteError();
         AnsiConsole.MarkupLineInterpolated(markup);
-    }   
+    }
 
     private static void WriteInfo()
     {
