@@ -8,4 +8,8 @@
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
+  </ItemGroup>
+
 </Project>

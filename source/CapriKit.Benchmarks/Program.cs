@@ -23,12 +23,13 @@ namespace CapriKit.Benchmarks
                 }
             }
 
-            var config = DefaultConfig.Instance
+            var config = DefaultConfig.Instance                
                 .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0))
                 .AddExporter(JsonExporter.Default)
                 .WithArtifactsPath(outputPath);
 
-            BenchmarkRunner.Run<TestBenchmark>(config);
+            var thisAssembly = typeof(Program).Assembly;
+            BenchmarkSwitcher.FromAssembly(thisAssembly).RunAll(config);
         }
 
         static bool IsValidPath(string directory)
