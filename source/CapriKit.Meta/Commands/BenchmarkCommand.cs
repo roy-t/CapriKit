@@ -2,7 +2,6 @@ using CapriKit.Build;
 using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
-using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
 
 namespace CapriKit.Meta.Commands;
@@ -15,7 +14,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
     {
         var startTime = DateTime.Now;
 
-        var (solutionPath, _, testResultsDirectory, _, benchmarkResultsDirectory) = BuildUtilities.GatherBuildInputs();
+        var (solutionPath, _, testResultsDirectory, _, benchmarkResultsDirectory, documentationDirectory) = BuildUtilities.GatherBuildInputs();
         var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
         var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
@@ -75,18 +74,18 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 
             foreach (var result in benchmarkResults.Benchmarks)
             {
-                // TODO: use the new math/statistics stuff to ensure we always compute the SD and Mean and .. in the same way
-                // I've checked and for runs they match the outcomes from BenchmarkDotNet
-                var mean2 = Mathematics.Statistics.Mean(result.Statistics.OriginalValues);                
-                var deviation2 = Mathematics.Statistics.SampleStandardDeviation(mean2, result.Statistics.OriginalValues);
-                var error2 = Mathematics.Statistics.StandardError(deviation2, result.Statistics.OriginalValues.Length);
-
-                var name = result.FullName;
-                var test = result.MethodTitle;
-                var mean = $"{result.Statistics.Mean:F3} ns";
-                var error = $"{result.Statistics.StandardError:F4} ns";
-                var deviation = $"{result.Statistics.StandardDeviation:F4} ns";
-                table.AddRow(name, test, mean, error, deviation);
+                // Even though these values are also calculated by BenchmarkDotNet we recalculate them using our own code
+                // to prevent numbers from being slightly different due to compound errors and rounding differences.
+                var mean = Mathematics.Statistics.Mean(result.Statistics.OriginalValues);
+                var deviation = Mathematics.Statistics.SampleStandardDeviation(mean, result.Statistics.OriginalValues);
+                var error = Mathematics.Statistics.StandardError(deviation, result.Statistics.OriginalValues.Length);
+                                
+                var nameColumn = result.FullName;
+                var testColumn = result.MethodTitle;
+                var meanColumn = $"{mean:F3} ns";
+                var errorColumn = $"{error:F4} ns";
+                var deviationColumn = $"{deviation:F4} ns";
+                table.AddRow(nameColumn, testColumn, meanColumn, errorColumn, deviationColumn);
             }
 
             AnsiConsole.Write(table);
@@ -97,6 +96,8 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         // for example: https://github.com/accord-net/framework/blob/development/Sources/Accord.Statistics/Testing/TwoSample/TwoSampleTTest.cs#L195
         // note variance = (standard deviation)^2
 
+        // TODO: Store them for each version of CapriKit in the documentation folder thing and ask to overwrite if the file exist
+        // Display significant differences compared to the last 2 versions (or the current version and prev version if there is already a CURRENTVERSION.json file.
         return TaskList.ExitCodeFromResult(results);
     }
 

@@ -20,7 +20,7 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
-        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
+        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName, _, _) = BuildUtilities.GatherBuildInputs();
         using var logger = BuildUtilities.CreateBuildLogger();
 
         var taskList = new TaskList();

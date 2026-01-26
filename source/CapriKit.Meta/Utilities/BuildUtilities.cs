@@ -1,7 +1,7 @@
 namespace CapriKit.Meta.Utilities;
 
 
-internal record BuildInputs(string SolutionPath, string PackagePath, string TestResultsDirectory, string TestResultsFileName, string BenchmarkResultsDirectory);
+internal record BuildInputs(string SolutionPath, string PackagePath, string TestResultsDirectory, string TestResultsFileName, string BenchmarkResultsDirectory, string DocumentationDirectory);
 
 internal sealed class BuildLogger : IDisposable
 {
@@ -32,12 +32,13 @@ internal static class BuildUtilities
             ?? throw new FileNotFoundException($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
 
         var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
+        var documentationDirectory = Path.Combine(solutionDirectory, "documentation");
         var packagePath = Path.Combine(solutionDirectory, ".build", "pkg");
         var testResultsDirectory = Path.Combine(solutionDirectory, ".build", "tst");
         var testResultsFileName = "test-report.trx";
 
         var benchmarkResultsDirectory = Path.Combine(testResultsDirectory, "results");
-        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName, benchmarkResultsDirectory);
+        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName, benchmarkResultsDirectory, documentationDirectory);
     }
 
     public static BuildLogger CreateBuildLogger()

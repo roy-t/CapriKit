@@ -15,7 +15,7 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
     {
         var startTime = DateTime.Now;
 
-        var (solutionPath, _, testResultsDirectory, testResultsFileName, _) = BuildUtilities.GatherBuildInputs();
+        var (solutionPath, _, testResultsDirectory, testResultsFileName, _, _) = BuildUtilities.GatherBuildInputs();
         var testResultsPath = Path.Combine(testResultsDirectory, testResultsFileName);
 
         using var logger = BuildUtilities.CreateBuildLogger();
