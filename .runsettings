@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Ensure that Visual Studio doesn't accidentally make a TestResults directory, otherwise largerly ignored by 
+the new test tooling
+-->
+<RunSettings>
+
+  <RunConfiguration>    
+    <ResultsDirectory>.build/tst</ResultsDirectory>    
+  </RunConfiguration>
+
+</RunSettings>

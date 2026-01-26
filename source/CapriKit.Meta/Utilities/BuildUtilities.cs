@@ -32,13 +32,12 @@ internal static class BuildUtilities
             ?? throw new FileNotFoundException($"Could not find *.sln file in {Environment.CurrentDirectory} or parent directories");
 
         var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
-        var documentationDirectory = Path.Combine(solutionDirectory, "documentation");
         var packagePath = Path.Combine(solutionDirectory, ".build", "pkg");
         var testResultsDirectory = Path.Combine(solutionDirectory, ".build", "tst");
         var testResultsFileName = "test-report.trx";
-
-        var benchmarkResultsDirectory = Path.Combine(testResultsDirectory, "results");
-        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName, benchmarkResultsDirectory, documentationDirectory);
+        var benchmarkOutputDirectory = Path.Combine(testResultsDirectory, "results");
+        var benchmarksDirectory = Path.Combine(solutionDirectory, "benchmarks");
+        return new BuildInputs(solutionPath, packagePath, testResultsDirectory, testResultsFileName, benchmarkOutputDirectory, benchmarksDirectory);
     }
 
     public static BuildLogger CreateBuildLogger()

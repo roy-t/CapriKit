@@ -7,7 +7,7 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing" Version="1.1.2" />
     <!-- Override the version of workspace package used in SourceGenerators.Testing to enable testing of newer source generators.
          See: https://github.com/dotnet/roslyn-sdk/issues/1241#issuecomment-3730711290 -->
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" PrivateAssets="all" />    
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>    
     <PackageReference Include="TUnit" Version="1.6.15" />

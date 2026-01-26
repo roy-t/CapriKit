@@ -32,28 +32,21 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
 
     public override int Execute(CommandContext context, Settings bump, CancellationToken _)
     {
-        // Find the path to the .git directory
-        var rootDirectory = FileSearchUtilities.SearchDirectoryUp(".git", Environment.CurrentDirectory)
-            .FirstOrDefault() ?? throw new Exception($"Not a git repository: {Environment.CurrentDirectory}");
 
-        // The root directory of the repository, that contains the .git directory is one level "up"
-        // this is also where the version file should be
-        var path = Path.GetFullPath(Path.Combine(rootDirectory, "..", "version.txt"));
+        var oldVersion = VersionUtilities.ReadVersionFromFile();
 
-        if (File.Exists(path))
+        if (oldVersion != null)
         {
-            var text = File.ReadAllText(path).Trim();
-            var oldVersion = SemVer.Parse(text);
             var newVersion = UpdateVersion(oldVersion, bump);
 
-            WriteVersionToFile(path, newVersion);
-            AnsiConsoleExt.InfoMarkupLineInterpolated($"Updating [gray]({path})[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
+            VersionUtilities.WriteVersionToFile(newVersion);
+            AnsiConsoleExt.InfoMarkupLineInterpolated($"Updating [gray](version.txt)[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
         }
         else
         {
             var version = new SemVer(0, 1, 0);
-            WriteVersionToFile(path, version);
-            AnsiConsoleExt.WarningMarkupLineInterpolated($"[orangered1]Creating[/] [gray]({path})[/]: [bold gray]{version}[/]");
+            VersionUtilities.WriteVersionToFile(version);
+            AnsiConsoleExt.WarningMarkupLineInterpolated($"[orangered1]Creating[/] [gray](version.txt)[/]: [bold gray]{version}[/]");
         }
 
         return 0;
@@ -97,10 +90,5 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         }
 
         return version;
-    }
-
-    private static void WriteVersionToFile(string path, SemVer version)
-    {
-        File.WriteAllText(path, version.ToString());
     }
 }
