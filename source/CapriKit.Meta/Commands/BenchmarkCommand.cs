@@ -53,26 +53,23 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
             AnsiConsoleExt.InfoMarkupLineInterpolated($"Found {entries.Count} benchmark entries in: {benchmarkOutputDirectory}");
         }
 
-        PrintBenchmarkResults(entries);
+        PrintBenchmarkResults($"Results ({entries.Count})", entries);
 
         var latestBenchmarkedVersion = GetLatestBenchmarkResults(benchmarkDirectory);
         if (latestBenchmarkedVersion != null && latestBenchmarkedVersion != version)
         {
             var before = ReadBenchmarkResults(benchmarkDirectory, latestBenchmarkedVersion);
+            AnsiConsole.MarkupLineInterpolated($"Comparing {latestBenchmarkedVersion} to current run ({version})");
             PrintBenchmarkDiff(before, entries);
         }
 
-        StoreBenchmarkResults(benchmarkDirectory, version, entries);
-        var foo = ReadBenchmarkResults(benchmarkDirectory, version);
+        // TODO: only ask if already exists
+        if (AnsiConsole.Confirm($"Overwrite results for {version}?", false))
+        {
+            AnsiConsole.MarkupLine("Storing results..");
+            StoreBenchmarkResults(benchmarkDirectory, version, entries);
+        }
 
-        // TODO: compare benchmark results with latest benchmark results and ask the user to 'promote' them if they are significantly different
-        // if we want to do this correctly this means doing a Welch two-sample t-test
-        // for example: https://github.com/accord-net/framework/blob/development/Sources/Accord.Statistics/Testing/TwoSample/TwoSampleTTest.cs#L195
-        // note variance = (standard deviation)^2
-
-        // TODO: Store them for each version of CapriKit in the documentation folder thing and ask to overwrite if the file exist
-        // Display significant differences compared to the last 2 versions (or the current version and prev version if there is already a CURRENTVERSION.json file.
-        //return TaskList.ExitCodeFromResult(results);
         return 0;
     }
 
@@ -105,9 +102,10 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         return entries;
     }
 
-    private static void PrintBenchmarkResults(IReadOnlyList<BenchmarkResultEntry> entries)
+    private static void PrintBenchmarkResults(string title, IReadOnlyList<BenchmarkResultEntry> entries)
     {
         var table = new Table();
+        table.Title(title);
         table.AddColumn("Id");
         table.AddColumn("Mean");
         table.AddColumn("StdError");
@@ -123,6 +121,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         }
 
         AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
     }
 
     private void PrintBenchmarkDiff(IReadOnlyList<BenchmarkResultEntry> previousBenchmark, IReadOnlyList<BenchmarkResultEntry> currentBenchmark)
@@ -136,16 +135,21 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var addedKeys = currentDict.Keys.Except(previousDict.Keys);
         var addedTests = addedKeys.Select(k => currentDict[k]).ToList();
 
-        AnsiConsole.MarkupLineInterpolated($"Removed {removedTest.Count} benchmarks");
-        PrintBenchmarkResults(removedTest);
+        
+        if (removedTest.Count > 0)
+        {
+            PrintBenchmarkResults($"Removed ({removedTest.Count})", removedTest);
+        }
 
-        AnsiConsole.MarkupLineInterpolated($"Added {addedTests.Count} benchmarks");
-        PrintBenchmarkResults(addedTests);
+        if (addedTests.Count > 0)
+        {
+            PrintBenchmarkResults($"Added ({addedTests.Count})", addedTests);
+        }
 
-        var changedBenchmarks = new List<(BenchmarkResultEntry b, BenchmarkResultEntry a)>();
-        var comparableKeys = previousDict.Keys.Union(currentDict.Keys);
+        var changedBenchmarks = new List<(BenchmarkResultEntry before, BenchmarkResultEntry after)>();
+        var comparableKeys = previousDict.Keys.Intersect(currentDict.Keys);
 
-        foreach(var key in comparableKeys)
+        foreach (var key in comparableKeys)
         {
             var prev = previousDict[key];
             var curr = currentDict[key];
@@ -158,27 +162,41 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
                 changedBenchmarks.Add((prev, curr));
             }
         }
+        
+        if (changedBenchmarks.Count > 0)
+        {
+            var table = new Table();
+            table.Title($"Significantly different ({changedBenchmarks.Count})");
+            table.AddColumn("Id");
+            table.AddColumn("Old Mean");
+            table.AddColumn("New Mean");
+            table.AddColumn("Diff");
 
-        AnsiConsole.MarkupLineInterpolated($"Signicantly changed {addedTests.Count()} benchmarks");
+            foreach (var (before, after) in changedBenchmarks)
+            {
+                var id = new Text(after.Id);
+                var oldMean = new Text($"{before.Mean:F3} ns");
+                var newMean = new Text($"{after.Mean:F3} ns");
 
-        var table = new Table();
-        table.AddColumn("Id");
-        table.AddColumn("Old Mean");
-        table.AddColumn("New Mean");
-        table.AddColumn("Diff");
+                var percentage = 100.0 - (Math.Min(before.Mean, after.Mean) / Math.Max(before.Mean, after.Mean)) * 100;
+                var diff = after.Mean < before.Mean
+                    ? new Text($"-{percentage:F2}%", new Style(Color.Green))
+                    : new Text($"+{percentage:F2}%", new Style(Color.Red));
 
-        // TODO: create diff
-        throw new Exception("TODO: create diff");
-        AnsiConsole.Write(table);
+                table.AddRow(id, oldMean, newMean, diff);
+            }
+            AnsiConsole.Write(table);
+            AnsiConsole.WriteLine();
+        }
     }
 
     private static void StoreBenchmarkResults(string benchmarkDirectory, SemVer version, IReadOnlyList<BenchmarkResultEntry> entries)
     {
         var path = GetPathToResult(benchmarkDirectory, version);
         var info = new FileInfo(path);
-        if (info.Exists)
+        if (info.Exists) // TODO: or truncate?
         {
-            throw new Exception("File Exists");
+            info.Delete();
         }
         else
         {
