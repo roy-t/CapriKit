@@ -1,9 +1,10 @@
+using CapriKit.Build;
 using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Text.Json;
 
-namespace CapriKit.Meta.Commands;
+namespace CapriKit.Meta.Benchmarks;
 
 // TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
 
@@ -17,17 +18,21 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var version = VersionUtilities.ReadVersionFromFile() ?? new SemVer(0, 1, 0);
         AnsiConsole.MarkupLineInterpolated($"Running benchmarking for {version}");
 
-        var (solutionPath, _, testResultsDirectory, _, benchmarkOutputDirectory, benchmarkDirectory) = BuildUtilities.GatherBuildInputs();
-        var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? Environment.CurrentDirectory;
-        var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
+        var solutionPath = Config.SolutionPath;
+        var solutionDirectory = Config.SolutionDirectory;
+        var testResultsDirectory = Config.Outputs.TestDirectory;
+        var benchmarkOutputDirectory = Config.Outputs.BenchmarkDirectory;
+        var benchmarkDirectory = Config.Assets.BenchmarkDirectory;
+                
+        //var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
-        //using var logger = BuildUtilities.CreateBuildLogger();
+        //using var logger = BuildLogger.CreateBuildLogger();
         //var taskList = new TaskList();
         //taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
         //taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));
         //taskList.AddTask("Benchmark", DotNetManager.Run(logger.Writer, solutionPath, projectPath, WellKnownConfigurations.Release, testResultsDirectory));
 
-        //var results = taskList.Execute(cancellationToken);
+        //var results = taskList.Execute(logger, cancellationToken);
         //if (results.Any(t => t.Exception != null))
         //{
         //    return 1;
@@ -58,7 +63,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var latestBenchmarkedVersion = GetLatestBenchmarkResults(benchmarkDirectory);
         if (latestBenchmarkedVersion != null && latestBenchmarkedVersion != version)
         {
-            var before = ReadBenchmarkResults(benchmarkDirectory, latestBenchmarkedVersion);
+            var before =   BenchmarkRepository.Load(latestBenchmarkedVersion);
             AnsiConsole.MarkupLineInterpolated($"Comparing {latestBenchmarkedVersion} to current run ({version})");
             PrintBenchmarkDiff(before, entries);
         }
@@ -67,15 +72,15 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         if (AnsiConsole.Confirm($"Overwrite results for {version}?", false))
         {
             AnsiConsole.MarkupLine("Storing results..");
-            StoreBenchmarkResults(benchmarkDirectory, version, entries);
+            BenchmarkRepository.Save(version, entries);
         }
 
         return 0;
     }
 
-    private static IReadOnlyList<BenchmarkResultEntry> ParseBenchmarkResults(SemVer version, DateTime timestamp, string directory)
+    private static IReadOnlyList<BenchmarkEntry> ParseBenchmarkResults(SemVer version, DateTime timestamp, string directory)
     {
-        var entries = new List<BenchmarkResultEntry>();
+        var entries = new List<BenchmarkEntry>();
         var info = new DirectoryInfo(directory);
         foreach (var file in info.GetFiles("*.json"))
         {
@@ -95,14 +100,14 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
                 var deviation = Mathematics.Statistics.SampleStandardDeviation(mean, result.Statistics.OriginalValues);
                 var error = Mathematics.Statistics.StandardError(deviation, result.Statistics.OriginalValues.Length);
                 var sampleCount = result.Statistics.OriginalValues.Length;
-                entries.Add(new BenchmarkResultEntry(version, timestamp, result.FullName, mean, error, deviation, sampleCount));
+                entries.Add(new BenchmarkEntry(version, timestamp, result.FullName, mean, error, deviation, sampleCount));
             }
         }
 
         return entries;
     }
 
-    private static void PrintBenchmarkResults(string title, IReadOnlyList<BenchmarkResultEntry> entries)
+    private static void PrintBenchmarkResults(string title, IReadOnlyList<BenchmarkEntry> entries)
     {
         var table = new Table();
         table.Title(title);
@@ -124,7 +129,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         AnsiConsole.WriteLine();
     }
 
-    private void PrintBenchmarkDiff(IReadOnlyList<BenchmarkResultEntry> previousBenchmark, IReadOnlyList<BenchmarkResultEntry> currentBenchmark)
+    private void PrintBenchmarkDiff(IReadOnlyList<BenchmarkEntry> previousBenchmark, IReadOnlyList<BenchmarkEntry> currentBenchmark)
     {
         var previousDict = previousBenchmark.ToDictionary(e => e.Id);
         var currentDict = currentBenchmark.ToDictionary(e => e.Id);
@@ -146,7 +151,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
             PrintBenchmarkResults($"Added ({addedTests.Count})", addedTests);
         }
 
-        var changedBenchmarks = new List<(BenchmarkResultEntry before, BenchmarkResultEntry after)>();
+        var changedBenchmarks = new List<(BenchmarkEntry before, BenchmarkEntry after)>();
         var comparableKeys = previousDict.Keys.Intersect(currentDict.Keys);
 
         foreach (var key in comparableKeys)
@@ -188,26 +193,11 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
             AnsiConsole.Write(table);
             AnsiConsole.WriteLine();
         }
-    }
-
-    private static void StoreBenchmarkResults(string benchmarkDirectory, SemVer version, IReadOnlyList<BenchmarkResultEntry> entries)
-    {
-        var path = GetPathToResult(benchmarkDirectory, version);
-        var info = new FileInfo(path);
-        if (info.Exists) // TODO: or truncate?
-        {
-            info.Delete();
-        }
-        else
-        {
-            Directory.CreateDirectory(info.DirectoryName!);
-            using var stream = info.Create();
-            JsonSerializer.Serialize(stream, entries);
-        }
-    }
+    }   
 
     private static SemVer? GetLatestBenchmarkResults(string path)
     {
+        // TODO: use Reposiory.List().Max();
         var info = new DirectoryInfo(path);
         SemVer? latest = null;
         foreach (var file in info.GetFiles("*.json"))
@@ -223,30 +213,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
             catch { }
         }
         return latest;
-    }
-
-    private static IReadOnlyList<BenchmarkResultEntry> ReadBenchmarkResults(string benchmarkDirectory, SemVer version)
-    {
-        var path = GetPathToResult(benchmarkDirectory, version);
-        var info = new FileInfo(path);
-        if (!info.Exists)
-        {
-            throw new FileNotFoundException(null, path);
-        }
-        else
-        {
-            using var stream = info.OpenRead();
-            using var reader = new StreamReader(stream);
-            var json = reader.ReadToEnd();
-            var benchmarkResults = JsonSerializer.Deserialize<IReadOnlyList<BenchmarkResultEntry>>(json);
-            if (benchmarkResults == null)
-            {
-                throw new Exception($"Failed to parse benchmark result entries in file {path}");
-            }
-
-            return benchmarkResults;
-        }
-    }
+    }   
 
     private static string GetPathToResult(string benchmarkDirectory, SemVer version)
     {
@@ -258,4 +225,4 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
     }
 }
 
-public record BenchmarkResultEntry(SemVer Version, DateTime timestamp, string Id, double Mean, double StandardError, double StandardDeviation, int SampleCount);
+

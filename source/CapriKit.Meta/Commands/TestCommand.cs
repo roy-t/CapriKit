@@ -15,17 +15,19 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
     {
         var startTime = DateTime.Now;
 
-        var (solutionPath, _, testResultsDirectory, testResultsFileName, _, _) = BuildUtilities.GatherBuildInputs();
-        var testResultsPath = Path.Combine(testResultsDirectory, testResultsFileName);
+        var solutionPath = Config.SolutionPath;                
+        var testResultsDirectory = Config.Outputs.TestDirectory;        
+        var testResultsFileName = Config.Outputs.TestResultsFileName;
+        var testResultsPath = Config.Outputs.TestResultsPath;
 
-        using var logger = BuildUtilities.CreateBuildLogger();
+        using var logger = BuildLogger.CreateBuildLogger();
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
         taskList.AddTask("Build Test", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Test));
         taskList.AddTask("Test", DotNetManager.Test(logger.Writer, solutionPath, WellKnownConfigurations.Test, testResultsDirectory, testResultsFileName));
 
-        var results = taskList.Execute(cancellationToken);
+        var results = taskList.Execute(logger, cancellationToken);
 
         var testFile = new FileInfo(testResultsPath);
         if (!testFile.Exists)

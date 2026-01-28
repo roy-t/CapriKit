@@ -20,8 +20,12 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
-        var (solutionPath, packagePath, testResultsDirectory, testResultsFileName, _, _) = BuildUtilities.GatherBuildInputs();
-        using var logger = BuildUtilities.CreateBuildLogger();
+        var solutionPath = Config.SolutionPath;
+        var pacakgeDirectory = Config.Outputs.PackageDirectory;        
+        var testResultsDirectory = Config.Outputs.TestDirectory;        
+        var testResultsFileName = Config.Outputs.TestResultsFileName;        
+        
+        using var logger = BuildLogger.CreateBuildLogger();
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
@@ -37,10 +41,10 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         }
         else
         {
-            taskList.AddTask("Push", () => DotNetManager.NuGetPush(logger.Writer, packagePath, release.ApiKey));
+            taskList.AddTask("Push", () => DotNetManager.NuGetPush(logger.Writer, pacakgeDirectory, release.ApiKey));
         }
 
-        var results = taskList.Execute(cancellationToken);
+        var results = taskList.Execute(logger, cancellationToken);
         return TaskList.ExitCodeFromResult(results);
     }
 }

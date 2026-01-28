@@ -20,14 +20,11 @@ internal class TaskList
         Tasks.Add(new ProgressableTask(tasks, description));
     }
 
-    public IReadOnlyList<TaskExecutionResult> Execute(CancellationToken cancellationToken)
+    public IReadOnlyList<TaskExecutionResult> Execute(BuildLogger logger, CancellationToken cancellationToken)
     {
-        using var logger = BuildUtilities.CreateBuildLogger();
-
         AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
 
         var results = new List<TaskExecutionResult>();
-
 
         AnsiConsole.Progress()
             .Columns([

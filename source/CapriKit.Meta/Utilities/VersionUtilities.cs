@@ -2,20 +2,10 @@ namespace CapriKit.Meta.Utilities;
 
 internal static class VersionUtilities
 {
-    private static string GetVersionFilePath()
-    {
-        // Find the path to the .git directory
-        var rootDirectory = FileSearchUtilities.SearchDirectoryUp(".git", Environment.CurrentDirectory)
-            .FirstOrDefault() ?? throw new Exception($"Not a git repository: {Environment.CurrentDirectory}");
-
-        // The root directory of the repository, that contains the .git directory is one level "up"
-        // this is also where the version file should be
-        return Path.GetFullPath(Path.Combine(rootDirectory, "..", "version.txt"));
-    }
-
+    
     public static SemVer? ReadVersionFromFile()
     {
-        var path = GetVersionFilePath();
+        var path = Config.VersionPath;
         if (File.Exists(path))
         {
             var text = File.ReadAllText(path).Trim();
@@ -27,7 +17,7 @@ internal static class VersionUtilities
 
     public static void WriteVersionToFile(SemVer version)
     {
-        var path = GetVersionFilePath();
+        var path = Config.VersionPath;
         File.WriteAllText(path, version.ToString());
     }
 }

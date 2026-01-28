@@ -1,3 +1,4 @@
+using CapriKit.Meta.Benchmarks;
 using CapriKit.Meta.Commands;
 using Spectre.Console;
 using Spectre.Console.Cli;
