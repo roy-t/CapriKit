@@ -24,8 +24,8 @@ internal sealed class BuildLogger : IDisposable
     public static BuildLogger CreateBuildLogger()
     {
         var logFile = FileRotator.CreateFile(Directory.GetCurrentDirectory(), "release", ".log", 10);
-        var logStream = logFile.OpenWrite();
-        var logStreamWriter = new StreamWriter(logStream);
+        var logStream = logFile.Open(FileMode.Append, FileAccess.Write, FileShare.Read);
+        var logStreamWriter = new StreamWriter(logStream) { AutoFlush = true };
 
         return new BuildLogger(logFile, logStream, logStreamWriter);
     }

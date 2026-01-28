@@ -5,9 +5,9 @@ namespace CapriKit.Build;
 public static class DotNetManager
 {
     /// <summary>
-    /// Runs `dotnet build --no-restore` on a solution or project. Defaults to the build targets if none specified    
+    /// Runs `dotnet build --no-restore` on a solution or project. Defaults to the build targets if none specified
     /// </summary>    
-    public static Action Build(StreamWriter logStream, string path, string configuration, params string[] targets)
+    public static Action Build(StreamWriter logStream, string path, string configuration, params IReadOnlyList<string> targets)
     {
         var workingDirectory = Path.GetDirectoryName(path);
 
@@ -17,7 +17,7 @@ public static class DotNetManager
         argumentList.Add("--no-restore");
         argumentList.Add("--configuration");
         argumentList.Add(configuration);
-        if (targets.Length > 0)
+        if (targets.Count > 0)
         {
             argumentList.Add($"-t:{string.Join(',', targets)}");
         }
@@ -28,7 +28,7 @@ public static class DotNetManager
     }
 
     /// <summary>
-    /// Runs `dotnet pack --no-restore` on a solution or project. Defaults to the build targets if none specified    
+    /// Runs `dotnet pack --no-restore` on a solution or project. Defaults to the build targets if none specified
     /// </summary>    
     public static Action Pack(StreamWriter logStream, string path, string configuration)
     {
@@ -53,7 +53,7 @@ public static class DotNetManager
     /// Runs `dotnet run` on one projects in the solution.
     /// Assumes the project has already been built
     /// </summary>    
-    public static Action Run(StreamWriter logStream, string solutionPath, string projectPath, string configuration, params string[] args)
+    public static Action Run(StreamWriter logStream, string solutionPath, string projectPath, string configuration, params IReadOnlyList<string> args)
     {
         var solutionDirectory = Path.GetDirectoryName(solutionPath);
         var argumentList = new List<string>();
@@ -65,7 +65,7 @@ public static class DotNetManager
         argumentList.Add("--configuration");
         argumentList.Add(configuration);
         AppendLogArguments(argumentList);
-        if (args.Length > 0)
+        if (args.Count > 0)
         {
             argumentList.Add("--");
             argumentList.AddRange(args);

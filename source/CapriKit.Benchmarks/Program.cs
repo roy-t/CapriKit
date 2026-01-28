@@ -10,33 +10,13 @@ namespace CapriKit.Benchmarks
     {
         static void Main(string[] args)
         {
-            var outputPath = "./../../tst";
-            if (args.Length == 1)
-            {
-                if (IsValidPath(args[0]))
-                {
-                    outputPath = args[0];
-                }
-                else
-                {
-                    throw new ArgumentException($"Invalid path: {args[0]}");
-                }
-            }
+            var config = DefaultConfig.Instance
+                .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0).AsDefault())
+                .AddExporter(JsonExporter.Default);
 
-            var config = DefaultConfig.Instance                
-                .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0))
-                .AddExporter(JsonExporter.Default)
-                .WithArtifactsPath(outputPath);
 
-            var thisAssembly = typeof(Program).Assembly;
-            BenchmarkSwitcher.FromAssembly(thisAssembly).RunAll(config);
-        }
-
-        static bool IsValidPath(string directory)
-        {
-            var invalid = Path.GetInvalidPathChars()
-                .Any(directory.Contains) || directory.Equals("con", StringComparison.OrdinalIgnoreCase);
-            return !invalid;
+            var assembly = typeof(Program).Assembly;
+            BenchmarkSwitcher.FromAssembly(assembly).Run(args, config);
         }
     }
 }

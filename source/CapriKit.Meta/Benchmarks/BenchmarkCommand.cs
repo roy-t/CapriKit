@@ -2,18 +2,16 @@ using CapriKit.Build;
 using CapriKit.Meta.Utilities;
 using Spectre.Console;
 using Spectre.Console.Cli;
+using System.ComponentModel;
 using System.Text.Json;
 
 namespace CapriKit.Meta.Benchmarks;
-
-// TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
 
 internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
-        //var startTime = DateTime.Now;
-        var startTime = DateTime.MinValue;
+        var startTime = DateTime.Now;
 
         var version = VersionUtilities.ReadVersionFromFile() ?? new SemVer(0, 1, 0);
         AnsiConsole.MarkupLineInterpolated($"Running benchmarking for {version}");
@@ -23,23 +21,37 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var testResultsDirectory = Config.Outputs.TestDirectory;
         var benchmarkOutputDirectory = Config.Outputs.BenchmarkDirectory;
         var benchmarkDirectory = Config.Assets.BenchmarkDirectory;
-                
-        //var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
-        //using var logger = BuildLogger.CreateBuildLogger();
-        //var taskList = new TaskList();
-        //taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
-        //taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));
-        //taskList.AddTask("Benchmark", DotNetManager.Run(logger.Writer, solutionPath, projectPath, WellKnownConfigurations.Release, testResultsDirectory));
+        var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
-        //var results = taskList.Execute(logger, cancellationToken);
-        //if (results.Any(t => t.Exception != null))
-        //{
-        //    return 1;
-        //}
+        using var logger = BuildLogger.CreateBuildLogger();
+        var taskList = new TaskList();
+        taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
+        taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));
+
+        var args = new List<string>
+        {
+            "--artifacts",
+            testResultsDirectory,
+            "--filter",
+            settings.Filter
+        };
+
+        if (settings.DryRun)
+        {
+            args.Add("--job");
+            args.Add("Dry");
+        }
+
+        taskList.AddTask("Benchmark", DotNetManager.Run(logger.Writer, solutionPath, projectPath, WellKnownConfigurations.Release, args));
+
+        var results = taskList.Execute(logger, cancellationToken);
+        if (results.Any(t => t.Exception != null))
+        {
+            return 1;
+        }
 
         // Find each json file in benchmarkResultsDirectory that is newer than start time
-
         var directory = new DirectoryInfo(benchmarkOutputDirectory);
         if (!directory.Exists)
         {
@@ -55,24 +67,32 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         }
         else
         {
-            AnsiConsoleExt.InfoMarkupLineInterpolated($"Found {entries.Count} benchmark entries in: {benchmarkOutputDirectory}");
+            AnsiConsole.MarkupLineInterpolated($"Found {entries.Count} benchmark entries in: {benchmarkOutputDirectory}");
         }
 
-        PrintBenchmarkResults($"Results ({entries.Count})", entries);
+        BenchmarkPrinter.PrintBenchmarkResults($"Results ({entries.Count})", entries);
 
-        var latestBenchmarkedVersion = GetLatestBenchmarkResults(benchmarkDirectory);
+        var latestBenchmarkedVersion = BenchmarkRepository.List().Max();
         if (latestBenchmarkedVersion != null && latestBenchmarkedVersion != version)
         {
-            var before =   BenchmarkRepository.Load(latestBenchmarkedVersion);
+            var before = BenchmarkRepository.Load(latestBenchmarkedVersion);
             AnsiConsole.MarkupLineInterpolated($"Comparing {latestBenchmarkedVersion} to current run ({version})");
-            PrintBenchmarkDiff(before, entries);
+            var difference = BenchmarkDiffer.ComputeDifference(before, entries);
+            BenchmarkPrinter.PrintBenchmarkDiff(difference);
         }
 
-        // TODO: only ask if already exists
-        if (AnsiConsole.Confirm($"Overwrite results for {version}?", false))
+        if (settings.DryRun == false && settings.Filter == Settings.FilterIncludeAll)
         {
-            AnsiConsole.MarkupLine("Storing results..");
-            BenchmarkRepository.Save(version, entries);
+            var exists = BenchmarkRepository.Exists(version);
+            if (!exists || (exists && AnsiConsole.Confirm($"Overwrite results for {version}?", false)))
+            {
+                AnsiConsole.MarkupLine("Storing results..");
+                BenchmarkRepository.Save(version, entries);
+            }
+        }
+        else
+        {
+            AnsiConsole.MarkupLineInterpolated($"Discarding results of unrepresentative run (--filter {settings.Filter} --dry-run {settings.DryRun})");
         }
 
         return 0;
@@ -107,122 +127,16 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         return entries;
     }
 
-    private static void PrintBenchmarkResults(string title, IReadOnlyList<BenchmarkEntry> entries)
-    {
-        var table = new Table();
-        table.Title(title);
-        table.AddColumn("Id");
-        table.AddColumn("Mean");
-        table.AddColumn("StdError");
-        table.AddColumn("StdDev");
-
-        foreach (var entry in entries)
-        {
-            var nameColumn = entry.Id;
-            var meanColumn = $"{entry.Mean:F3} ns";
-            var errorColumn = $"{entry.StandardError:F4} ns";
-            var deviationColumn = $"{entry.StandardDeviation:F4} ns";
-            table.AddRow(nameColumn, meanColumn, errorColumn, deviationColumn);
-        }
-
-        AnsiConsole.Write(table);
-        AnsiConsole.WriteLine();
-    }
-
-    private void PrintBenchmarkDiff(IReadOnlyList<BenchmarkEntry> previousBenchmark, IReadOnlyList<BenchmarkEntry> currentBenchmark)
-    {
-        var previousDict = previousBenchmark.ToDictionary(e => e.Id);
-        var currentDict = currentBenchmark.ToDictionary(e => e.Id);
-
-        var removedKeys = previousDict.Keys.Except(currentDict.Keys);
-        var removedTest = removedKeys.Select(k => previousDict[k]).ToList();
-
-        var addedKeys = currentDict.Keys.Except(previousDict.Keys);
-        var addedTests = addedKeys.Select(k => currentDict[k]).ToList();
-
-        
-        if (removedTest.Count > 0)
-        {
-            PrintBenchmarkResults($"Removed ({removedTest.Count})", removedTest);
-        }
-
-        if (addedTests.Count > 0)
-        {
-            PrintBenchmarkResults($"Added ({addedTests.Count})", addedTests);
-        }
-
-        var changedBenchmarks = new List<(BenchmarkEntry before, BenchmarkEntry after)>();
-        var comparableKeys = previousDict.Keys.Intersect(currentDict.Keys);
-
-        foreach (var key in comparableKeys)
-        {
-            var prev = previousDict[key];
-            var curr = currentDict[key];
-
-            var t = Mathematics.StudentTTest.ForIndependentSamples(prev.Mean, prev.StandardDeviation, prev.SampleCount, curr.Mean, curr.StandardDeviation, curr.SampleCount);
-            var dof = Mathematics.StudentTTest.GetDegreesOfFreedom(prev.StandardDeviation, prev.SampleCount, curr.StandardDeviation, curr.SampleCount);
-            var probability = Mathematics.StudentTTest.ComputeTwoTailedProbabilityOfT(t, dof);
-            if (probability < 0.05)
-            {
-                changedBenchmarks.Add((prev, curr));
-            }
-        }
-        
-        if (changedBenchmarks.Count > 0)
-        {
-            var table = new Table();
-            table.Title($"Significantly different ({changedBenchmarks.Count})");
-            table.AddColumn("Id");
-            table.AddColumn("Old Mean");
-            table.AddColumn("New Mean");
-            table.AddColumn("Diff");
-
-            foreach (var (before, after) in changedBenchmarks)
-            {
-                var id = new Text(after.Id);
-                var oldMean = new Text($"{before.Mean:F3} ns");
-                var newMean = new Text($"{after.Mean:F3} ns");
-
-                var percentage = 100.0 - (Math.Min(before.Mean, after.Mean) / Math.Max(before.Mean, after.Mean)) * 100;
-                var diff = after.Mean < before.Mean
-                    ? new Text($"-{percentage:F2}%", new Style(Color.Green))
-                    : new Text($"+{percentage:F2}%", new Style(Color.Red));
-
-                table.AddRow(id, oldMean, newMean, diff);
-            }
-            AnsiConsole.Write(table);
-            AnsiConsole.WriteLine();
-        }
-    }   
-
-    private static SemVer? GetLatestBenchmarkResults(string path)
-    {
-        // TODO: use Reposiory.List().Max();
-        var info = new DirectoryInfo(path);
-        SemVer? latest = null;
-        foreach (var file in info.GetFiles("*.json"))
-        {
-            try
-            {
-                var version = SemVer.Parse(file.Name[0..^5]);
-                if (latest == null || version > latest)
-                {
-                    latest = version;
-                }
-            }
-            catch { }
-        }
-        return latest;
-    }   
-
-    private static string GetPathToResult(string benchmarkDirectory, SemVer version)
-    {
-        return Path.Combine(benchmarkDirectory, $"{version}.json");
-    }
-
     public sealed class Settings : CommandSettings
     {
+        public const string FilterIncludeAll = "*";
+
+        [Description("Benchmarks to run, defaults to '*' for all")]
+        [CommandOption("--filter", false)]
+        public string Filter { get; init; } = FilterIncludeAll;
+
+        [Description("Performs a dry run of the benchmark(s) to test if they work")]
+        [CommandOption("--dry-run", false)]
+        public bool DryRun { get; init; }
     }
 }
-
-

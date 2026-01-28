@@ -5,12 +5,6 @@ namespace CapriKit.Meta.Utilities;
 public static class AnsiConsoleExt
 {
 
-    public static void InfoMarkupLineInterpolated(FormattableString markup)
-    {
-        WriteInfo();
-        AnsiConsole.MarkupLineInterpolated(markup);
-    }
-
     public static void WarningMarkupLineInterpolated(FormattableString markup)
     {
         WriteWarning();
@@ -21,12 +15,6 @@ public static class AnsiConsoleExt
     {
         WriteError();
         AnsiConsole.MarkupLineInterpolated(markup);
-    }
-
-    private static void WriteInfo()
-    {
-        const string INFO = "[INFO]";
-        AnsiConsole.MarkupInterpolated($"[bold grey]{INFO}[/]: ");
     }
 
     private static void WriteWarning()

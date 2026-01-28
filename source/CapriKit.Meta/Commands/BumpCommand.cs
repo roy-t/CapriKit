@@ -40,7 +40,7 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
             var newVersion = UpdateVersion(oldVersion, bump);
 
             VersionUtilities.WriteVersionToFile(newVersion);
-            AnsiConsoleExt.InfoMarkupLineInterpolated($"Updating [gray](version.txt)[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
+            AnsiConsole.MarkupLineInterpolated($"Updating [gray](version.txt)[/]: [bold gray]{oldVersion}[/] -> [bold green]{newVersion}[/]");
         }
         else
         {
