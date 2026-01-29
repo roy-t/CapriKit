@@ -30,7 +30,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Generators", "Generators", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Generators.PrecisionVariants", "source\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj", "{006D65D3-7A30-DADB-2984-F576BEEEC3B5}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Storage", "source\CapriKit.Storage\CapriKit.Storage.csproj", "{86723B46-E68C-424A-8124-1BAC8C42C2D4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.IO", "source\CapriKit.IO\CapriKit.IO.csproj", "{86723B46-E68C-424A-8124-1BAC8C42C2D4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

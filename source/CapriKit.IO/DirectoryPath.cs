@@ -1,4 +1,4 @@
-namespace CapriKit.Storage;
+namespace CapriKit.IO;
 
 public record DirectoryPath
 {
@@ -46,7 +46,7 @@ public record DirectoryPath
 
     public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
     {
-        if (MemoryExtensions.IsWhiteSpace(path))
+        if (path.IsWhiteSpace())
         {
             return false;
         }
@@ -54,11 +54,9 @@ public record DirectoryPath
         return path.IndexOfAny(InvalidPathChars) < 0;
     }
 
-
-
     public static ReadOnlySpan<char> NormalizePathSeparators(ReadOnlySpan<char> path)
     {
-        if (MemoryExtensions.IsWhiteSpace(path))
+        if (path.IsWhiteSpace())
         {
             return path;
         }

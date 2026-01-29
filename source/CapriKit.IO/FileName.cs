@@ -1,4 +1,4 @@
-namespace CapriKit.Storage;
+namespace CapriKit.IO;
 
 public record FileName
 {
@@ -17,7 +17,7 @@ public record FileName
 
     public static bool IsValidFileName(ReadOnlySpan<char> name)
     {
-        if (MemoryExtensions.IsWhiteSpace(name))
+        if (name.IsWhiteSpace())
         {
             return false;
         }
