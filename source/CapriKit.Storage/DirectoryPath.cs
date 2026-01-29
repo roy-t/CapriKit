@@ -2,7 +2,11 @@ namespace CapriKit.Storage;
 
 public record DirectoryPath
 {
-    public DirectoryPath(string path)
+    private const char AltDirectorySeperator = '\\';
+    private const char DirectorySeperator = '/';
+    private static readonly char[] InvalidPathChars = System.IO.Path.GetInvalidPathChars();
+
+    public DirectoryPath(ReadOnlySpan<char> path)
     {
         var validPath = IsValidDirectoryPath(path) ? path : throw new ArgumentException($"Invalid directory path: {path}");
         Path = AddTrailingDirectorySeparator(NormalizePathSeparators(validPath));
@@ -40,34 +44,35 @@ public record DirectoryPath
         return new FilePath(this, file);
     }
 
-    public static bool IsValidDirectoryPath(string path)
+    public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
     {
-        if (string.IsNullOrEmpty(path))
+        if (MemoryExtensions.IsWhiteSpace(path))
         {
             return false;
         }
 
-        var invalidChars = System.IO.Path.GetInvalidPathChars();
-        return path.IndexOfAny(invalidChars) < 0;
+        return path.IndexOfAny(InvalidPathChars) < 0;
     }
 
-    public static string NormalizePathSeparators(string path)
+
+
+    public static ReadOnlySpan<char> NormalizePathSeparators(ReadOnlySpan<char> path)
     {
-        if (string.IsNullOrWhiteSpace(path))
+        if (MemoryExtensions.IsWhiteSpace(path))
         {
             return path;
         }
 
-        return path.Replace('\\', '/');
+        return path.ToString().Replace(AltDirectorySeperator, DirectorySeperator);
     }
 
-    public static string AddTrailingDirectorySeparator(string path)
+    public static string AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
     {
-        if (string.IsNullOrWhiteSpace(path) || System.IO.Path.EndsInDirectorySeparator(path))
+        if (path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
         {
-            return path;
+            return path.ToString() + DirectorySeperator;
         }
 
-        return path + '/';
+        return path.ToString();
     }
 }
