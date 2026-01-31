@@ -8,7 +8,7 @@ namespace CapriKit.Tests.Generators.PrecisionVariants;
 internal class AttributeGeneratorTests
 {
     [Test]
-    public async Task Execute_GeneratesAttributes()
+    public async Task Execute()
     {
         string attributeSource = """
             using System;

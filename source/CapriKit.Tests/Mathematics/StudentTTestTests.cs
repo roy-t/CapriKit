@@ -7,7 +7,7 @@ namespace CapriKit.Tests.Mathematics;
 internal class StudentTTestTests
 {
     [Test]
-    public async Task ForOneSample_ReturnsT()
+    public async Task ForOneSample()
     {
         var mean = 3.0;
         var sd = 1.581;
@@ -25,7 +25,7 @@ internal class StudentTTestTests
     }
 
     [Test]
-    public async Task ForIndependentSamples_ReturnsT()
+    public async Task ForIndependentSamples()
     {
         var mean = 3.0;
         var sd = 1.581;
@@ -46,7 +46,7 @@ internal class StudentTTestTests
     }
 
     [Test]
-    public async Task ForPairedSamples_ReturnsT()
+    public async Task ForPairedSamples()
     {
         double[] before = [1.0, 2.0, 3.0, 4.0, 5.0];
         double[] after = [2.0, 2.1, 2.2, 2.3, 2.4];
@@ -62,14 +62,14 @@ internal class StudentTTestTests
     }
 
     [Test]
-    public async Task GetDegreesOfFreedom_ForOneSampleOrPairedSamples_ReturnsDF()
+    public async Task GetDegreesOfFreedom_ForOneSampleOrPairedSamples()
     {
         var dof = StudentTTest.GetDegreesOfFreedom(5);
         await Assert.That(dof).IsEqualTo(4);
     }
 
     [Test]
-    public async Task GetDegreesOfFreedom_ForTwoPairedTest_ReturnsDF()
+    public async Task GetDegreesOfFreedom_ForTwoPairedTest()
     {
         var dof = StudentTTest.GetDegreesOfFreedom(1.581, 5, 1.345, 7);
         await Assert.That(dof).IsEqualTo(7.813).Within(0.001);

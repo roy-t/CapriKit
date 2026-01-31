@@ -9,7 +9,7 @@ namespace CapriKit.Tests.Generators.PrecisionVariants;
 internal class VariantGeneratorTests
 {
     [Test]
-    public async Task Execute_ComplexTypeVariants_RewritesAllTypesToFullyQualifiedNames()
+    public async Task Execute()
     {
         string attributeSource = """
             using System;

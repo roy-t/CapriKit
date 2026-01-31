@@ -5,14 +5,14 @@ namespace CapriKit.Tests.Mathematics;
 internal class StatisticsTests
 {
     [Test]
-    public async Task Mean_OfArray_ReturnsAverage()
+    public async Task Mean()
     {
         double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];
         await Assert.That(Statistics.Mean(values)).IsEqualTo(3.0);
     }
 
     [Test]
-    public async Task PopulationStandardDeviation_OfArray_ReturnsSD()
+    public async Task PopulationStandardDeviation()
     {
         double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];
         var mean = Statistics.Mean(values);
@@ -21,7 +21,7 @@ internal class StatisticsTests
     }
 
     [Test]
-    public async Task SampleStandardDeviation_OfArray_ReturnsSD()
+    public async Task SampleStandardDeviation()
     {
         double[] values = [1.0, 2.0, 3.0, 4.0, 5.0];
         var mean = Statistics.Mean(values);
@@ -30,7 +30,7 @@ internal class StatisticsTests
     }
 
     [Test]
-    public async Task StandardError_ReturnsSE()
+    public async Task StandardError()
     {
         double sd = 1.581;
         double se = 0.707;

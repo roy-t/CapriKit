@@ -1,8 +1,9 @@
+
 namespace CapriKit.IO;
 
 public sealed class InMemoryFileSystem : IVirtualFileSystem
 {
-    private record InMemoryFile(MemoryStream Stream, DateTime LastWriteTime);
+    private record InMemoryFile(InMemoryFileStream Stream, DateTime LastWriteTime);
     private readonly Dictionary<FilePath, InMemoryFile> Disk;
 
     public InMemoryFileSystem()
@@ -30,7 +31,7 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
             return inMemoryFile.Stream;
         }
 
-        var newStream = new MemoryStream();
+        var newStream = new InMemoryFileStream();
         Disk.Add(file, new InMemoryFile(newStream, DateTime.Now));
         return newStream;
     }
@@ -48,12 +49,15 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
 
     public Stream OpenRead(FilePath file)
     {
-        throw new NotImplementedException();
+        var (stream, _) = FindOrThrow(file);
+        stream.Position = 0;
+        return stream;
     }
 
-    public int SizeInBytes(FilePath file)
+    public long SizeInBytes(FilePath file)
     {
-        throw new NotImplementedException();
+        var (stream, _) = FindOrThrow(file);
+        return stream.Length;
     }
 
     private InMemoryFile FindOrThrow(FilePath file)
@@ -63,5 +67,24 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
             return value;
         }
         throw new FileNotFoundException(null, file.ToString());
+    }
+
+    private sealed class InMemoryFileStream : MemoryStream
+    {
+        protected override void Dispose(bool disposing)
+        {
+            Position = 0;
+        }
+
+        public override ValueTask DisposeAsync()
+        {
+            Position = 0;
+            return ValueTask.CompletedTask;
+        }
+
+        public override void Close()
+        {
+            Position = 0;
+        }
     }
 }

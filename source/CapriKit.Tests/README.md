@@ -10,13 +10,9 @@ When in doubt, follow [Microsoft's Unit Testing Best Practices](https://learn.mi
 
 Since CapriKit is a hobby project, the goal is not to write extensive tests that prove the code is production ready. Instead we want to have reasonable assurance that the happy path functionality works. In practice this means that tests should only cover functionality that has at least some complexity and should focus on the hapy path.
 
-Test names should consist of three parts:
-
-- Name of the method being tested
-- Scenario under which the method is being tested
-- Expected behavior when the scenario is involved
-
-For example a good test name for a method testing `Math.Floor` would be: `Floor_NegativeNumber_RoundsDown()`
-
-
 Test should follow the arrange, act, assert pattern.
+
+## Naming
+- Put tests for file `Foo.cs` in namespace `CapriKit.Bar` in `/Bar/FooTests.cs`.
+- Put the most important test for method `Method` in a method called `Method`
+- Put tests for specific corner cases in `Method_CornerCase`
