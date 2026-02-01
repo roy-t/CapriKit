@@ -10,6 +10,16 @@ public record FilePath(DirectoryPath Directory, FileName File)
         return new FilePath(new DirectoryPath(directory), new FileName(file));
     }
 
+    public FilePath ToAbsolute()
+    {
+        return this with { Directory = this.Directory.ToAbsolute() };
+    }
+
+    public FilePath ToAbsolute(string basePath)
+    {
+        return this with { Directory = this.Directory.ToAbsolute(basePath) };
+    }
+
     public override string ToString()
     {
         return $"{Directory.Path}{File.Name}";

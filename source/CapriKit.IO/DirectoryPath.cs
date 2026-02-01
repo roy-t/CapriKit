@@ -22,6 +22,12 @@ public record DirectoryPath
         return new DirectoryPath(full);
     }
 
+    public DirectoryPath ToAbsolute(string basePath)
+    {
+        var full = System.IO.Path.GetFullPath(Path, basePath);
+        return new DirectoryPath(full);
+    }
+
     public DirectoryPath Join(params DirectoryPath[] path)
     {
         var pathString = Path;
