@@ -36,6 +36,11 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
         return newStream;
     }
 
+    public void Delete(FilePath file)
+    {
+        Disk.Remove(file);
+    }
+
     public bool Exists(FilePath file)
     {
         return Disk.ContainsKey(file);

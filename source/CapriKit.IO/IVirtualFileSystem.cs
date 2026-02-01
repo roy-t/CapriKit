@@ -11,6 +11,11 @@ public interface IVirtualFileSystem : IReadOnlyVirtualFileSystem
     /// Opens an existing file and moves the stream to the end of the file. Throws an exception if the file does not exist.
     /// </summary>
     Stream AppendReadWrite(FilePath file);
+
+    /// <summary>
+    /// Deletes an existig file. Nothing happens if the file does not exist.
+    /// </summary>
+    void Delete(FilePath file);
 }
 
 public interface IReadOnlyVirtualFileSystem

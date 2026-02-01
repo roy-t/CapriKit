@@ -22,9 +22,9 @@ public record DirectoryPath
         return new DirectoryPath(full);
     }
 
-    public DirectoryPath ToAbsolute(string basePath)
+    public DirectoryPath ToAbsolute(DirectoryPath basePath)
     {
-        var full = System.IO.Path.GetFullPath(Path, basePath);
+        var full = System.IO.Path.GetFullPath(Path, basePath.Path);
         return new DirectoryPath(full);
     }
 
@@ -52,11 +52,7 @@ public record DirectoryPath
 
     public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
     {
-        if (path.IsWhiteSpace())
-        {
-            return false;
-        }
-
+        // If this is a relative path an empty directory name is valid
         return path.IndexOfAny(InvalidPathChars) < 0;
     }
 
@@ -72,7 +68,7 @@ public record DirectoryPath
 
     public static string AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
     {
-        if (path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
+        if (path.Length > 0 && path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
         {
             return path.ToString() + DirectorySeperator;
         }

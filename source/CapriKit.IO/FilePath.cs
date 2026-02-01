@@ -15,7 +15,7 @@ public record FilePath(DirectoryPath Directory, FileName File)
         return this with { Directory = this.Directory.ToAbsolute() };
     }
 
-    public FilePath ToAbsolute(string basePath)
+    public FilePath ToAbsolute(DirectoryPath basePath)
     {
         return this with { Directory = this.Directory.ToAbsolute(basePath) };
     }

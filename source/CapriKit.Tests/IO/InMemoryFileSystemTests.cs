@@ -57,6 +57,16 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
+    public async Task Delete()
+    {
+        var sut = new InMemoryFileSystem();
+        using (var writeStream = sut.CreateReadWrite(File)) { }
+        await Assert.That(sut.Exists(File)).IsTrue();
+        sut.Delete(File);
+        await Assert.That(sut.Exists(File)).IsFalse();
+    }
+
+    [Test]
     public async Task Exists()
     {
         var sut = new InMemoryFileSystem();
