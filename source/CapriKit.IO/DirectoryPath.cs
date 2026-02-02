@@ -16,6 +16,18 @@ public record DirectoryPath
 
     public bool IsAbsolute => System.IO.Path.IsPathFullyQualified(Path);
 
+    public DirectoryPath? Parent
+    {
+        get
+        {
+            var name = RemoveTrailingDirectorySeparator(Path);
+            var parent = System.IO.Path.GetDirectoryName(name);
+            return parent == null
+                ? null
+                : new DirectoryPath(parent);
+        }
+    }
+
     public DirectoryPath ToAbsolute()
     {
         var full = System.IO.Path.GetFullPath(Path);
@@ -74,5 +86,20 @@ public record DirectoryPath
         }
 
         return path.ToString();
+    }
+
+    public static string RemoveTrailingDirectorySeparator(ReadOnlySpan<char> path)
+    {
+        if (path.Length == 0)
+        {
+            return path.ToString();
+        }
+
+        if (path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
+        {
+            return path.ToString();
+        }
+
+        return path[0..^1].ToString();
     }
 }

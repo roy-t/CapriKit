@@ -54,6 +54,22 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         return absoluteFile.Length;
     }
 
+    public IReadOnlyList<FilePath> List(DirectoryPath directory)
+    {
+        var absoluteDirectory = GetDirectoryInfo(directory);
+        var files = absoluteDirectory.GetFiles();
+
+        var filePaths = new List<FilePath>();
+        foreach (var file in files)
+        {
+            var dir = MakeRelative(file.DirectoryName);
+            var name = new FileName(file.Name);
+            filePaths.Add(new FilePath(dir, name));
+        }
+
+        return filePaths;
+    }
+
     private FileInfo FindOrThrow(FilePath file)
     {
         var info = GetFileInfo(file);
@@ -72,15 +88,47 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         return new FileInfo(absolutePath.ToString());
     }
 
+    private DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    {
+        var absolutePath = path.ToAbsolute(BasePath);
+        ThrowIfPathIsOutsideBasePath(absolutePath);
+        return new DirectoryInfo(absolutePath.ToString());
+    }
+
+    private DirectoryPath MakeRelative(string? directoryPath)
+    {
+        if (string.IsNullOrEmpty(directoryPath))
+        {
+            return new DirectoryPath(string.Empty);
+        }
+
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        var relativePath = directoryPath.Replace(BasePath.Path, string.Empty, comparisonType);
+
+        return new DirectoryPath(relativePath);
+    }
+
     private void ThrowIfPathIsOutsideBasePath(FilePath file)
     {
         if (file.IsAbsolute)
         {
-            var comparisonType = OperatingSystem.IsWindows()
-                ? StringComparison.OrdinalIgnoreCase
-                : StringComparison.Ordinal;
-
+            var comparisonType = IOUtilities.GetOSPathComparisonType();
             var path = file.Directory.Path;
+            var basePath = BasePath.Path;
+
+            if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
+            {
+                throw new ForbiddenPathException(path, basePath);
+            }
+        }
+    }
+
+    private void ThrowIfPathIsOutsideBasePath(DirectoryPath directory)
+    {
+        if (directory.IsAbsolute)
+        {
+            var comparisonType = IOUtilities.GetOSPathComparisonType();
+            var path = directory.Path;
             var basePath = BasePath.Path;
 
             if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))

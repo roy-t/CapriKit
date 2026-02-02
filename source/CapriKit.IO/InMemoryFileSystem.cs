@@ -1,4 +1,5 @@
 
+
 namespace CapriKit.IO;
 
 public sealed class InMemoryFileSystem : IVirtualFileSystem
@@ -64,6 +65,21 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
         var (stream, _) = FindOrThrow(file);
         return stream.Length;
     }
+
+    public IReadOnlyList<FilePath> List(DirectoryPath directory)
+    {
+        var files = new List<FilePath>();
+        foreach (var key in Disk.Keys)
+        {
+            if (key.Directory.Equals(directory))
+            {
+                files.Add(key);
+            }
+        }
+
+        return files;
+    }
+
 
     private InMemoryFile FindOrThrow(FilePath file)
     {

@@ -39,4 +39,6 @@ public interface IReadOnlyVirtualFileSystem
     /// Returns when the file was last changed, in local time. Throws an exception if the file does not exist.
     /// </summary>
     DateTime LastWriteTime(FilePath file);
+
+    IReadOnlyList<FilePath> List(DirectoryPath directory);
 }
