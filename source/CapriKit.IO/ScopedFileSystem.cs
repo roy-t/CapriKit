@@ -1,11 +1,15 @@
 namespace CapriKit.IO;
 
+
+public class ForbiddenPathException(string Path, string RequiredBasePath)
+    : Exception($"Attempt to access {Path} that does not have the required base path {RequiredBasePath}");
+
 public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSystem
 {
-    public Stream AppendReadWrite(FilePath file)
+    public Stream AppendWrite(FilePath file)
     {
         var absoluteFile = FindOrThrow(file);
-        return absoluteFile.Open(FileMode.Append, FileAccess.ReadWrite, FileShare.Read);
+        return absoluteFile.Open(FileMode.Append, FileAccess.Write, FileShare.Read);
     }
 
     public Stream CreateReadWrite(FilePath file)
@@ -13,7 +17,8 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         var absoluteFile = GetFileInfo(file);
         if (!absoluteFile.Exists)
         {
-            Directory.CreateDirectory(absoluteFile.FullName);
+            var directory = absoluteFile.DirectoryName ?? string.Empty;
+            Directory.CreateDirectory(directory);
         }
 
         return absoluteFile.Open(FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
@@ -49,14 +54,6 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         return absoluteFile.Length;
     }
 
-    private FileInfo GetFileInfo(FilePath file)
-    {
-        // TODO: add a better check to make sure that this file is really
-        // in the basePath and doesn't use .. etc.. to get somewhere else
-        var absolutePath = file.ToAbsolute(BasePath);
-        return new FileInfo(absolutePath.ToString());
-    }
-
     private FileInfo FindOrThrow(FilePath file)
     {
         var info = GetFileInfo(file);
@@ -66,5 +63,30 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         }
 
         throw new FileNotFoundException(null, file.ToString());
+    }
+
+    private FileInfo GetFileInfo(FilePath file)
+    {
+        var absolutePath = file.ToAbsolute(BasePath);
+        ThrowIfPathIsOutsideBasePath(absolutePath);
+        return new FileInfo(absolutePath.ToString());
+    }
+
+    private void ThrowIfPathIsOutsideBasePath(FilePath file)
+    {
+        if (file.IsAbsolute)
+        {
+            var comparisonType = OperatingSystem.IsWindows()
+                ? StringComparison.OrdinalIgnoreCase
+                : StringComparison.Ordinal;
+
+            var path = file.Directory.Path;
+            var basePath = BasePath.Path;
+
+            if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
+            {
+                throw new ForbiddenPathException(path, basePath);
+            }
+        }
     }
 }

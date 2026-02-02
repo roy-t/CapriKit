@@ -11,7 +11,7 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
         Disk = new Dictionary<FilePath, InMemoryFile>();
     }
 
-    public Stream AppendReadWrite(FilePath file)
+    public Stream AppendWrite(FilePath file)
     {
         var inMemoryFile = FindOrThrow(file);
         Disk[file] = inMemoryFile with { LastWriteTime = DateTime.Now };

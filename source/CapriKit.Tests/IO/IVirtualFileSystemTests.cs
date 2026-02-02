@@ -3,24 +3,47 @@ using System.Text;
 
 namespace CapriKit.Tests.IO;
 
-internal class InMemoryFileSystemTests
+internal class IVirtualFileSystemTests
 {
-    private readonly static FilePath File = FilePath.FromSpan(@"C:\Users\User1\Notes.txt");
+    private FilePath File = null!;
+
+    [Before(Test)]
+    public void TestSetup()
+    {
+        var id = Path.GetRandomFileName();
+        File = FilePath.FromSpan($"{nameof(IVirtualFileSystemTests)}.{id}.tmp");
+    }
+
+    [After(Test)]
+    public void TestTeardown()
+    {        
+        var info = new FileInfo(File.ToString());
+        info.Delete();
+    }
+
+    public static class FileSystemDataSource
+    {
+        public static IEnumerable<Func<IVirtualFileSystem>> Generator()
+        {
+            yield return () => new InMemoryFileSystem();
+            yield return () => new ScopedFileSystem(new DirectoryPath(Path.GetTempPath()));
+        }
+    }
 
     [Test]
-    public async Task AppendReadWrite()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task AppendReadWrite(IVirtualFileSystem sut)
     {
         var part1 = "Hello";
         var part2 = "World";
-
-        var sut = new InMemoryFileSystem();
+        
         using (var writeStream = sut.CreateReadWrite(File))
         {
             using var writer = new StreamWriter(writeStream);
             writer.Write(part1);
         }
 
-        using (var appendStream = sut.AppendReadWrite(File))
+        using (var appendStream = sut.AppendWrite(File))
         {
             using var writer = new StreamWriter(appendStream);
             writer.Write(part2);
@@ -33,18 +56,18 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task AppendReadWrite_ThrowsIfFileDoesNotExists()
-    {
-        var sut = new InMemoryFileSystem();
-        await Assert.That(() => sut.AppendReadWrite(File)).Throws<FileNotFoundException>();
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task AppendReadWrite_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
+    {        
+        await Assert.That(() => sut.AppendWrite(File)).Throws<FileNotFoundException>();
     }
 
     [Test]
-    public async Task CreateReadWrite()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task CreateReadWrite(IVirtualFileSystem sut)
     {
         var writtenText = "Hello World";
 
-        var sut = new InMemoryFileSystem();
         using (var writeStream = sut.CreateReadWrite(File))
         {
             using var writer = new StreamWriter(writeStream);
@@ -57,9 +80,9 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task Delete()
-    {
-        var sut = new InMemoryFileSystem();
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task Delete(IVirtualFileSystem sut)
+    {        
         using (var writeStream = sut.CreateReadWrite(File)) { }
         await Assert.That(sut.Exists(File)).IsTrue();
         sut.Delete(File);
@@ -67,9 +90,9 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task Exists()
-    {
-        var sut = new InMemoryFileSystem();
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task Exists(IVirtualFileSystem sut)
+    {        
         var exists = sut.Exists(File);
         await Assert.That(exists).IsFalse();
 
@@ -80,14 +103,14 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task LastWriteTime()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task LastWriteTime(IVirtualFileSystem sut)
     {
         var start = DateTime.Now;
 
         var part1 = "Hello";
         var part2 = "World";
 
-        var sut = new InMemoryFileSystem();
         using (var writeStream = sut.CreateReadWrite(File))
         {
             using var writer = new StreamWriter(writeStream);
@@ -96,7 +119,7 @@ internal class InMemoryFileSystemTests
 
         var before = sut.LastWriteTime(File);
 
-        using (var appendStream = sut.AppendReadWrite(File))
+        using (var appendStream = sut.AppendWrite(File))
         {
             using var writer = new StreamWriter(appendStream);
             writer.Write(part2);
@@ -109,18 +132,18 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task LastWriteTime_ThrowsIfFileDoesNotExists()
-    {
-        var sut = new InMemoryFileSystem();
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task LastWriteTime_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
+    {        
         await Assert.That(() => sut.LastWriteTime(File)).Throws<FileNotFoundException>();
     }
 
     [Test]
-    public async Task OpenRead()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task OpenRead(IVirtualFileSystem sut)
     {
         var writtenText = "Hello World";
-
-        var sut = new InMemoryFileSystem();
+       
         await sut.WriteAllText(File, writtenText);
 
         using var stream = sut.OpenRead(File);
@@ -132,16 +155,16 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task OpenRead_ThrowsIfFileDoesNotExists()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task OpenRead_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
     {
-        var sut = new InMemoryFileSystem();
         await Assert.That(() => sut.OpenRead(File)).Throws<FileNotFoundException>();
     }
 
     [Test]
-    public async Task SizeInBytes()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task SizeInBytes(IVirtualFileSystem sut)
     {
-        var sut = new InMemoryFileSystem();
         var bytes = Encoding.UTF8.GetBytes("Hello World");
         await sut.WriteAllBytes(File, bytes);
 
@@ -151,9 +174,9 @@ internal class InMemoryFileSystemTests
     }
 
     [Test]
-    public async Task SizeInBytes_ThrowsIfFileDoesNotExists()
+    [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
+    public async Task SizeInBytes_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
     {
-        var sut = new InMemoryFileSystem();
         await Assert.That(() => sut.SizeInBytes(File)).Throws<FileNotFoundException>();
     }
 }

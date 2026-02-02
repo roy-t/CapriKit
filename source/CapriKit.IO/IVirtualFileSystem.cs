@@ -3,14 +3,14 @@ namespace CapriKit.IO;
 public interface IVirtualFileSystem : IReadOnlyVirtualFileSystem
 {
     /// <summary>
-    /// Creates a new file if it does not exist, including the entire directory structure. If the file does exists it is truncated.
+    /// Creates a new file if it does not exist, including the entire directory structure. If the file does exists it is overwritten.
     /// </summary>
     Stream CreateReadWrite(FilePath file);
 
     /// <summary>
-    /// Opens an existing file and moves the stream to the end of the file. Throws an exception if the file does not exist.
+    /// Opens an existing file for writing data to the end of the file. Throws an exception if the file does not exist.
     /// </summary>
-    Stream AppendReadWrite(FilePath file);
+    Stream AppendWrite(FilePath file);
 
     /// <summary>
     /// Deletes an existig file. Nothing happens if the file does not exist.

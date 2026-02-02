@@ -9,6 +9,7 @@ public record FilePath(DirectoryPath Directory, FileName File)
 
         return new FilePath(new DirectoryPath(directory), new FileName(file));
     }
+    public bool IsAbsolute => Directory.IsAbsolute;
 
     public FilePath ToAbsolute()
     {
