@@ -1,16 +1,22 @@
 namespace CapriKit.IO;
 
-public record FilePath
+public sealed class FilePath : IEquatable<FilePath>
 {
     private readonly string Path;
 
     public FilePath(ReadOnlySpan<char> path)
     {
-        var validPath = IOUtilities.IsValidFilePath(path)
-            ? path
-            : throw new ArgumentException($"Invalid file path {path}", nameof(path));
+        if (!IOUtilities.IsValidFilePath(path))
+        {
+            throw new ArgumentException($"Invalid file path {path}", nameof(path));
+        }
 
-        Path = IOUtilities.NormalizePathSeparators(validPath).ToString();
+        if (System.IO.Path.IsPathFullyQualified(path))
+        {
+            path = IOUtilities.NormalizeDotSegments(path);
+        }
+
+        Path = IOUtilities.NormalizePathSeparators(path).ToString();
     }
 
     public ReadOnlySpan<char> FileName => System.IO.Path.GetFileName(Path.AsSpan());
@@ -34,6 +40,35 @@ public record FilePath
 
         var path = System.IO.Path.GetFullPath(Path, basePath);
         return new FilePath(path);
+    }
+
+    public FilePath GetPathRelativeTo(DirectoryPath basePath)
+    {
+        if (StartsWith(basePath))
+        {
+            var relativePath = System.IO.Path.GetRelativePath(basePath, Path);
+            return new FilePath(relativePath);
+        }
+
+        throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
+    }
+
+    public bool StartsWith(DirectoryPath beginning)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.StartsWith(beginning, comparisonType);
+    }
+
+    public bool Contains(DirectoryPath segment)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.Contains(segment, comparisonType);
+    }
+
+    public bool EndsWith(FilePath ending)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.EndsWith(ending, comparisonType);
     }
 
     public override string ToString()
@@ -64,5 +99,26 @@ public record FilePath
     public static implicit operator FilePath(ReadOnlySpan<char> path)
     {
         return new FilePath(path);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as FilePath);
+    }
+
+    public bool Equals(FilePath? other)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return other != null && other.Path.Equals(Path, comparisonType);
+    }
+
+
+    public static bool operator ==(FilePath? left, FilePath? right) => Equals(left, right);
+    public static bool operator !=(FilePath? left, FilePath? right) => !Equals(left, right);
+
+    public override int GetHashCode()
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return StringComparer.FromComparison(comparisonType).GetHashCode(Path);
     }
 }

@@ -57,13 +57,11 @@ public static class VirtualFileSystemExtensions
     /// </summary>
     public static DirectoryPath? SearchForDirectoryWithMarker(this IVirtualFileSystem system, DirectoryPath startingDirectory, FilePath marker)
     {
-        // TODO: the file and directory types should use the right comparison out of the box
-        var comparisonType = IOUtilities.GetOSPathComparisonType();
         DirectoryPath? current = startingDirectory;
         while (current != null)
         {
             var files = system.List(current);
-            if (files.Any(f => f.FileName.Equals(marker.FileName, comparisonType)))
+            if (files.Any(f => f.EndsWith(marker)))
             {
                 return current;
             }

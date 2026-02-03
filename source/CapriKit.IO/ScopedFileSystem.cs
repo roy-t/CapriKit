@@ -1,5 +1,3 @@
-using System.IO;
-
 namespace CapriKit.IO;
 
 
@@ -62,9 +60,9 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         var files = absoluteDirectory.GetFiles();
 
         var filePaths = new List<FilePath>();
-        foreach (var file in files)
+        foreach (var file in files.Select(f => new FilePath(f.FullName)))
         {
-            var relativePath = MakeRelative(file.FullName);
+            var relativePath = file.GetPathRelativeTo(BasePath);
             filePaths.Add(relativePath);
         }
 
@@ -96,40 +94,24 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         return new DirectoryInfo(absolutePath.ToString());
     }
 
-    private FilePath MakeRelative(string path)
-    {
-        var comparisonType = IOUtilities.GetOSPathComparisonType();
-        var relativePath = path.Replace(BasePath, string.Empty, comparisonType);
-
-        return new FilePath(relativePath);
-    }
-
     private void ThrowIfPathIsOutsideBasePath(FilePath file)
     {
         if (file.IsAbsolute)
         {
-            var comparisonType = IOUtilities.GetOSPathComparisonType();
-            var path = file.ToString();
-            var basePath = BasePath.ToString();
-
-            if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
+            if (!file.StartsWith(BasePath))
             {
-                throw new ForbiddenPathException(path, basePath);
+                throw new ForbiddenPathException(file, BasePath);
             }
         }
     }
 
-    private void ThrowIfPathIsOutsideBasePath(DirectoryPath directory)
+    private void ThrowIfPathIsOutsideBasePath(DirectoryPath path)
     {
-        if (directory.IsAbsolute)
+        if (path.IsAbsolute)
         {
-            var comparisonType = IOUtilities.GetOSPathComparisonType();
-            var path = directory.ToString();
-            var basePath = BasePath.ToString();
-
-            if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
+            if (!path.StartsWith(BasePath))
             {
-                throw new ForbiddenPathException(path, basePath);
+                throw new ForbiddenPathException(path, BasePath);
             }
         }
     }

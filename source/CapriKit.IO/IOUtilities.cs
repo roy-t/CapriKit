@@ -8,7 +8,7 @@ public static class IOUtilities
     private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
     private static readonly char[] InvalidPathChars = Path.GetInvalidPathChars();
 
-    public static StringComparison GetOSPathComparisonType()
+    internal static StringComparison GetOSPathComparisonType()
     {
         return OperatingSystem.IsWindows()
             ? StringComparison.OrdinalIgnoreCase
@@ -28,14 +28,14 @@ public static class IOUtilities
         return path.ToString().Replace(AltDirectorySeperator, DirectorySeperator);
     }
 
-    public static string AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
+    public static ReadOnlySpan<char> AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
     {
         if (path.Length > 0 && path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
         {
             return path.ToString() + DirectorySeperator;
         }
 
-        return path.ToString();
+        return path;
     }
 
     public static ReadOnlySpan<char> RemoveTrailingDirectorySeparator(ReadOnlySpan<char> path)
@@ -90,5 +90,15 @@ public static class IOUtilities
     public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
     {
         return path.IndexOfAny(InvalidPathChars) < 0;
+    }
+
+    public static ReadOnlySpan<char> NormalizeDotSegments(ReadOnlySpan<char> path)
+    {
+        if (Path.IsPathRooted(path))
+        {
+            return Path.GetFullPath(path.ToString());
+        }
+
+        throw new Exception($"Cannot normalize dot segments on relative path: {path}");
     }
 }

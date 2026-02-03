@@ -1,16 +1,24 @@
 namespace CapriKit.IO;
 
-public record DirectoryPath
+public sealed class DirectoryPath : IEquatable<DirectoryPath>
 {
     private readonly string Path;
 
     public DirectoryPath(ReadOnlySpan<char> path)
     {
-        var validPath = IOUtilities.IsValidDirectoryPath(path)
-            ? path
-            : throw new ArgumentException($"Invalid directory path: {path}", nameof(path));
+        if (!IOUtilities.IsValidDirectoryPath(path))
+        {
+            throw new ArgumentException($"Invalid directory path: {path}", nameof(path));
+        }
 
-        Path = IOUtilities.AddTrailingDirectorySeparator(IOUtilities.NormalizePathSeparators(validPath));
+        if (System.IO.Path.IsPathFullyQualified(path))
+        {
+            path = IOUtilities.NormalizeDotSegments(path);
+        }
+
+        Path = IOUtilities.AddTrailingDirectorySeparator(
+                IOUtilities.NormalizePathSeparators(path))
+                  .ToString();
     }
 
     public bool IsAbsolute => System.IO.Path.IsPathFullyQualified(Path);
@@ -29,8 +37,42 @@ public record DirectoryPath
 
     public DirectoryPath ToAbsolute()
     {
+        if (IsAbsolute)
+        {
+            return this;
+        }
+
         var full = System.IO.Path.GetFullPath(Path);
         return new DirectoryPath(full);
+    }
+
+    public DirectoryPath GetPathRelativeTo(DirectoryPath basePath)
+    {
+        if (StartsWith(basePath))
+        {
+            var relativePath = System.IO.Path.GetRelativePath(basePath, Path);
+            return new DirectoryPath(relativePath);
+        }
+
+        throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
+    }
+
+    public bool StartsWith(DirectoryPath beginning)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.StartsWith(beginning.Path, comparisonType);
+    }
+
+    public bool Contains(DirectoryPath segment)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.Contains(segment.Path, comparisonType);
+    }
+
+    public bool EndsWith(DirectoryPath ending)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return Path.EndsWith(ending.Path, comparisonType);
     }
 
     public DirectoryPath ToAbsolute(DirectoryPath basePath)
@@ -73,9 +115,14 @@ public record DirectoryPath
         return new FilePath(path);
     }
 
+    public override string ToString()
+    {
+        return Path;
+    }
+
     public static implicit operator string(DirectoryPath? path)
     {
-        if (string.IsNullOrEmpty(path))
+        if (path == null)
         {
             return string.Empty;
         }
@@ -97,4 +144,26 @@ public record DirectoryPath
     {
         return new DirectoryPath(path);
     }
+
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as DirectoryPath);
+    }
+
+    public bool Equals(DirectoryPath? other)
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return other != null && other.Path.Equals(Path, comparisonType);
+    }
+
+    public static bool operator ==(DirectoryPath? left, DirectoryPath? right) => Equals(left, right);
+    public static bool operator !=(DirectoryPath? left, DirectoryPath? right) => !Equals(left, right);
+
+    public override int GetHashCode()
+    {
+        var comparisonType = IOUtilities.GetOSPathComparisonType();
+        return StringComparer.FromComparison(comparisonType).GetHashCode(Path);
+    }
+
+
 }
