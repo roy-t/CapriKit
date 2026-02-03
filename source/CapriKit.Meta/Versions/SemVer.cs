@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
-namespace CapriKit.Meta;
+namespace CapriKit.Meta.Versions;
 
 // TODO: move to separate library
 // TODO: add tests

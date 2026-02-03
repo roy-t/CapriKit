@@ -51,24 +51,4 @@ public static class VirtualFileSystemExtensions
         using var stream = system.CreateReadWrite(file);
         await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
-
-    /// <summary>
-    /// Looks for a file with the specified name, starting at the starting directory and then traversing up towards the root
-    /// </summary>
-    public static DirectoryPath? SearchForDirectoryWithMarker(this IVirtualFileSystem system, DirectoryPath startingDirectory, FilePath marker)
-    {
-        DirectoryPath? current = startingDirectory;
-        while (current != null)
-        {
-            var files = system.List(current);
-            if (files.Any(f => f.EndsWith(marker)))
-            {
-                return current;
-            }
-
-            current = current.Parent;
-        }
-
-        return null;
-    }
 }

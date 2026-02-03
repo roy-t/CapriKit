@@ -4,8 +4,16 @@ namespace CapriKit.IO;
 public class ForbiddenPathException(string Path, string RequiredBasePath)
     : Exception($"Attempt to access {Path} that does not have the required base path {RequiredBasePath}");
 
-public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSystem
+/// <summary>
+/// Limits access to the base path and all its sub-directories. Relative paths
+/// are assumed to be relative to the base path. Using relative or absolute paths
+/// that resolve to directories outside of the scope of this file system results
+/// in a ForbiddenPathException.
+/// </summary>
+public sealed class ScopedFileSystem(DirectoryPath basePath) : IVirtualFileSystem
 {
+    public string BasePath { get; } = basePath;
+
     public Stream AppendWrite(FilePath file)
     {
         var absoluteFile = FindOrThrow(file);

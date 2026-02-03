@@ -3,7 +3,7 @@ using CapriKit.Meta.Utilities;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace CapriKit.Meta.Commands;
+namespace CapriKit.Meta.Builds;
 
 internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
 {

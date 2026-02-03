@@ -86,7 +86,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         return new DirectoryPath(path);
     }
 
-    public DirectoryPath Join(params DirectoryPath[] path)
+    public DirectoryPath Join(DirectoryPath[] path)
     {
         var pathString = Path;
         foreach (var p in path)

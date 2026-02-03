@@ -3,7 +3,7 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
 
-namespace CapriKit.Meta.Commands;
+namespace CapriKit.Meta.Versions;
 
 internal sealed class BumpCommand : Command<BumpCommand.Settings>
 {

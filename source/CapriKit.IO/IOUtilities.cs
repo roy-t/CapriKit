@@ -101,4 +101,24 @@ public static class IOUtilities
 
         throw new Exception($"Cannot normalize dot segments on relative path: {path}");
     }
+
+    /// <summary>
+    /// Looks for a file with the specified name, starting at the starting directory and then traversing up towards the root
+    /// </summary>
+    public static DirectoryPath? SearchForDirectoryWithMarker(DirectoryPath startingDirectory, FilePath marker)
+    {
+        DirectoryPath? current = startingDirectory;
+        while (current != null)
+        {
+            var markerPath = current.Join(marker);
+            if (File.Exists(markerPath))
+            {
+                return current;
+            }
+
+            current = current.Parent;
+        }
+
+        return null;
+    }
 }

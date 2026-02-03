@@ -1,4 +1,4 @@
-namespace CapriKit.Meta.Utilities;
+namespace CapriKit.Meta.Benchmarks;
 
 public record BenchmarkResults(string Title, Hostenvironmentinfo HostEnvironmentInfo, Benchmark[] Benchmarks);
 

@@ -1,5 +1,6 @@
 using CapriKit.Meta.Benchmarks;
-using CapriKit.Meta.Commands;
+using CapriKit.Meta.Builds;
+using CapriKit.Meta.Versions;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.Text;
@@ -21,7 +22,6 @@ internal partial class Program
                 .WithDescription("Run all unit tests");
             configure.AddCommand<BenchmarkCommand>("benchmark")
                 .WithDescription("Run all unit benchmarks");
-            // TODO: generate a diff with previous well know results, store one report per version in git.
         });
         app.Run(args);
     }
@@ -32,10 +32,9 @@ internal partial class Program
         // emoji and other glyphs. On Windows this does require that users use Windows Terminal
         // https://github.com/spectreconsole/spectre.console/issues/1964
         Console.OutputEncoding = Encoding.UTF8;
-
+        RunCommand(args);
         if (args.Length == 0)
         {
-            RunCommand([]);
             Console.WriteLine();
             while (true)
             {
@@ -44,10 +43,6 @@ internal partial class Program
                 var arguments = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                 RunCommand(arguments);
             }
-        }
-        else
-        {
-            RunCommand(args);
         }
     }
 }

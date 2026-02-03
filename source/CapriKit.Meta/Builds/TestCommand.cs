@@ -4,7 +4,7 @@ using Spectre.Console;
 using Spectre.Console.Cli;
 using TrxFileParser;
 
-namespace CapriKit.Meta.Commands;
+namespace CapriKit.Meta.Builds;
 
 // TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
 // This works like `dotnet test --treenode-filter /*/*/*/SampleStandardDeviation_OfArray_ReturnsSD`
@@ -15,8 +15,8 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
     {
         var startTime = DateTime.Now;
 
-        var solutionPath = Config.SolutionPath;                
-        var testResultsDirectory = Config.Outputs.TestDirectory;        
+        var solutionPath = Config.SolutionPath;
+        var testResultsDirectory = Config.Outputs.TestDirectory;
         var testResultsFileName = Config.Outputs.TestResultsFileName;
         var testResultsPath = Config.Outputs.TestResultsPath;
 

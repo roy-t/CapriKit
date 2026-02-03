@@ -1,4 +1,6 @@
-namespace CapriKit.Meta.Utilities;
+using CapriKit.Meta.Utilities;
+
+namespace CapriKit.Meta.Builds;
 
 
 internal sealed class BuildLogger : IDisposable

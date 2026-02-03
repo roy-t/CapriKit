@@ -1,5 +1,7 @@
 using CapriKit.Build;
+using CapriKit.Meta.Builds;
 using CapriKit.Meta.Utilities;
+using CapriKit.Meta.Versions;
 using Spectre.Console;
 using Spectre.Console.Cli;
 using System.ComponentModel;
@@ -22,7 +24,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var benchmarkOutputDirectory = Config.Outputs.BenchmarkDirectory;
         var benchmarkDirectory = Config.Assets.BenchmarkDirectory;
 
-        var projectPath = Path.Combine(solutionDirectory, @"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
+        var projectPath = solutionDirectory.Join(@"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
         using var logger = BuildLogger.CreateBuildLogger();
         var taskList = new TaskList();

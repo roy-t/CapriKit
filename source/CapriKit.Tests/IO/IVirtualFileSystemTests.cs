@@ -127,8 +127,11 @@ internal class IVirtualFileSystemTests
 
         var after = sut.LastWriteTime(File);
 
-        await Assert.That(start).IsLessThan(before);
-        await Assert.That(before).IsLessThan(after);
+        // The resolution of DateTime.Now is ~1ms. Sometimes
+        // this test is so fast that if we compare before and after
+        // using less than. So we make the weaker assumption.
+        await Assert.That(start).IsLessThanOrEqualTo(before);
+        await Assert.That(before).IsLessThanOrEqualTo(after);
     }
 
     [Test]

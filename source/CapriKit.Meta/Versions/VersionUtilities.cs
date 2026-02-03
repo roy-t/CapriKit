@@ -1,4 +1,4 @@
-namespace CapriKit.Meta.Utilities;
+namespace CapriKit.Meta.Versions;
 
 internal static class VersionUtilities
 {
