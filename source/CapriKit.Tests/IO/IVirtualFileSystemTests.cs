@@ -11,12 +11,12 @@ internal class IVirtualFileSystemTests
     public void TestSetup()
     {
         var id = Path.GetRandomFileName();
-        File = FilePath.FromSpan($"{nameof(IVirtualFileSystemTests)}.{id}.tmp");
+        File = new FilePath($"{nameof(IVirtualFileSystemTests)}.{id}.tmp");
     }
 
     [After(Test)]
     public void TestTeardown()
-    {        
+    {
         var info = new FileInfo(File.ToString());
         info.Delete();
     }
@@ -36,7 +36,7 @@ internal class IVirtualFileSystemTests
     {
         var part1 = "Hello";
         var part2 = "World";
-        
+
         using (var writeStream = sut.CreateReadWrite(File))
         {
             using var writer = new StreamWriter(writeStream);
@@ -58,7 +58,7 @@ internal class IVirtualFileSystemTests
     [Test]
     [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
     public async Task AppendReadWrite_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
-    {        
+    {
         await Assert.That(() => sut.AppendWrite(File)).Throws<FileNotFoundException>();
     }
 
@@ -82,7 +82,7 @@ internal class IVirtualFileSystemTests
     [Test]
     [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
     public async Task Delete(IVirtualFileSystem sut)
-    {        
+    {
         using (var writeStream = sut.CreateReadWrite(File)) { }
         await Assert.That(sut.Exists(File)).IsTrue();
         sut.Delete(File);
@@ -92,7 +92,7 @@ internal class IVirtualFileSystemTests
     [Test]
     [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
     public async Task Exists(IVirtualFileSystem sut)
-    {        
+    {
         var exists = sut.Exists(File);
         await Assert.That(exists).IsFalse();
 
@@ -134,7 +134,7 @@ internal class IVirtualFileSystemTests
     [Test]
     [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
     public async Task LastWriteTime_ThrowsIfFileDoesNotExists(IVirtualFileSystem sut)
-    {        
+    {
         await Assert.That(() => sut.LastWriteTime(File)).Throws<FileNotFoundException>();
     }
 
@@ -143,7 +143,7 @@ internal class IVirtualFileSystemTests
     public async Task OpenRead(IVirtualFileSystem sut)
     {
         var writtenText = "Hello World";
-       
+
         await sut.WriteAllText(File, writtenText);
 
         using var stream = sut.OpenRead(File);

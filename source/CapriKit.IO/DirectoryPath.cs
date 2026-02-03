@@ -2,17 +2,16 @@ namespace CapriKit.IO;
 
 public record DirectoryPath
 {
-    private const char AltDirectorySeperator = '\\';
-    private const char DirectorySeperator = '/';
-    private static readonly char[] InvalidPathChars = System.IO.Path.GetInvalidPathChars();
+    private readonly string Path;
 
     public DirectoryPath(ReadOnlySpan<char> path)
     {
-        var validPath = IsValidDirectoryPath(path) ? path : throw new ArgumentException($"Invalid directory path: {path}");
-        Path = AddTrailingDirectorySeparator(NormalizePathSeparators(validPath));
-    }
+        var validPath = IOUtilities.IsValidDirectoryPath(path)
+            ? path
+            : throw new ArgumentException($"Invalid directory path: {path}", nameof(path));
 
-    public string Path { get; }
+        Path = IOUtilities.AddTrailingDirectorySeparator(IOUtilities.NormalizePathSeparators(validPath));
+    }
 
     public bool IsAbsolute => System.IO.Path.IsPathFullyQualified(Path);
 
@@ -20,9 +19,9 @@ public record DirectoryPath
     {
         get
         {
-            var name = RemoveTrailingDirectorySeparator(Path);
+            var name = IOUtilities.RemoveTrailingDirectorySeparator(Path);
             var parent = System.IO.Path.GetDirectoryName(name);
-            return parent == null
+            return parent.IsWhiteSpace()
                 ? null
                 : new DirectoryPath(parent);
         }
@@ -36,8 +35,13 @@ public record DirectoryPath
 
     public DirectoryPath ToAbsolute(DirectoryPath basePath)
     {
-        var full = System.IO.Path.GetFullPath(Path, basePath.Path);
-        return new DirectoryPath(full);
+        if (IsAbsolute)
+        {
+            throw new Exception($"Cannot prepend base path {basePath} to absolute path {Path}");
+        }
+
+        var path = System.IO.Path.GetFullPath(Path, basePath.Path);
+        return new DirectoryPath(path);
     }
 
     public DirectoryPath Join(params DirectoryPath[] path)
@@ -47,7 +51,7 @@ public record DirectoryPath
         {
             if (p.IsAbsolute)
             {
-                throw new Exception($"Cannot append absolute path {p.Path}");
+                throw new Exception($"Cannot append absolute path {p.Path} to {pathString}");
             }
 
             pathString = System.IO.Path.Join(pathString, p.Path);
@@ -57,49 +61,40 @@ public record DirectoryPath
         return new DirectoryPath(pathString);
     }
 
-    public FilePath Join(FileName file)
+    public FilePath Join(FilePath file)
     {
-        return new FilePath(this, file);
-    }
 
-    public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
-    {
-        // If this is a relative path an empty directory name is valid
-        return path.IndexOfAny(InvalidPathChars) < 0;
-    }
-
-    public static ReadOnlySpan<char> NormalizePathSeparators(ReadOnlySpan<char> path)
-    {
-        if (path.IsWhiteSpace())
+        if (file.IsAbsolute)
         {
-            return path;
+            throw new Exception($"Cannot append absolute path {file} to {Path}");
         }
 
-        return path.ToString().Replace(AltDirectorySeperator, DirectorySeperator);
+        var path = System.IO.Path.Join(Path, file);
+        return new FilePath(path);
     }
 
-    public static string AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
+    public static implicit operator string(DirectoryPath? path)
     {
-        if (path.Length > 0 && path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
+        if (string.IsNullOrEmpty(path))
         {
-            return path.ToString() + DirectorySeperator;
+            return string.Empty;
         }
 
-        return path.ToString();
+        return path.Path;
     }
 
-    public static string RemoveTrailingDirectorySeparator(ReadOnlySpan<char> path)
+    public static implicit operator DirectoryPath(string? path)
     {
-        if (path.Length == 0)
+        if (string.IsNullOrEmpty(path))
         {
-            return path.ToString();
+            throw new Exception("Cannot convert null or empty string to directory path");
         }
 
-        if (path[^1] != DirectorySeperator && path[^1] != AltDirectorySeperator)
-        {
-            return path.ToString();
-        }
+        return new DirectoryPath(path);
+    }
 
-        return path[0..^1].ToString();
+    public static implicit operator DirectoryPath(ReadOnlySpan<char> path)
+    {
+        return new DirectoryPath(path);
     }
 }

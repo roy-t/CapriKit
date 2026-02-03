@@ -11,7 +11,7 @@ internal class ScopedFileSystemTests
         var basePath = new DirectoryPath(Path.Join(Path.GetTempPath(), "ScopedPath"));
         var sut = new ScopedFileSystem(basePath);
 
-        var forbiddenPath = basePath.Join(new DirectoryPath("..")).Join(new FileName("forbidden.txt"));
+        var forbiddenPath = basePath.Join(new DirectoryPath("..")).Join(new FilePath("forbidden.txt"));
 
         await Assert.That(() =>
         {

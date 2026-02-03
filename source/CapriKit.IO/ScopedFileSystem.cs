@@ -1,3 +1,5 @@
+using System.IO;
+
 namespace CapriKit.IO;
 
 
@@ -62,9 +64,8 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         var filePaths = new List<FilePath>();
         foreach (var file in files)
         {
-            var dir = MakeRelative(file.DirectoryName);
-            var name = new FileName(file.Name);
-            filePaths.Add(new FilePath(dir, name));
+            var relativePath = MakeRelative(file.FullName);
+            filePaths.Add(relativePath);
         }
 
         return filePaths;
@@ -83,29 +84,24 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
 
     private FileInfo GetFileInfo(FilePath file)
     {
-        var absolutePath = file.ToAbsolute(BasePath);
+        var absolutePath = file.IsAbsolute ? file : file.ToAbsolute(BasePath);
         ThrowIfPathIsOutsideBasePath(absolutePath);
         return new FileInfo(absolutePath.ToString());
     }
 
     private DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
-        var absolutePath = path.ToAbsolute(BasePath);
+        var absolutePath = path.IsAbsolute ? path : path.ToAbsolute(BasePath);
         ThrowIfPathIsOutsideBasePath(absolutePath);
         return new DirectoryInfo(absolutePath.ToString());
     }
 
-    private DirectoryPath MakeRelative(string? directoryPath)
+    private FilePath MakeRelative(string path)
     {
-        if (string.IsNullOrEmpty(directoryPath))
-        {
-            return new DirectoryPath(string.Empty);
-        }
-
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        var relativePath = directoryPath.Replace(BasePath.Path, string.Empty, comparisonType);
+        var relativePath = path.Replace(BasePath, string.Empty, comparisonType);
 
-        return new DirectoryPath(relativePath);
+        return new FilePath(relativePath);
     }
 
     private void ThrowIfPathIsOutsideBasePath(FilePath file)
@@ -113,8 +109,8 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         if (file.IsAbsolute)
         {
             var comparisonType = IOUtilities.GetOSPathComparisonType();
-            var path = file.Directory.Path;
-            var basePath = BasePath.Path;
+            var path = file.ToString();
+            var basePath = BasePath.ToString();
 
             if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
             {
@@ -128,8 +124,8 @@ public sealed class ScopedFileSystem(DirectoryPath BasePath) : IVirtualFileSyste
         if (directory.IsAbsolute)
         {
             var comparisonType = IOUtilities.GetOSPathComparisonType();
-            var path = directory.Path;
-            var basePath = BasePath.Path;
+            var path = directory.ToString();
+            var basePath = BasePath.ToString();
 
             if (!path.StartsWith(basePath, comparisonType) && !path.Equals(basePath, comparisonType))
             {

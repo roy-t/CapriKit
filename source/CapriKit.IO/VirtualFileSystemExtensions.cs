@@ -55,7 +55,7 @@ public static class VirtualFileSystemExtensions
     /// <summary>
     /// Looks for a file with the specified name, starting at the starting directory and then traversing up towards the root
     /// </summary>
-    public static DirectoryPath? SearchForDirectoryWithMarker(this IVirtualFileSystem system, DirectoryPath startingDirectory, FileName marker)
+    public static DirectoryPath? SearchForDirectoryWithMarker(this IVirtualFileSystem system, DirectoryPath startingDirectory, FilePath marker)
     {
         // TODO: the file and directory types should use the right comparison out of the box
         var comparisonType = IOUtilities.GetOSPathComparisonType();
@@ -63,7 +63,7 @@ public static class VirtualFileSystemExtensions
         while (current != null)
         {
             var files = system.List(current);
-            if (files.Any(f => f.File.Name.Equals(marker.Name, comparisonType)))
+            if (files.Any(f => f.FileName.Equals(marker.FileName, comparisonType)))
             {
                 return current;
             }
