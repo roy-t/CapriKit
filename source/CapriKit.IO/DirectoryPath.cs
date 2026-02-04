@@ -6,7 +6,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
 
     public DirectoryPath(ReadOnlySpan<char> path)
     {
-        if (!IOUtilities.IsValidDirectoryPath(path))
+        if (!IOUtilities.IsValidPath(path))
         {
             throw new ArgumentException($"Invalid directory path: {path}", nameof(path));
         }
@@ -57,22 +57,25 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
     }
 
-    public bool StartsWith(DirectoryPath beginning)
+    public bool StartsWith(string beginning)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.StartsWith(beginning.Path, comparisonType);
+        var normalized = IOUtilities.Normalize(beginning);
+        return Path.StartsWith(normalized, comparisonType);
     }
 
-    public bool Contains(DirectoryPath segment)
+    public bool Contains(string segment)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.Contains(segment.Path, comparisonType);
+        var normalized = IOUtilities.Normalize(segment);
+        return Path.Contains(normalized, comparisonType);
     }
 
-    public bool EndsWith(DirectoryPath ending)
+    public bool EndsWith(string ending)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.EndsWith(ending.Path, comparisonType);
+        var normalized = IOUtilities.Normalize(ending);
+        return Path.EndsWith(normalized, comparisonType);
     }
 
     public DirectoryPath ToAbsolute(DirectoryPath basePath)
@@ -86,7 +89,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         return new DirectoryPath(path);
     }
 
-    public DirectoryPath Join(DirectoryPath[] path)
+    public DirectoryPath Append(DirectoryPath[] path)
     {
         var pathString = Path;
         foreach (var p in path)
@@ -103,7 +106,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         return new DirectoryPath(pathString);
     }
 
-    public FilePath Join(FilePath file)
+    public FilePath Append(FilePath file)
     {
 
         if (file.IsAbsolute)

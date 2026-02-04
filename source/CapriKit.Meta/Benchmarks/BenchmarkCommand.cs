@@ -23,7 +23,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         var benchmarkOutputDirectory = Config.Outputs.BenchmarkDirectory;
         var benchmarkDirectory = Config.Assets.BenchmarkDirectory;
 
-        var projectPath = solutionDirectory.Join(@"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
+        var projectPath = solutionDirectory.Append(@"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
         using var logger = CommandLogger.CreateBuildLogger();
         var taskList = new TaskList();

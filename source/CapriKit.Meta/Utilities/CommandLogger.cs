@@ -25,14 +25,7 @@ internal sealed class CommandLogger : IDisposable
 
     public static CommandLogger CreateBuildLogger()
     {
-        // TODO: this doesn't work since startswith expects a directory, not a string/filename!
-        // PROBABLY A fault  in the API for StartsWith, maybe we need a generic Path object for this?
-        var rotationPolicy = new RotationPolicy(
-            _ => $"command-log-{DateTime.Now.Ticks}.log",
-            s => s.StartsWith("command-log-") && s.EndsWith(".log"),
-            (i, _) => i >= 10
-            );
-
+        var rotationPolicy = RotationPolicy.FixedCount("command-log", ".log", 10);
         var (logFile, logStream) = FileRotator.CreateFile(Directory.GetCurrentDirectory(), rotationPolicy);
         var logStreamWriter = new StreamWriter(logStream) { AutoFlush = true };
 

@@ -53,22 +53,25 @@ public sealed class FilePath : IEquatable<FilePath>
         throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
     }
 
-    public bool StartsWith(DirectoryPath beginning)
+    public bool StartsWith(string beginning)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.StartsWith(beginning, comparisonType);
+        var normalized = IOUtilities.Normalize(beginning);
+        return Path.StartsWith(normalized, comparisonType);
     }
 
-    public bool Contains(DirectoryPath segment)
+    public bool Contains(string segment)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.Contains(segment, comparisonType);
+        var normalized = IOUtilities.Normalize(segment);
+        return Path.Contains(normalized, comparisonType);
     }
 
-    public bool EndsWith(FilePath ending)
+    public bool EndsWith(string ending)
     {
         var comparisonType = IOUtilities.GetOSPathComparisonType();
-        return Path.EndsWith(ending, comparisonType);
+        var normalized = IOUtilities.Normalize(ending);
+        return Path.EndsWith(normalized, comparisonType);
     }
 
     public override string ToString()

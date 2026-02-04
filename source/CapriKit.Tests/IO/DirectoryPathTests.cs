@@ -70,11 +70,11 @@ internal class DirectoryPathTests
     {
         var subPath = new DirectoryPath("Com");
         var joinedWithSubPath = new DirectoryPath("C:/Windows/System32/Com");
-        await Assert.That(AbsolutePath.Join([subPath])).IsEqualTo(joinedWithSubPath);
+        await Assert.That(AbsolutePath.Append([subPath])).IsEqualTo(joinedWithSubPath);
 
         var fileName = new FilePath("config.cfg");
         var joinedWithFileName = new FilePath("C:/Windows/System32/config.cfg");
-        await Assert.That(AbsolutePath.Join(fileName)).IsEqualTo(joinedWithFileName);
+        await Assert.That(AbsolutePath.Append(fileName)).IsEqualTo(joinedWithFileName);
     }
 
     [Test]

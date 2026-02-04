@@ -17,7 +17,7 @@ public static class IOUtilities
 
     /// <summary>
     /// Changes all path separators to "/" as both the Unix and Windows APIs recognize that character
-    /// </summary>    
+    /// </summary>
     public static ReadOnlySpan<char> NormalizePathSeparators(ReadOnlySpan<char> path)
     {
         if (!path.Contains(AltDirectorySeperator))
@@ -26,6 +26,27 @@ public static class IOUtilities
         }
 
         return path.ToString().Replace(AltDirectorySeperator, DirectorySeperator);
+    }
+
+    public static ReadOnlySpan<char> NormalizeDotSegments(ReadOnlySpan<char> path)
+    {
+        if (Path.IsPathRooted(path))
+        {
+            return Path.GetFullPath(path.ToString());
+        }
+
+        throw new Exception($"Cannot normalize dot segments on relative path: {path}");
+    }
+
+    public static ReadOnlySpan<char> Normalize(ReadOnlySpan<char> path)
+    {
+        if (Path.IsPathRooted(path))
+        {
+            path = NormalizeDotSegments(path);
+        }
+        path = NormalizePathSeparators(path);
+
+        return path;
     }
 
     public static ReadOnlySpan<char> AddTrailingDirectorySeparator(ReadOnlySpan<char> path)
@@ -80,26 +101,16 @@ public static class IOUtilities
         var fileName = Path.GetFileName(path);
         var directory = Path.GetDirectoryName(path);
 
-        return IsValidFileName(fileName) && IsValidDirectoryPath(directory);
+        return IsValidFileName(fileName) && IsValidPath(directory);
     }
 
     /// <summary>
-    /// Determines if a path contains any invalid characters, note that an emptpy path is valid
+    /// Determines if a path contains any invalid characters, note that an empty path is valid
     /// as it could be a relative path to the current directory
     /// </summary>
-    public static bool IsValidDirectoryPath(ReadOnlySpan<char> path)
+    public static bool IsValidPath(ReadOnlySpan<char> path)
     {
         return path.IndexOfAny(InvalidPathChars) < 0;
-    }
-
-    public static ReadOnlySpan<char> NormalizeDotSegments(ReadOnlySpan<char> path)
-    {
-        if (Path.IsPathRooted(path))
-        {
-            return Path.GetFullPath(path.ToString());
-        }
-
-        throw new Exception($"Cannot normalize dot segments on relative path: {path}");
     }
 
     /// <summary>
@@ -110,7 +121,7 @@ public static class IOUtilities
         DirectoryPath? current = startingDirectory;
         while (current != null)
         {
-            var markerPath = current.Join(marker);
+            var markerPath = current.Append(marker);
             if (File.Exists(markerPath))
             {
                 return current;
