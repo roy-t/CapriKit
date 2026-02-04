@@ -1,5 +1,3 @@
-
-
 namespace CapriKit.IO;
 
 public sealed class InMemoryFileSystem : IVirtualFileSystem
@@ -79,7 +77,6 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
 
         return files;
     }
-
 
     private InMemoryFile FindOrThrow(FilePath file)
     {

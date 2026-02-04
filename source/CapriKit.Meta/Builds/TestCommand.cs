@@ -6,9 +6,6 @@ using TrxFileParser;
 
 namespace CapriKit.Meta.Builds;
 
-// TODO: Ensure that the test filters can be passed on so that you can run a single test or single suite
-// This works like `dotnet test --treenode-filter /*/*/*/SampleStandardDeviation_OfArray_ReturnsSD`
-
 internal sealed class TestCommand : Command<TestCommand.Settings>
 {
     public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
@@ -98,5 +95,7 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
 
     public sealed class Settings : CommandSettings
     {
+        // If we want to add testing support it should execute this command:
+        // dotnet test --treenode-filter /*/*/*/SampleStandardDeviation_OfArray_ReturnsSD
     }
 }

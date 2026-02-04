@@ -21,10 +21,10 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
     public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
         var solutionPath = Config.SolutionPath;
-        var pacakgeDirectory = Config.Outputs.PackageDirectory;        
-        var testResultsDirectory = Config.Outputs.TestDirectory;        
-        var testResultsFileName = Config.Outputs.TestResultsFileName;        
-        
+        var pacakgeDirectory = Config.Outputs.PackageDirectory;
+        var testResultsDirectory = Config.Outputs.TestDirectory;
+        var testResultsFileName = Config.Outputs.TestResultsFileName;
+
         using var logger = BuildLogger.CreateBuildLogger();
 
         var taskList = new TaskList();

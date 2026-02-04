@@ -1,8 +1,10 @@
+using CapriKit.Build;
+
 namespace CapriKit.Meta.Versions;
 
 internal static class VersionUtilities
 {
-    
+
     public static SemVer? ReadVersionFromFile()
     {
         var path = Config.VersionPath;

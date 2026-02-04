@@ -40,5 +40,8 @@ public interface IReadOnlyVirtualFileSystem
     /// </summary>
     DateTime LastWriteTime(FilePath file);
 
+    /// <summary>
+    /// Lists all files in the given directory. Throws an exception if the directory does not exist.
+    /// </summary>
     IReadOnlyList<FilePath> List(DirectoryPath directory);
 }
