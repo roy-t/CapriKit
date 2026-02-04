@@ -17,7 +17,7 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
         var testResultsFileName = Config.Outputs.TestResultsFileName;
         var testResultsPath = Config.Outputs.TestResultsPath;
 
-        using var logger = BuildLogger.CreateBuildLogger();
+        using var logger = CommandLogger.CreateBuildLogger();
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));

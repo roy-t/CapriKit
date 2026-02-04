@@ -1,5 +1,4 @@
 using CapriKit.Build;
-using CapriKit.Meta.Builds;
 using CapriKit.Meta.Utilities;
 using CapriKit.Meta.Versions;
 using Spectre.Console;
@@ -26,7 +25,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 
         var projectPath = solutionDirectory.Join(@"source\CapriKit.Benchmarks\CapriKit.Benchmarks.csproj");
 
-        using var logger = BuildLogger.CreateBuildLogger();
+        using var logger = CommandLogger.CreateBuildLogger();
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
         taskList.AddTask("Build Release", DotNetManager.Build(logger.Writer, solutionPath, WellKnownConfigurations.Release));

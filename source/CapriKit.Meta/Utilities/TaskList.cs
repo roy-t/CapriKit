@@ -1,4 +1,3 @@
-using CapriKit.Meta.Builds;
 using Spectre.Console;
 
 namespace CapriKit.Meta.Utilities;
@@ -21,9 +20,9 @@ internal class TaskList
         Tasks.Add(new ProgressableTask(tasks, description));
     }
 
-    public IReadOnlyList<TaskExecutionResult> Execute(BuildLogger logger, CancellationToken cancellationToken)
+    public IReadOnlyList<TaskExecutionResult> Execute(CommandLogger logger, CancellationToken cancellationToken)
     {
-        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File.FullName}]{logger.File.FullName}[/]");
+        AnsiConsole.MarkupLineInterpolated($"Logging to: [link={logger.File}]{logger.File}[/]");
 
         var results = new List<TaskExecutionResult>();
 

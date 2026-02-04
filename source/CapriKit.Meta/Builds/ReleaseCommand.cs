@@ -25,7 +25,7 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         var testResultsDirectory = Config.Outputs.TestDirectory;
         var testResultsFileName = Config.Outputs.TestResultsFileName;
 
-        using var logger = BuildLogger.CreateBuildLogger();
+        using var logger = CommandLogger.CreateBuildLogger();
 
         var taskList = new TaskList();
         taskList.AddTask("Restore", DotNetManager.Restore(logger.Writer, solutionPath));
