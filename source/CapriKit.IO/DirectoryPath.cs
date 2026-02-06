@@ -1,5 +1,12 @@
 namespace CapriKit.IO;
 
+/// <summary>
+/// Represents a relative or absolute path to a directory (that might not exist).
+/// The path can be an empty string but it cannot contain any illegal characters.
+/// Paths are normalized to use the same directory separators and path traversals
+/// are resolved for absolute paths. Comparison between file paths, directory paths
+/// and string use OS specific comparison rules.
+/// </summary>
 public sealed class DirectoryPath : IEquatable<DirectoryPath>
 {
     private readonly string Path;
@@ -11,14 +18,9 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
             throw new ArgumentException($"Invalid directory path: {path}", nameof(path));
         }
 
-        if (System.IO.Path.IsPathFullyQualified(path))
-        {
-            path = IOUtilities.NormalizeDotSegments(path);
-        }
-
         Path = IOUtilities.AddTrailingDirectorySeparator(
-                IOUtilities.NormalizePathSeparators(path))
-                  .ToString();
+                IOUtilities.Normalize(path))
+                .ToString();
     }
 
     public bool IsAbsolute => System.IO.Path.IsPathFullyQualified(Path);
@@ -29,7 +31,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         {
             var name = IOUtilities.RemoveTrailingDirectorySeparator(Path);
             var parent = System.IO.Path.GetDirectoryName(name);
-            return parent.IsWhiteSpace()
+            return parent.IsEmpty
                 ? null
                 : new DirectoryPath(parent);
         }
@@ -44,6 +46,22 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
 
         var full = System.IO.Path.GetFullPath(Path);
         return new DirectoryPath(full);
+    }
+
+    public DirectoryPath ToAbsolute(DirectoryPath basePath)
+    {
+        if (IsAbsolute)
+        {
+            throw new Exception($"Cannot prepend base path {basePath} to absolute path {Path}");
+        }
+
+        if (!basePath.IsAbsolute)
+        {
+            throw new Exception($"Cannot get the absolute path to {Path} using a relative base path ({basePath})");
+        }
+
+        var path = System.IO.Path.GetFullPath(Path, basePath.Path);
+        return new DirectoryPath(path);
     }
 
     public DirectoryPath GetPathRelativeTo(DirectoryPath basePath)
@@ -76,17 +94,6 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         var comparisonType = IOUtilities.GetOSPathComparisonType();
         var normalized = IOUtilities.Normalize(ending);
         return Path.EndsWith(normalized, comparisonType);
-    }
-
-    public DirectoryPath ToAbsolute(DirectoryPath basePath)
-    {
-        if (IsAbsolute)
-        {
-            throw new Exception($"Cannot prepend base path {basePath} to absolute path {Path}");
-        }
-
-        var path = System.IO.Path.GetFullPath(Path, basePath.Path);
-        return new DirectoryPath(path);
     }
 
     public DirectoryPath Append(DirectoryPath[] path)
@@ -137,7 +144,7 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
     {
         if (string.IsNullOrEmpty(path))
         {
-            throw new Exception("Cannot convert null or empty string to directory path");
+            throw new Exception($"Cannot convert null or empty string to {nameof(DirectoryPath)}.");
         }
 
         return new DirectoryPath(path);
@@ -167,6 +174,4 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         var comparisonType = IOUtilities.GetOSPathComparisonType();
         return StringComparer.FromComparison(comparisonType).GetHashCode(Path);
     }
-
-
 }

@@ -1,5 +1,12 @@
 namespace CapriKit.IO;
 
+/// <summary>
+/// Represents a relative or absolute path to a file (that might not exist).
+/// The path is not empty or white space and does not contain any illegal characters.
+/// Paths are normalized to use the same directory separators and path traversals
+/// are resolved for absolute paths. Comparison between file paths, directory paths
+/// and strings use OS specific comparison rules.
+/// </summary>
 public sealed class FilePath : IEquatable<FilePath>
 {
     private readonly string Path;
@@ -11,12 +18,7 @@ public sealed class FilePath : IEquatable<FilePath>
             throw new ArgumentException($"Invalid file path {path}", nameof(path));
         }
 
-        if (System.IO.Path.IsPathFullyQualified(path))
-        {
-            path = IOUtilities.NormalizeDotSegments(path);
-        }
-
-        Path = IOUtilities.NormalizePathSeparators(path).ToString();
+        Path = IOUtilities.Normalize(path).ToString();
     }
 
     public ReadOnlySpan<char> FileName => System.IO.Path.GetFileName(Path.AsSpan());
@@ -36,6 +38,11 @@ public sealed class FilePath : IEquatable<FilePath>
         if (IsAbsolute)
         {
             throw new Exception($"Cannot prepend base path {basePath} to absolute path {Path}");
+        }
+
+        if (!basePath.IsAbsolute)
+        {
+            throw new Exception($"Cannot get the absolute path to {Path} using a relative base path ({basePath})");
         }
 
         var path = System.IO.Path.GetFullPath(Path, basePath);
@@ -114,7 +121,6 @@ public sealed class FilePath : IEquatable<FilePath>
         var comparisonType = IOUtilities.GetOSPathComparisonType();
         return other != null && other.Path.Equals(Path, comparisonType);
     }
-
 
     public static bool operator ==(FilePath? left, FilePath? right) => Equals(left, right);
     public static bool operator !=(FilePath? left, FilePath? right) => !Equals(left, right);

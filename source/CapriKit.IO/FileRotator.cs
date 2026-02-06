@@ -53,8 +53,7 @@ public static class FileRotator
 
     public static (FilePath, Stream) CreateFile(DirectoryPath directory, RotationPolicy policy)
     {
-        var fileSystem = new ScopedFileSystem(directory);
-        var (file, stream) = CreateFile(fileSystem, directory, policy);
-        return (file.ToAbsolute(directory), stream);
+        var fileSystem = new FileSystem();
+        return CreateFile(fileSystem, directory, policy);
     }
 }

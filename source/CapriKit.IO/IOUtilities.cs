@@ -30,7 +30,7 @@ public static class IOUtilities
 
     public static ReadOnlySpan<char> NormalizeDotSegments(ReadOnlySpan<char> path)
     {
-        if (Path.IsPathRooted(path))
+        if (Path.IsPathFullyQualified(path))
         {
             return Path.GetFullPath(path.ToString());
         }
@@ -40,7 +40,7 @@ public static class IOUtilities
 
     public static ReadOnlySpan<char> Normalize(ReadOnlySpan<char> path)
     {
-        if (Path.IsPathRooted(path))
+        if (Path.IsPathFullyQualified(path))
         {
             path = NormalizeDotSegments(path);
         }

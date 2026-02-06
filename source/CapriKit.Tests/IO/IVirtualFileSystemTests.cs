@@ -26,6 +26,7 @@ internal class IVirtualFileSystemTests
         public static IEnumerable<Func<IVirtualFileSystem>> Generator()
         {
             yield return () => new InMemoryFileSystem();
+            yield return () => new FileSystem();
             yield return () => new ScopedFileSystem(new DirectoryPath(Path.GetTempPath()));
         }
     }
