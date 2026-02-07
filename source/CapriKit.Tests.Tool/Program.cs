@@ -7,10 +7,10 @@ public class Program
     [STAThread]
     static void Main()
     {
-        Win32Application.Initialize("CapriKit.Tests.Tool");
+        var window = Win32Application.Initialize("CapriKit.Tests.Tool");
 
         var isRunning = true;
-        while(isRunning)
+        while (isRunning)
         {
             isRunning = Win32Application.PumpMessages();
         }

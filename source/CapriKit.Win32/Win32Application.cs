@@ -10,16 +10,22 @@ using static Windows.Win32.PInvoke;
 
 namespace CapriKit.Win32;
 
-[SupportedOSPlatform("windows5.1.2600")]
+[SupportedOSPlatform(WindowsVersions.WindowsXP)]
 public static class Win32Application
 {
     private const string WindowClassName = "CapriKit.Window";
+    private static List<WindowEventProcessor> Processors = [];
 
-    public static void Initialize(string windowTitle)
+    public static Window Initialize(string windowTitle)
     {
         RegisterWindowClass();
         var handle = CreateWindow(windowTitle);
         ShowWindow(handle);
+
+        var window = new Window(handle);
+        Processors.Add(new WindowEventProcessor(window));
+
+        return window;
     }
 
     private static unsafe void RegisterWindowClass()
@@ -71,7 +77,11 @@ public static class Win32Application
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvStdcall)])]
     internal static LRESULT WndProc(HWND hWnd, uint msg, WPARAM wParam, LPARAM lParam)
     {
-        //EventProcessor.FireWindowEvents(hWnd, msg, wParam, lParam);
+        foreach (var processor in Processors)
+        {
+            processor.OnEvent(hWnd, msg, wParam, lParam);
+        }
+
         switch (msg)
         {
             case WM_DESTROY:
@@ -93,5 +103,20 @@ public static class Win32Application
         }
 
         return @continue;
+    }
+
+    public static void SetMouseCursor(Cursor cursor)
+    {
+        if (cursor == Cursor.Default)
+        {
+            SetCursor(null);
+        }
+
+        unsafe
+        {
+            PCWSTR resource = (char*)(int)cursor;
+            var hCursor = LoadCursor((HINSTANCE)IntPtr.Zero, resource);
+            SetCursor(hCursor);
+        }
     }
 }

@@ -1,15 +1,119 @@
+using System.Diagnostics;
+using System.Drawing;
+using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Windows.Win32.Foundation;
 using Windows.Win32.UI.Input.KeyboardAndMouse;
 using static Windows.Win32.PInvoke;
 
 namespace CapriKit.Win32;
 
+[SupportedOSPlatform(WindowsVersions.WindowsXP)]
 public sealed class Window
 {
+    public int Width { get; private set; }
+    public int Height { get; private set; }
+
+    public bool IsMinimized => Width == 0 && Height == 0;
+
+    public bool HasFocus { get; private set; }
+
+    public bool HasCapturedMouse { get; private set; }
+
+    // Top left is (0, 0)
+    public Point GetCursorPosition()
+    {
+        if (!isCursorPositionKnown && GetCursorPos(out var pos) && ScreenToClient(Handle, ref pos))
+        {
+            cursorPosition = pos;
+            isCursorPositionKnown = true;
+        }
+
+        return cursorPosition;
+    }
+
+    // Top left is (0.0, 0.0)
+    public Vector2 GetCursorPositionF()
+    {
+        var point = GetCursorPosition();
+        return new Vector2(point.X, point.Y);
+    }
+
+    // Top left is (0, 0)
+    public void SetCursorPosition(Point position)
+    {
+        ClientToScreen(Handle, ref position);
+        SetCursorPos(position.X, position.Y);
+    }
+
+    // Top left is (0.0, 0.0)
+    public void SetCursorPosition(Vector2 position) => SetCursorPosition(new Point((int)position.X, (int)position.Y));
+
+    private TRACKMOUSEEVENT trackMouseEventData;
+    private bool isCursorPositionKnown;
+    private bool isTrackingNextMouseLeave;
+    private Point cursorPosition;
+
+    internal Window(HWND handle)
+    {
+        trackMouseEventData = new TRACKMOUSEEVENT()
+        {
+            cbSize = (uint)Marshal.SizeOf<TRACKMOUSEEVENT>(),
+            dwFlags = TRACKMOUSEEVENT_FLAGS.TME_LEAVE,
+            hwndTrack = handle,
+        };
+
+        Handle = handle;
+    }
+
     internal HWND Handle { get; }
+
+    internal void OnSizeChanged(int width, int height)
+    {
+        Width = width;
+        Height = height;
+    }
+
+    internal void OnFocusChanged(bool hasFocus)
+    {
+        HasFocus = hasFocus;
+    }
+
+    internal void OnMouseMove()
+    {
+        isCursorPositionKnown = false;
+        if (!isTrackingNextMouseLeave)
+        {
+            // Get a message the next time (and only next time)
+            // the mouse leaves the window area.
+            TrackMouseEvent(ref trackMouseEventData);
+            isTrackingNextMouseLeave = true;
+            Win32Application.SetMouseCursor(Cursor.Arrow);
+        }
+    }
+
+    internal void OnMouseLeave()
+    {
+        isCursorPositionKnown = false;
+        isTrackingNextMouseLeave = false;
+        Win32Application.SetMouseCursor(Cursor.Default);
+    }
+
+    internal void CaptureMouse()
+    {
+        SetCapture(Handle);
+        HasCapturedMouse = true;
+    }
+
+    internal void ReleaseMouse()
+    {
+        ReleaseCapture();
+        HasCapturedMouse = false;
+    }
 }
 
+[SupportedOSPlatform(WindowsVersions.WindowsXP)]
 public sealed class WindowEventProcessor
 {
     private readonly Window Target;
@@ -35,53 +139,29 @@ public sealed class WindowEventProcessor
                     case SIZE_RESTORED:
                     case SIZE_MAXIMIZED:
                     case SIZE_MINIMIZED:
-                        window.Listener.OnSizeChanged(width, height);
+                        Target.OnSizeChanged(width, height);
                         break;
                 }
                 break;
 
             case WM_SETFOCUS:
-                window.Listener.OnFocusChanged(true);
+                Target.OnFocusChanged(true);
                 break;
 
             case WM_KILLFOCUS:
-                window.Listener.OnFocusChanged(false);
+                Target.OnFocusChanged(false);
                 break;
 
             case WM_ACTIVATE:
-                window.Listener.OnFocusChanged(EventDecoder.Loword((int)wParam.Value) != 0);
-                break;
-
-            case WM_DESTROY:
-                window.Listener.OnDestroyed();
-                this.WindowEventListeners.RemoveAt(i);
+                Target.OnFocusChanged(EventDecoder.Loword((int)wParam.Value) != 0);
                 break;
 
             case WM_MOUSEMOVE:
-                if (!window.HasMouseEntered)
-                {
-                    unsafe
-                    {
-                        var tme = new TRACKMOUSEEVENT()
-                        {
-                            cbSize = (uint)Marshal.SizeOf<TRACKMOUSEEVENT>(),
-                            dwFlags = TRACKMOUSEEVENT_FLAGS.TME_LEAVE,
-                            hwndTrack = hWnd,
-                        };
-                        TrackMouseEvent(ref tme);
-                    }
-
-                    window.Listener.OnMouseEnter();
-                    window.HasMouseEntered = true;
-                }
-                window.Listener.OnMouseMove();
+                Target.OnMouseMove();
                 break;
 
             case WM_MOUSELEAVE:
-                window.Listener.OnMouseMove();
-                window.Listener.OnMouseLeave();
-                window.HasMouseEntered = false;
-
+                Target.OnMouseLeave();
                 break;
 
             // Mouse
@@ -93,21 +173,18 @@ public sealed class WindowEventProcessor
             case WM_MBUTTONDBLCLK:
             case WM_XBUTTONDOWN:
             case WM_XBUTTONDBLCLK:
-                SetCapture(hWnd);
-                window.IsMouseCaptured = true;
-
+                Target.CaptureMouse();
                 break;
 
             case WM_LBUTTONUP:
             case WM_RBUTTONUP:
             case WM_MBUTTONUP:
             case WM_XBUTTONUP:
-                ReleaseCapture();
-                window.IsMouseCaptured = false;
-
+                Target.ReleaseMouse();
                 break;
 
         }
+
+        Debug.WriteLine($"W: {Target.Width}, H: {Target.Height}, Mi: {Target.IsMinimized}, F: {Target.HasFocus}, C: {Target.HasCapturedMouse}, P: {Target.GetCursorPosition()}");
     }
-}
 }
