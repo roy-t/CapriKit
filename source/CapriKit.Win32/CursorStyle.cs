@@ -1,6 +1,9 @@
 namespace CapriKit.Win32;
 
-public enum Cursor
+/// <summary>
+/// Cursor style enum for the Win32Application.SetCursor() method
+/// </summary>
+public enum CursorStyle
 {
     Default = 0, // Let the operating decide
     Arrow = 32512, // Normal select

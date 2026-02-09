@@ -1,8 +1,12 @@
+using CapriKit.Win32.Input;
 using Windows.Win32.Foundation;
 using static Windows.Win32.PInvoke;
 
 namespace CapriKit.Win32;
 
+/// <summary>
+/// Decodes Win32 messages that contain additional data in the WPARAM and LPARAM parameters
+/// </summary>
 internal static class EventDecoder
 {
     public static MouseButton GetMouseButton(uint msg, WPARAM wParam, LPARAM lParam)
@@ -24,7 +28,7 @@ internal static class EventDecoder
     /// </summary>
     public static int GetMouseWheelDelta(WPARAM wParam)
     {
-        return GetWheelDelta(wParam);
+        return Hiword((int)wParam.Value);
     }
 
     public static VirtualKeyCode GetKeyCode(WPARAM wParam)
@@ -33,11 +37,6 @@ internal static class EventDecoder
     }
 
     private static int GetXButtonWParam(WPARAM wParam)
-    {
-        return Hiword((int)wParam.Value);
-    }
-
-    private static int GetWheelDelta(WPARAM wParam)
     {
         return Hiword((int)wParam.Value);
     }

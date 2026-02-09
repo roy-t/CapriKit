@@ -49,6 +49,7 @@ WM_SETFOCUS
 WM_SIZE
 WM_SYSKEYDOWN
 WM_SYSKEYUP
+WM_SHOWWINDOW
 WM_XBUTTONDBLCLK
 WM_XBUTTONDOWN
 WM_XBUTTONUP
@@ -77,6 +78,7 @@ DefWindowProc
 DestroyWindow
 GetForegroundWindow
 GetWindowPlacement
+GetClientRect
 IsChild
 ScreenToClient
 SetWindowPlacement

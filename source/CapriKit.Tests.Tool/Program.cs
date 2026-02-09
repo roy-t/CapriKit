@@ -7,8 +7,11 @@ public class Program
     [STAThread]
     static void Main()
     {
-        var window = Win32Application.Initialize("CapriKit.Tests.Tool");
+        Win32Application.Initialize("CapriKit.Tests.Tool");
 
+        var window = Win32Application.Window;
+        var mouse = Win32Application.Mouse;
+        var keyboard = Win32Application.Keyboard;
         var isRunning = true;
         while (isRunning)
         {

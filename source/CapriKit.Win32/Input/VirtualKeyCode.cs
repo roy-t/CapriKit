@@ -1,5 +1,8 @@
-namespace CapriKit.Win32;
+namespace CapriKit.Win32.Input;
 
+/// <summary>
+/// Win32 virtual key codes as an enum, enum values match the original Win32 values
+/// </summary>
 public enum VirtualKeyCode : byte
 {
     VK_0 = 48,
