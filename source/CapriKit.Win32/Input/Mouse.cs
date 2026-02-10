@@ -52,7 +52,7 @@ public sealed class Mouse : InputDevice
     /// A positive value indicates that the wheel was rotated to the right;
     /// a negative value indicates that the wheel was rotated to the left.
     /// </summary>
-    public int HorizontalScrollSteps => hScrollState / WHEEL_DELTA;    
+    public int HorizontalScrollSteps => hScrollState / WHEEL_DELTA;
 
     /// <summary>
     /// If the given button state changed to pressed this frame
@@ -105,12 +105,14 @@ public sealed class Mouse : InputDevice
 
     public override void NextFrame()
     {
-        // TODO: we need to keep track of the increments for mice with smooth scrolling. Otherwise they can't scroll as they will report values less then WHEEL_DETLA per frame
-        // be careful with modulo for negative numbers.
-        scrollState = nextScrollState;
+        // Most mice reports scrolling in steps of WHEEL_DELTA but some mice support smooth scrolling.
+        // While this class does not support smooth scrolling, we do want smooth scrolling mice to be able
+        // to scroll in increments. Since users that turn the scroll wheel slowly will have scrolled less
+        // than WHEEL_DELTA per frame, we need to keep track of the remainer to ensure scrolling works.
+        scrollState = (scrollState % WHEEL_DELTA) + nextScrollState;
         nextScrollState = 0;
 
-        hScrollState = nextHScrollState;
+        hScrollState = (hScrollState % WHEEL_DELTA) + nextHScrollState;
         nextHScrollState = 0;
 
         movement = new Point(nextPostion.X - position.X, nextPostion.Y - position.Y);
