@@ -1,4 +1,5 @@
 using CapriKit.Win32;
+using CapriKit.Win32.Input;
 
 namespace CapriKit.Tests.Tool;
 
@@ -16,6 +17,11 @@ public class Program
         while (isRunning)
         {
             isRunning = Win32Application.PumpMessages();
+
+            if (keyboard.Pressed(VirtualKeyCode.VK_ESCAPE))
+            {
+                return;
+            }
         }
     }
 }

@@ -15,7 +15,7 @@ public sealed class WindowEventProcessor(Win32Window target)
 
     internal void OnEvent(HWND hWnd, uint msg, WPARAM wParam, LPARAM lParam)
     {
-        if (Target.Handle != hWnd)
+        if (Target.Hwnd != hWnd)
         {
             return;
         }
@@ -23,7 +23,7 @@ public sealed class WindowEventProcessor(Win32Window target)
         switch (msg)
         {
             case WM_SHOWWINDOW:
-                GetClientRect(Target.Handle, out var rect);
+                GetClientRect(Target.Hwnd, out var rect);
                 Target.OnSizeChanged(rect.Width, rect.Height);
                 break;
             case WM_SIZE:

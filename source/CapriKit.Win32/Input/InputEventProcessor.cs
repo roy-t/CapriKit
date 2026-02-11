@@ -18,7 +18,7 @@ public sealed class InputEventProcessor(Win32Window Target, Mouse Mouse, Keyboar
 
     internal void OnEvent(HWND hWnd, uint msg, WPARAM wParam, LPARAM lParam)
     {
-        if (Target == null || Target.Handle != hWnd || Mouse == null || Keyboard == null)
+        if (Target == null || Target.Hwnd != hWnd || Mouse == null || Keyboard == null)
         {
             return;
         }

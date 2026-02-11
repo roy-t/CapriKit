@@ -14,6 +14,8 @@ namespace CapriKit.Win32;
 [SupportedOSPlatform(WindowsVersions.WindowsXP)]
 public sealed class Win32Window
 {
+    public nint Handle => Hwnd;
+
     /// <summary>
     /// The width of the client area of the window.
     /// </summary>
@@ -38,7 +40,7 @@ public sealed class Win32Window
     /// </summary>
     public Point GetCursorPosition()
     {
-        if (!isCursorPositionKnown && GetCursorPos(out var pos) && ScreenToClient(Handle, ref pos))
+        if (!isCursorPositionKnown && GetCursorPos(out var pos) && ScreenToClient(Hwnd, ref pos))
         {
             cursorPosition = pos;
             isCursorPositionKnown = true;
@@ -62,7 +64,7 @@ public sealed class Win32Window
     /// </summary>
     public void SetCursorPosition(Point position)
     {
-        ClientToScreen(Handle, ref position);
+        ClientToScreen(Hwnd, ref position);
         SetCursorPos(position.X, position.Y);
     }
 
@@ -90,10 +92,10 @@ public sealed class Win32Window
             dwFlags = TRACKMOUSEEVENT_FLAGS.TME_LEAVE,
             hwndTrack = handle,
         };
-        Handle = handle;
+        Hwnd = handle;
     }
 
-    internal HWND Handle { get; private set; }
+    internal HWND Hwnd { get; private set; }
 
     internal void OnSizeChanged(int width, int height)
     {
@@ -128,7 +130,7 @@ public sealed class Win32Window
 
     internal void CaptureMouse()
     {
-        SetCapture(Handle);
+        SetCapture(Hwnd);
         HasCapturedMouse = true;
     }
 

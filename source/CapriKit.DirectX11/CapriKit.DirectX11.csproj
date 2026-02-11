@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(TargetFramework)-windows</TargetFramework>    
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.2" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.2" />
+  </ItemGroup>
+</Project>
