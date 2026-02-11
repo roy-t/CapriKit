@@ -29,7 +29,7 @@ public class Program
         var mouse = Win32Application.Mouse;
         var keyboard = Win32Application.Keyboard;
 
-        using var device = new Device(window.Handle, window.Width, window.Height);
+        using var device = new Device(window);
 
         while (Win32Application.PumpMessages())
         {

@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Debug;
+using CapriKit.Win32;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using Vortice.Direct3D;
@@ -13,6 +14,8 @@ namespace CapriKit.DirectX11;
 
 public sealed class Device : IDisposable
 {
+    // Explicitly set the RTV to a format with SRGB while the actual backbuffer is a format without SRGB to properly
+    // let the output window be gamma corrected. See: https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/converting-data-color-space
     private const Format BackBufferFormat = Format.R8G8B8A8_UNorm;
     private const Format RenderTargetViewFormat = Format.R8G8B8A8_UNorm_SRgb;
 
@@ -33,17 +36,17 @@ public sealed class Device : IDisposable
     private static readonly DeviceCreationFlags Flags = DeviceCreationFlags.None;
 #endif
 
-    public Device(nint windowHandle, int width, int height)
+    public Device(Win32Window window)
     {
-        Viewport = new Rectangle(0, 0, width, height);
+        Viewport = new Rectangle(0, 0, window.Width, window.Height);
 
-        var swapChainDescription = CreateSwapChainDescription(width, height);
+        var swapChainDescription = CreateSwapChainDescription(window.Width, window.Height);
         var deviceResult = D3D11CreateDevice(null, DriverType.Hardware, Flags, [FeatureLevel.Level_11_1], out var device, out _, out var context);
         deviceResult.CheckError();
 
         ID3D11Device = device ?? throw new Exception($"Failed to create {nameof(ID3D11Device)}");
         ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
-        IDXGISwapChain = CreateSwapChain(device, swapChainDescription, windowHandle);
+        IDXGISwapChain = CreateSwapChain(device, swapChainDescription, window.Handle);
 
         CreateBackBuffer();
 
@@ -102,9 +105,7 @@ public sealed class Device : IDisposable
     private void CreateBackBuffer()
     {
         BackBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
-
-        // Explicitly set the RTV to a format with SRGB while the actual backbuffer is a format without SRGB to properly
-        // let the output window be gamma corrected. See: https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/converting-data-color-space
+        
         var view = new RenderTargetViewDescription(BackBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
         BackBufferView = ID3D11Device.CreateRenderTargetView(BackBuffer, view);
         BackBufferView.DebugName = DebugName.For(BackBufferView.GetType(), "BackBuffer_View");

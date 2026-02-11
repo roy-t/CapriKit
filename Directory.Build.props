@@ -10,7 +10,12 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <Configurations>Debug;Release;Test</Configurations>
-  </PropertyGroup> 
+  </PropertyGroup>
+
+  <!-- Debug settings -->
+  <PropertyGroup>
+    <HotReloadAutoRestart>true</HotReloadAutoRestart>
+  </PropertyGroup>
 
   <!--Nuget package info-->
   <!-- https://learn.microsoft.com/en-us/nuget/reference/msbuild-targets -->
