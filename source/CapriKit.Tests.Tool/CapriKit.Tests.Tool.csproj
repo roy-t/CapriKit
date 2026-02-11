@@ -2,10 +2,11 @@
 
   <PropertyGroup>
     <TargetFramework>$(TargetFramework)-windows</TargetFramework>
-    <OutputType>WinExe</OutputType>    
+    <OutputType>WinExe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
 

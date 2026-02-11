@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CapriKit.Tests.Tool": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}
