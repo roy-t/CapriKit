@@ -83,6 +83,13 @@ IsChild
 ScreenToClient
 SetWindowPlacement
 ShowWindow
+GetWindowLongPtr
+SetWindowLongPtr
+SetWindowPos
+
+// Monitor
+MonitorFromWindow
+GetMonitorInfo
 
 // Messaging
 DispatchMessage
