@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 
 namespace CapriKit.DirectX11.Debug;
 
+// C Header file: https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/api/app/renderdoc_app.h
 // Adapted from https://github.com/mellinoe/veldrid/tree/master/src/Veldrid.RenderDoc
 
 // <summary>
@@ -24,18 +25,9 @@ namespace CapriKit.DirectX11.Debug;
 /// </returns>
 internal unsafe delegate int pRENDERDOC_GetAPI(RENDERDOC_Version version, void** outAPIPointers);
 
-internal enum RENDERDOC_Version
+internal enum RENDERDOC_Version : uint
 {
-    API_Version_1_0_0 = 10000,    // RENDERDOC_API_1_0_0 = 1 00 00
-    API_Version_1_0_1 = 10001,    // RENDERDOC_API_1_0_1 = 1 00 01
-    API_Version_1_0_2 = 10002,    // RENDERDOC_API_1_0_2 = 1 00 02
-    API_Version_1_1_0 = 10100,    // RENDERDOC_API_1_1_0 = 1 01 00
-    API_Version_1_1_1 = 10101,    // RENDERDOC_API_1_1_1 = 1 01 01
-    API_Version_1_1_2 = 10102,    // RENDERDOC_API_1_1_2 = 1 01 02
-    API_Version_1_2_0 = 10200,    // RENDERDOC_API_1_2_0 = 1 02 00
-    API_Version_1_3_0 = 10300,    // RENDERDOC_API_1_3_0 = 1 03 00
-    API_Version_1_4_0 = 10400,    // RENDERDOC_API_1_4_0 = 1 04 00
-    API_Version_1_4_1 = 10401,    // RENDERDOC_API_1_4_1 = 1 04 01
+    API_VERSION_1_6_0 = 10600
 }
 
 /// <summary>
@@ -324,13 +316,14 @@ internal unsafe delegate uint pRENDERDOC_GetOverlayBits();
 // sets the overlay bits with an and & or mask
 internal unsafe delegate void pRENDERDOC_MaskOverlayBits(uint And, uint Or);
 
-// this function will attempt to shut down RenderDoc.
+// this function will attempt to remove RenderDoc's hooks in the application.
 //
-// Note: that this will only work correctly if done immediately after
-// the dll is loaded, before any API work happens. RenderDoc will remove its
+// Note: that this can only work correctly if done immediately after
+// the module is loaded, before any API work happens. RenderDoc will remove its
 // injected hooks and shut down. Behaviour is undefined if this is called
-// after any API functions have been called.
-internal unsafe delegate void pRENDERDOC_Shutdown();
+// after any API functions have been called, and there is still no guarantee of
+// success.
+internal unsafe delegate void pRENDERDOC_RemoveHooks();
 
 // This function will unload RenderDoc's crash handler.
 //
@@ -415,6 +408,11 @@ internal unsafe delegate void pRENDERDOC_SetActiveWindow(void* device, void* wnd
 // capture the next frame on whichever window and API is currently considered active
 internal unsafe delegate void pRENDERDOC_TriggerCapture();
 
+// This will return 1 if the request was successfully passed on, though it's not guaranteed that
+// the UI will be on top in all cases depending on OS rules. It will return 0 if there is no current
+// target control connection to make such a request, or if there was another error
+internal unsafe delegate uint pRENDERDOC_ShowReplayUI();
+
 // capture the next N frames on whichever window and API is currently considered active
 internal unsafe delegate void pRENDERDOC_TriggerMultiFrameCapture(uint numFrames);
 
@@ -454,12 +452,22 @@ internal unsafe delegate uint pRENDERDOC_EndFrameCapture(void* device, void* wnd
 // was in progress
 internal unsafe delegate uint pRENDERDOC_DiscardFrameCapture(void* device, void* wndHandle);
 
+// Only valid to be called between a call to StartFrameCapture and EndFrameCapture. Gives a custom
+// title to the capture produced which will be displayed in the UI.
+//
+// If multiple captures are ongoing, this title will be applied to the first capture to end after
+// this call. The second capture to end will have no title, unless this function is called again.
+//
+// Calling this function has no effect if no capture is currently running, and if it is called
+// multiple times only the last title will be used.
+internal unsafe delegate void pRENDERDOC_SetCaptureTitle(byte* title);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // RenderDoc API versions
 //
 
 [StructLayout(LayoutKind.Sequential)]
-internal struct RENDERDOC_API_1_4_0
+internal struct RENDERDOC_API_1_7_0222
 {
     public pRENDERDOC_GetAPIVersion GetAPIVersion;
 
@@ -475,7 +483,7 @@ internal struct RENDERDOC_API_1_4_0
     public pRENDERDOC_GetOverlayBits GetOverlayBits;
     public pRENDERDOC_MaskOverlayBits MaskOverlayBits;
 
-    public pRENDERDOC_Shutdown Shutdown;
+    public pRENDERDOC_RemoveHooks RemoveHooks;
     public pRENDERDOC_UnloadCrashHandler UnloadCrashHandler;
 
     public pRENDERDOC_SetCaptureFilePathTemplate SetCaptureFilePathTemplate;
@@ -504,3 +512,57 @@ internal struct RENDERDOC_API_1_4_0
     public pRENDERDOC_DiscardFrameCapture DiscardFrameCapture;
 }
 
+[StructLayout(LayoutKind.Sequential)]
+internal struct RENDERDOC_API_1_6_0
+{
+    pRENDERDOC_GetAPIVersion GetAPIVersion;
+
+    pRENDERDOC_SetCaptureOptionU32 SetCaptureOptionU32;
+    pRENDERDOC_SetCaptureOptionF32 SetCaptureOptionF32;
+
+    pRENDERDOC_GetCaptureOptionU32 GetCaptureOptionU32;
+    pRENDERDOC_GetCaptureOptionF32 GetCaptureOptionF32;
+
+    pRENDERDOC_SetFocusToggleKeys SetFocusToggleKeys;
+    pRENDERDOC_SetCaptureKeys SetCaptureKeys;
+
+    pRENDERDOC_GetOverlayBits GetOverlayBits;
+    pRENDERDOC_MaskOverlayBits MaskOverlayBits;
+
+    pRENDERDOC_RemoveHooks RemoveHooks;
+    pRENDERDOC_UnloadCrashHandler UnloadCrashHandler;
+
+    pRENDERDOC_SetCaptureFilePathTemplate SetCaptureFilePathTemplate;
+    pRENDERDOC_GetCaptureFilePathTemplate GetCaptureFilePathTemplate;
+
+
+    pRENDERDOC_GetNumCaptures GetNumCaptures;
+    pRENDERDOC_GetCapture GetCapture;
+
+    pRENDERDOC_TriggerCapture TriggerCapture;
+
+    pRENDERDOC_IsTargetControlConnected IsTargetControlConnected;
+
+    pRENDERDOC_LaunchReplayUI LaunchReplayUI;
+
+    pRENDERDOC_SetActiveWindow SetActiveWindow;
+
+    pRENDERDOC_StartFrameCapture StartFrameCapture;
+    pRENDERDOC_IsFrameCapturing IsFrameCapturing;
+    pRENDERDOC_EndFrameCapture EndFrameCapture;
+
+    // new function in 1.1.0
+    pRENDERDOC_TriggerMultiFrameCapture TriggerMultiFrameCapture;
+
+    // new function in 1.2.0
+    pRENDERDOC_SetCaptureFileComments SetCaptureFileComments;
+
+    // new function in 1.4.0
+    pRENDERDOC_DiscardFrameCapture DiscardFrameCapture;
+
+    // new function in 1.5.0
+    pRENDERDOC_ShowReplayUI ShowReplayUI;
+
+    // new function in 1.6.0
+    pRENDERDOC_SetCaptureTitle SetCaptureTitle;
+}

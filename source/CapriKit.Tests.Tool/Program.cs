@@ -1,4 +1,5 @@
 using CapriKit.DirectX11;
+using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using System.Diagnostics;
@@ -29,6 +30,8 @@ public class Program
         var mouse = Win32Application.Mouse;
         var keyboard = Win32Application.Keyboard;
 
+        var rd = RenderDoc.TryLoad();
+
         using var device = new Device(window);
 
         while (Win32Application.PumpMessages())
@@ -38,17 +41,22 @@ public class Program
                 return;
             }
 
-            if(keyboard.Pressed(VirtualKeyCode.VK_F11))
+            if (keyboard.Pressed(VirtualKeyCode.VK_F1))
             {
-                if(window.IsBorderlessFullScreen)
+                rd?.TriggerCapture();
+            }
+
+            if (keyboard.Pressed(VirtualKeyCode.VK_F11))
+            {
+                if (window.IsBorderlessFullScreen)
                 {
                     window.SwitchToWindowed();
                 }
                 else
                 {
                     window.SwitchToBorderlessFullScreen();
-                }                    
-            }          
+                }
+            }
 
             if (!window.IsMinimized && (window.Width != device.Width || window.Height != device.Height))
             {
