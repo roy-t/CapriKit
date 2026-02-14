@@ -25,6 +25,7 @@ public sealed class WindowEventProcessor(Win32Window target)
             case WM_SHOWWINDOW:
                 GetClientRect(Target.Hwnd, out var rect);
                 Target.OnSizeChanged(rect.Width, rect.Height);
+                Target.OnMove(rect.X, rect.Y);
                 break;
             case WM_SIZE:
                 var width = EventDecoder.Loword((int)lParam.Value);
@@ -39,7 +40,11 @@ public sealed class WindowEventProcessor(Win32Window target)
                         break;
                 }
                 break;
-
+            case WM_MOVE:
+                var x = EventDecoder.Loword((int)lParam.Value);
+                var y = EventDecoder.Hiword((int)lParam.Value);
+                Target.OnMove(x, y);
+                break;
             case WM_SETFOCUS:
                 Target.OnFocusChanged(true);
                 break;

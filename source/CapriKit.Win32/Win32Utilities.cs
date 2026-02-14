@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Windows.Win32;
@@ -13,6 +14,10 @@ namespace CapriKit.Win32;
 internal static class Win32Utilities
 {
     private const string WindowClassName = "CapriKit.Win32.WindowClass";
+    private const WINDOW_STYLE RegularWindowStyle = WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
+    private const WINDOW_EX_STYLE RegularWindowStyleEx = WINDOW_EX_STYLE.WS_EX_APPWINDOW | WINDOW_EX_STYLE.WS_EX_WINDOWEDGE;
+    private const WINDOW_STYLE BorderlessWindowStyle = WINDOW_STYLE.WS_POPUP | WINDOW_STYLE.WS_VISIBLE;
+    private const WINDOW_EX_STYLE BorderlessWindowStyleEx = WINDOW_EX_STYLE.WS_EX_APPWINDOW;
 
     public static unsafe void RegisterWindowClass(delegate* unmanaged[Stdcall]<HWND, uint, WPARAM, LPARAM, LRESULT> lpfnWndProc)
     {
@@ -39,11 +44,8 @@ internal static class Win32Utilities
 
     public static unsafe HWND CreateWindow(string title)
     {
-        var style = WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
-        var styleEx = WINDOW_EX_STYLE.WS_EX_APPWINDOW | WINDOW_EX_STYLE.WS_EX_WINDOWEDGE;
-
         return CreateWindowEx(
-            styleEx, WindowClassName, title, style,
+            RegularWindowStyleEx, WindowClassName, title, RegularWindowStyle,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             (HWND)IntPtr.Zero, null, null, null);
     }
@@ -60,31 +62,38 @@ internal static class Win32Utilities
         PInvoke.ShowWindow(handle, showCmd);
     }
 
-    public static void MakeBorderlessFullscreen(HWND hwnd)
+    /// <summary>
+    /// Transforms a borderless fullscreen window into a regular window with borders.
+    /// </summary>
+    public static bool MakeWindowed(HWND hwnd, int x, int y, int width, int height)
+    {
+        SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, unchecked((nint)RegularWindowStyle));
+        SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, unchecked((nint)RegularWindowStyleEx));
+
+        // Set the new position, don't bother copying the contents as that will be redrawn by the app anyway
+        return SetWindowPos(hwnd,
+            HWND.Null,
+            x,
+            y,
+            width,
+            height,
+            SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED | SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW | SET_WINDOW_POS_FLAGS.SWP_NOCOPYBITS);
+    }
+
+    /// <summary>
+    /// Transforms a regular window to a borderless fullscreen window that fills the monitor the window was on.
+    /// </summary>
+    public static bool MakeBorderlessFullscreen(HWND hwnd)
     {
         var hmon = MonitorFromWindow(hwnd, MONITOR_FROM_FLAGS.MONITOR_DEFAULTTOPRIMARY);
         var monitorInfo = new MONITORINFO() { cbSize = (uint)Marshal.SizeOf<MONITORINFO>() };
         if (GetMonitorInfo(hmon, ref monitorInfo))
         {
-            var width = monitorInfo.rcMonitor.Width;
-            var height = monitorInfo.rcMonitor.Height;
-
-            //// Unset overlapped window and 
-            //var style = (uint)GetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE);
-            //style &= ~(uint)WINDOW_STYLE.WS_OVERLAPPEDWINDOW;
-            //style |= (uint)(WINDOW_STYLE.WS_POPUP | WINDOW_STYLE.WS_VISIBLE);
-
-            //SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, unchecked((nint)style));
-
-            // Override the complete style of the window instead of just switchin on/off a few bits
-            var style = WINDOW_STYLE.WS_POPUP | WINDOW_STYLE.WS_VISIBLE;
-            var styleEx = WINDOW_EX_STYLE.WS_EX_APPWINDOW;
-
-            SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, unchecked((nint)style));
-            SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, unchecked((nint)styleEx));
+            SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_STYLE, unchecked((nint)BorderlessWindowStyle));
+            SetWindowLongPtr(hwnd, WINDOW_LONG_PTR_INDEX.GWL_EXSTYLE, unchecked((nint)BorderlessWindowStyleEx));
 
             // Set the new position, don't bother copying the contents as that will be redrawn by the app anyway
-            SetWindowPos(hwnd,
+            return SetWindowPos(hwnd,
                 HWND.Null,
                 monitorInfo.rcMonitor.X,
                 monitorInfo.rcMonitor.Y,
@@ -92,6 +101,6 @@ internal static class Win32Utilities
                 monitorInfo.rcMonitor.Height,
                 SET_WINDOW_POS_FLAGS.SWP_FRAMECHANGED | SET_WINDOW_POS_FLAGS.SWP_SHOWWINDOW | SET_WINDOW_POS_FLAGS.SWP_NOCOPYBITS);
         }
-
+        return false;
     }
 }

@@ -26,7 +26,6 @@ public sealed class Device : IDisposable
     private ID3D11Texture2D BackBuffer;
     private ID3D11RenderTargetView BackBufferView;
 
-
 #if DEBUG
     private static readonly DeviceCreationFlags Flags = DeviceCreationFlags.Debug;
     private readonly IDXGIDebug IDXGIDebug;
@@ -40,17 +39,10 @@ public sealed class Device : IDisposable
     {
         Viewport = new Rectangle(0, 0, window.Width, window.Height);
 
-        var swapChainDescription = CreateSwapChainDescription(window.Width, window.Height);
         var deviceResult = D3D11CreateDevice(null, DriverType.Hardware, Flags, [FeatureLevel.Level_11_1], out var device, out _, out var context);
         deviceResult.CheckError();
 
-        ID3D11Device = device ?? throw new Exception($"Failed to create {nameof(ID3D11Device)}");
-        ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
-        IDXGISwapChain = CreateSwapChain(device, swapChainDescription, window.Handle);
-
-        CreateBackBuffer();
-
-#if DEBUG
+#if DEBUG // Setup error checking as early as possible
         IDXGIDebug = DXGIGetDebugInterface1<IDXGIDebug>();
         IDXGIInfoQueue = DXGIGetDebugInterface1<IDXGIInfoQueue>();
         IDXGIInfoQueue.PushEmptyStorageFilter(DebugAll);
@@ -59,12 +51,23 @@ public sealed class Device : IDisposable
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Corruption, true);
         InfoQueueSubscription = new InfoQueueSubscription(IDXGIInfoQueue);
 #endif
+
+        AllowTearing = SupportsTearingDuringPresent(device);
+        var swapChainDescription = CreateSwapChainDescription(window.Width, window.Height, AllowTearing);
+
+        ID3D11Device = device ?? throw new Exception($"Failed to create {nameof(ID3D11Device)}");
+        ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
+        IDXGISwapChain = CreateSwapChain(device, swapChainDescription, window.Handle);
+
+        CreateBackBuffer();
     }
 
     public Rectangle Viewport { get; private set; }
     public int Width => Viewport.Width;
     public int Height => Viewport.Height;
     public bool VSync { get; set; } = true;
+
+    public bool AllowTearing { get; private set; } = false;
 
     public void Clear()
     {
@@ -73,13 +76,13 @@ public sealed class Device : IDisposable
 
     public void Present()
     {
-        if (VSync)
+        if (!VSync && AllowTearing)
         {
-            IDXGISwapChain.Present(1, PresentFlags.None);
+            IDXGISwapChain.Present(0, PresentFlags.AllowTearing);
         }
         else
         {
-            IDXGISwapChain.Present(0, PresentFlags.AllowTearing);
+            IDXGISwapChain.Present(1, PresentFlags.None);
         }
     }
 
@@ -89,7 +92,7 @@ public sealed class Device : IDisposable
         BackBufferView.Dispose();
         BackBuffer.Dispose();
 
-        var swapChainDescription = CreateSwapChainDescription(width, height);
+        var swapChainDescription = CreateSwapChainDescription(width, height, AllowTearing);
         var result = IDXGISwapChain.ResizeBuffers(swapChainDescription.BufferCount,
             swapChainDescription.Width,
             swapChainDescription.Height,
@@ -105,19 +108,20 @@ public sealed class Device : IDisposable
     private void CreateBackBuffer()
     {
         BackBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
-        
+
         var view = new RenderTargetViewDescription(BackBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
         BackBufferView = ID3D11Device.CreateRenderTargetView(BackBuffer, view);
         BackBufferView.DebugName = DebugName.For(BackBufferView.GetType(), "BackBuffer_View");
     }
-    private static SwapChainDescription1 CreateSwapChainDescription(int width, int height)
+
+    private static SwapChainDescription1 CreateSwapChainDescription(int width, int height, bool allowTearing)
     {
         return new SwapChainDescription1()
         {
             AlphaMode = AlphaMode.Unspecified,
             BufferCount = 2,
             BufferUsage = Usage.RenderTargetOutput,
-            Flags = SwapChainFlags.AllowTearing,
+            Flags = allowTearing ? SwapChainFlags.AllowTearing : SwapChainFlags.None,
             Format = BackBufferFormat,
             Height = (uint)height,
             SampleDescription = new SampleDescription(1, 0),
@@ -128,13 +132,25 @@ public sealed class Device : IDisposable
         };
     }
 
+    private static bool SupportsTearingDuringPresent(ID3D11Device device)
+    {
+        // Tearing support requires DXGI 1.5 which was added in Windows 10 Anniverary edition
+        using var dxgiDevice = device.QueryInterface<IDXGIDevice>();
+        using var adapter = dxgiDevice.GetParent<IDXGIAdapter>();
+        using var factory5 = adapter.GetParent<IDXGIFactory5>();
+        return factory5 != null && factory5.PresentAllowTearing;
+    }
+
     private static IDXGISwapChain1 CreateSwapChain(ID3D11Device device, SwapChainDescription1 description, nint windowHandle)
     {
         using var dxgiDevice = device.QueryInterface<IDXGIDevice>();
         using var adapter = dxgiDevice.GetParent<IDXGIAdapter>();
-
         using var factory = adapter.GetParent<IDXGIFactory2>();
-        return factory.CreateSwapChainForHwnd(device, windowHandle, description);
+        
+        var swapChain = factory.CreateSwapChainForHwnd(device, windowHandle, description);
+        factory.MakeWindowAssociation(windowHandle, WindowAssociationFlags.IgnoreAltEnter);
+
+        return swapChain;
     }
 
     public void Dispose()

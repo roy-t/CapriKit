@@ -38,9 +38,22 @@ public class Program
                 return;
             }
 
+            if(keyboard.Pressed(VirtualKeyCode.VK_F11))
+            {
+                if(window.IsBorderlessFullScreen)
+                {
+                    window.SwitchToWindowed();
+                }
+                else
+                {
+                    window.SwitchToBorderlessFullScreen();
+                }                    
+            }          
+
             if (!window.IsMinimized && (window.Width != device.Width || window.Height != device.Height))
             {
                 device.Resize(window.Width, window.Height);
+                Console.WriteLine($"{window.Width}x{window.Height}");
             }
 
             // TODO: switch to borderless window?

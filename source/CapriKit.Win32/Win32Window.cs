@@ -14,7 +14,11 @@ namespace CapriKit.Win32;
 [SupportedOSPlatform(WindowsVersions.WindowsXP)]
 public sealed class Win32Window
 {
+    private int restoreX, restoreY, restoreWidth, restoreHeight;
     public nint Handle => Hwnd;
+
+    public int X { get; private set; }
+    public int Y { get; private set; }
 
     /// <summary>
     /// The width of the client area of the window.
@@ -27,6 +31,8 @@ public sealed class Win32Window
     public int Height { get; private set; }
 
     public bool IsMinimized => Width == 0 && Height == 0;
+
+    public bool IsBorderlessFullScreen { get; private set; }
 
     public bool HasFocus { get; private set; }
 
@@ -74,6 +80,17 @@ public sealed class Win32Window
     /// </summary>
     public void SetCursorPosition(Vector2 position) => SetCursorPosition(new Point((int)position.X, (int)position.Y));
 
+    public void SwitchToBorderlessFullScreen()
+    {
+        restoreX = X; restoreY = Y; restoreWidth = Width; restoreHeight = Height;
+        IsBorderlessFullScreen = Win32Utilities.MakeBorderlessFullscreen(Hwnd);
+    }
+
+    public void SwitchToWindowed()
+    {
+        IsBorderlessFullScreen = !Win32Utilities.MakeWindowed(Hwnd, restoreX, restoreY, restoreWidth, restoreHeight);
+    }
+
     private TRACKMOUSEEVENT trackMouseEventData;
     private bool isCursorPositionKnown;
     private bool isTrackingNextMouseLeave;
@@ -97,6 +114,11 @@ public sealed class Win32Window
 
     internal HWND Hwnd { get; private set; }
 
+    internal void OnMove(int x, int y)
+    {
+        X = x;
+        Y = y;
+    }
     internal void OnSizeChanged(int width, int height)
     {
         Width = width;
