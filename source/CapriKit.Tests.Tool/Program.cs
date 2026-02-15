@@ -19,7 +19,7 @@ public class Program
     }
 
     [STAThread]
-    static void Main()
+    static void Main() // TODO: main loop is getting a bit cluttered
     {
 #if DEBUG // Ensure writes to console are redirected to Visual Studio
         Console.SetOut(new DebugOutputTextWriter());
@@ -30,15 +30,16 @@ public class Program
         var mouse = Win32Application.Mouse;
         var keyboard = Win32Application.Keyboard;
 
-        var rd = RenderDoc.TryLoad();
+        using var rd = RenderDoc.TryLoad();
 
         using var device = new Device(window);
 
-        while (Win32Application.PumpMessages())
+        var running = true;
+        while (running)
         {
             if (keyboard.Pressed(VirtualKeyCode.VK_ESCAPE))
             {
-                return;
+                running = false;
             }
 
             if (keyboard.Pressed(VirtualKeyCode.VK_F1))
@@ -67,6 +68,19 @@ public class Program
             // TODO: switch to borderless window?
             device.Clear();
             device.Present();
+
+            running &= Win32Application.PumpMessages();
+        }
+
+        // Open RenderDoc to analyze the last taken capture
+        if (rd != null)
+        {
+            var numCaptures = rd.GetNumCaptures();
+            if (numCaptures > 0)
+            {
+                var capture = rd.GetCapture(numCaptures - 1);
+                rd.LaunchReplayUI(capture);
+            }
         }
     }
 }

@@ -1,8 +1,7 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace CapriKit.DirectX11.Debug;
-
-// TODO: use types from RenderDocNative instead!
 
 /// <summary>
 /// In-application RenderDoc API
@@ -11,29 +10,106 @@ namespace CapriKit.DirectX11.Debug;
 public sealed unsafe class RenderDoc : IDisposable
 {
     private nint _module;
-    private RenderDocApi* _api;
+    private RENDERDOC_API_1_6_0 _api;
 
     private RenderDoc() { }
 
-    public static bool TryLoad(out RenderDoc instance)
+    public static RenderDoc? TryLoad()
     {
-        instance = new RenderDoc();
-        return instance.Load();
+        var instance = new RenderDoc();
+        if (instance.Load())
+        {
+            return instance;
+        }
+        return null;
     }
 
     public void StartFrameCapture(nint device, nint window = default)
     {
-        _api->StartFrameCapture(device, window);
+        _api.StartFrameCapture((void*)device, (void*)window);
     }
 
     public bool EndFrameCapture(nint device, nint window = default)
     {
-        return _api->EndFrameCapture(device, window) != 0;
+        return _api.EndFrameCapture((void*)device, (void*)window) != 0;
     }
 
     public void TriggerCapture()
     {
-        _api->TriggerCapture();
+        _api.TriggerCapture();
+    }
+
+    public uint GetNumCaptures()
+    {
+        return _api.GetNumCaptures();
+    }
+
+    public string GetCapture(uint index)
+    {
+        uint pathLength;
+        ulong timeStamp;
+        var result = _api.GetCapture(index, null, &pathLength, &timeStamp);
+        if (result == 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(index));
+        }
+
+        fixed (char* fileName = new char[pathLength])
+        {
+            _api.GetCapture(index, fileName, &pathLength, &timeStamp);
+            return Encoding.UTF8.GetString((byte*)fileName, (int)pathLength - 1); // skip the '\0' character
+        }
+    }
+
+    public uint LaunchReplayUI(string args)
+    {
+        int utf8ByteCount = Encoding.UTF8.GetByteCount(args);
+        byte* utf8Bytes = stackalloc byte[utf8ByteCount + 1];
+        fixed (char* argsPtr = args)
+        {
+            int encoded = Encoding.UTF8.GetBytes(argsPtr, args.Length, utf8Bytes, utf8ByteCount);
+            utf8Bytes[encoded] = 0;
+        }
+
+        return _api.LaunchReplayUI(1, utf8Bytes);
+    }
+
+    private bool Load()
+    {
+        var path = GetPathToLibrary();
+        if (!NativeLibrary.TryLoad(path, out _module))
+        {
+            return false;
+        }
+
+        if (!NativeLibrary.TryGetExport(_module, "RENDERDOC_GetAPI", out var proc))
+        {
+            return false;
+        }
+
+        var getApi = Marshal.GetDelegateForFunctionPointer<pRENDERDOC_GetAPI>(proc);
+        void* apiPtr = null;
+        var result = getApi(RENDERDOC_Version.API_VERSION_1_6_0, &apiPtr);
+
+        if (result == 0 || apiPtr == null)
+        {
+            return false;
+        }
+
+        _api = Marshal.PtrToStructure<RENDERDOC_API_1_6_0>((nint)apiPtr);
+        return true;
+    }
+
+    public void Dispose()
+    {
+        if (_module != 0)
+        {
+            NativeLibrary.Free(_module);
+            _module = 0;
+            _api = default;
+        }
+
+        GC.SuppressFinalize(this);
     }
 
     private static string GetPathToLibrary()
@@ -46,73 +122,6 @@ public sealed unsafe class RenderDoc : IDisposable
         }
 
         return "renderdoc.dll"; // Hope its available on the PATH
-    }
-
-    private bool Load()
-    {
-        var path = GetPathToLibrary();
-
-        if (NativeLibrary.TryLoad(path, out _module) && NativeLibrary.TryGetExport(_module, "RENDERDOC_GetAPI", out var proc))
-        {
-            delegate* unmanaged[Cdecl]<uint, void**, int> getApi = (delegate* unmanaged[Cdecl]<uint, void**, int>)proc;
-
-            void* apiPtr = null;
-            int result = getApi(RENDERDOC_API_VERSION, &apiPtr);
-            if (result != 0 && apiPtr != null)
-            {
-                _api = (RenderDocApi*)apiPtr;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    // Matches the beginning of RENDERDOC_API_1_6_0
-    // We only define the functions we use.
-    // Layout must match native exactly.
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct RenderDocApi
-    {
-        private readonly nint GetAPIVersion;
-        private readonly nint SetCaptureOptionU32;
-        private readonly nint SetCaptureOptionF32;
-        private readonly nint GetCaptureOptionU32;
-        private readonly nint GetCaptureOptionF32;
-
-        private readonly nint SetCaptureKeys;
-        private readonly nint GetOverlayBits;
-        private readonly nint MaskOverlayBits;
-
-        private readonly nint RemoveHooks;
-        private readonly nint UnloadCrashHandler;
-
-        private readonly nint SetCaptureFilePathTemplate;
-        private readonly nint GetCaptureFilePathTemplate;
-
-        private readonly nint GetNumCaptures;
-        private readonly nint GetCapture;
-
-        private readonly nint TriggerMultiFrameCapture;
-        public readonly delegate* unmanaged[Cdecl]<void> TriggerCapture;
-
-        public readonly delegate* unmanaged[Cdecl]<nint, nint, void> StartFrameCapture;
-        public readonly delegate* unmanaged[Cdecl]<nint, nint, uint> EndFrameCapture;
-
-        private readonly nint IsFrameCapturing;
-    }
-
-    public void Dispose()
-    {
-        if (_module != 0)
-        {
-            NativeLibrary.Free(_module);
-            _module = 0;
-        }
-
-        _api = null;
-        GC.SuppressFinalize(this);
     }
 }
 

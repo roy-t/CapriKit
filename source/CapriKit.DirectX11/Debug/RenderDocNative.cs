@@ -5,7 +5,7 @@ namespace CapriKit.DirectX11.Debug;
 // C Header file: https://github.com/baldurk/renderdoc/blob/v1.x/renderdoc/api/app/renderdoc_app.h
 // Adapted from https://github.com/mellinoe/veldrid/tree/master/src/Veldrid.RenderDoc
 
-// <summary>
+/// <summary>
 /// RenderDoc API entry point
 ///
 /// This entry point can be obtained via GetProcAddress/dlsym if RenderDoc is available.
@@ -181,21 +181,34 @@ internal enum RENDERDOC_CaptureOption
 
 }
 
-// Sets an option that controls how RenderDoc behaves on capture.
-//
-// Returns 1 if the option and value are valid
-// Returns 0 if either is invalid and the option is unchanged
+/// <summary>
+/// Sets an option that controls how RenderDoc behaves on capture.
+///
+/// Returns 1 if the option and value are valid
+/// Returns 0 if either is invalid and the option is unchanged
+/// </summary>
 internal unsafe delegate int pRENDERDOC_SetCaptureOptionU32(RENDERDOC_CaptureOption opt, uint val);
+
+/// <summary>
+/// Sets an option that controls how RenderDoc behaves on capture.
+///
+/// Returns 1 if the option and value are valid
+/// Returns 0 if either is invalid and the option is unchanged
+/// </summary>
 internal unsafe delegate int pRENDERDOC_SetCaptureOptionF32(RENDERDOC_CaptureOption opt, float val);
 
-// Gets the current value of an option as a uint
-//
-// If the option is invalid, 0xffffffff is returned
+/// <summary>
+/// Gets the current value of an option as a uint
+///
+/// If the option is invalid, 0xffffffff is returned
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_GetCaptureOptionU32(RENDERDOC_CaptureOption opt);
 
-// Gets the current value of an option as a float
-//
-// If the option is invalid, -FLT_MAX is returned
+/// <summary>
+/// Gets the current value of an option as a float
+///
+/// If the option is invalid, -FLT_MAX is returned
+/// </summary>
 internal unsafe delegate float pRENDERDOC_GetCaptureOptionF32(RENDERDOC_CaptureOption opt);
 
 internal enum RENDERDOC_InputButton
@@ -277,292 +290,258 @@ internal enum RENDERDOC_InputButton
     eRENDERDOC_Key_Max,
 }
 
-// Sets which key or keys can be used to toggle focus between multiple windows
-//
-// If keys is NULL or num is 0, toggle keys will be disabled
+/// <summary>
+/// Sets which key or keys can be used to toggle focus between multiple windows.
+///
+/// If <c>keys</c> is NULL or <c>num</c> is 0, toggle keys will be disabled.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetFocusToggleKeys(RENDERDOC_InputButton* keys, int num);
 
-// Sets which key or keys can be used to capture the next frame
-//
-// If keys is NULL or num is 0, captures keys will be disabled
+/// <summary>
+/// Sets which key or keys can be used to capture the next frame.
+///
+/// If <c>keys</c> is NULL or <c>num</c> is 0, capture keys will be disabled.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetCaptureKeys(RENDERDOC_InputButton* keys, int num);
 
-internal enum RENDERDOC_OverlayBits : uint
-{
-    // This single bit controls whether the overlay is enabled or disabled globally
-    Enabled = 0x1,
-
-    // Show the average framerate over several seconds as well as min/max
-    FrameRate = 0x2,
-
-    // Show the current frame number
-    FrameNumber = 0x4,
-
-    // Show a list of recent captures, and how many captures have been made
-    CaptureList = 0x8,
-
-    // Default values for the overlay mask
-    Default = (Enabled | FrameRate | FrameNumber | CaptureList),
-
-    // Enable all bits
-    All = ~0U,
-
-    // Disable all bits
-    None = 0,
-}
-
-// returns the overlay bits that have been set
+/// <summary>
+/// Returns the overlay bits that have been set.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_GetOverlayBits();
-// sets the overlay bits with an and & or mask
+
+/// <summary>
+/// Sets the overlay bits with an AND and OR mask.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_MaskOverlayBits(uint And, uint Or);
 
-// this function will attempt to remove RenderDoc's hooks in the application.
-//
-// Note: that this can only work correctly if done immediately after
-// the module is loaded, before any API work happens. RenderDoc will remove its
-// injected hooks and shut down. Behaviour is undefined if this is called
-// after any API functions have been called, and there is still no guarantee of
-// success.
+/// <summary>
+/// Attempts to remove RenderDoc's hooks in the application.
+///
+/// Note: This can only work correctly if done immediately after the module is loaded,
+/// before any API work happens. RenderDoc will remove its injected hooks and shut down.
+/// Behaviour is undefined if this is called after any API functions have been called,
+/// and there is still no guarantee of success.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_RemoveHooks();
 
-// This function will unload RenderDoc's crash handler.
-//
-// If you use your own crash handler and don't want RenderDoc's handler to
-// intercede, you can call this function to unload it and any unhandled
-// exceptions will pass to the next handler.
+/// <summary>
+/// Unloads RenderDoc's crash handler.
+///
+/// If you use your own crash handler and do not want RenderDoc's handler to intercede,
+/// you can call this function to unload it and any unhandled exceptions will pass to
+/// the next handler.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_UnloadCrashHandler();
 
-// Sets the capture file path template
-//
-// pathtemplate is a UTF-8 string that gives a template for how captures will be named
-// and where they will be saved.
-//
-// Any extension is stripped off the path, and captures are saved in the directory
-// specified, and named with the filename and the frame number appended. If the
-// directory does not exist it will be created, including any parent directories.
-//
-// If pathtemplate is NULL, the template will remain unchanged
-//
-// Example:
-//
-// SetCaptureFilePathTemplate("my_captures/example");
-//
-// Capture #1 -> my_captures/example_frame123.rdc
-// Capture #2 -> my_captures/example_frame456.rdc
+/// <summary>
+/// Sets the capture file path template.
+///
+/// <paramref name="pathtemplate"/> is a UTF-8 string that gives a template for how captures
+/// will be named and where they will be saved.
+///
+/// Any extension is stripped off the path. Captures are saved in the specified directory
+/// and named with the filename and the frame number appended. If the directory does not
+/// exist it will be created, including any parent directories.
+///
+/// If <c>pathtemplate</c> is NULL, the template will remain unchanged.
+///
+/// Example:
+/// SetCaptureFilePathTemplate("my_captures/example");
+///
+/// Capture #1 -> my_captures/example_frame123.rdc
+/// Capture #2 -> my_captures/example_frame456.rdc
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetCaptureFilePathTemplate(byte* pathtemplate);
 
-// returns the current capture path template, see SetCaptureFileTemplate above, as a UTF-8 string
+/// <summary>
+/// Returns the current capture path template as a UTF-8 string.
+/// See <c>pRENDERDOC_SetCaptureFilePathTemplate</c> for details.
+/// </summary>
 internal unsafe delegate byte* pRENDERDOC_GetCaptureFilePathTemplate();
 
-// returns the number of captures that have been made
+/// <summary>
+/// Returns the number of captures that have been made.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_GetNumCaptures();
 
-// This function returns the details of a capture, by index. New captures are added
-// to the end of the list.
-//
-// filename will be filled with the absolute path to the capture file, as a UTF-8 string
-// pathlength will be written with the length in bytes of the filename string
-// timestamp will be written with the time of the capture, in seconds since the Unix epoch
-//
-// Any of the parameters can be NULL and they'll be skipped.
-//
-// The function will return 1 if the capture index is valid, or 0 if the index is invalid
-// If the index is invalid, the values will be unchanged
-//
-// Note: when captures are deleted in the UI they will remain in this list, so the
-// capture path may not exist anymore.
+/// <summary>
+/// Returns the details of a capture by index. New captures are added to the end of the list.
+///
+/// <paramref name="filename"/> will be filled with the absolute path to the capture file as a UTF-8 string.
+/// <paramref name="pathlength"/> will be written with the length in bytes of the filename string.
+/// <paramref name="timestamp"/> will be written with the time of the capture in seconds since the Unix epoch.
+///
+/// Any of the parameters can be NULL and they will be skipped.
+///
+/// Returns 1 if the capture index is valid, or 0 if the index is invalid.
+/// If the index is invalid, the values will be unchanged.
+///
+/// Note: When captures are deleted in the UI they will remain in this list,
+/// so the capture path may not exist anymore.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_GetCapture(uint idx, char* filename, uint* pathlength, ulong* timestamp);
 
-// Sets the comments associated with a capture file. These comments are displayed in the
-// UI program when opening.
-//
-// filePath should be a path to the capture file to add comments to. If set to NULL or ""
-// the most recent capture file created made will be used instead.
-// comments should be a NULL-terminated UTF-8 string to add as comments.
-//
-// Any existing comments will be overwritten.
+/// <summary>
+/// Sets the comments associated with a capture file. These comments are displayed
+/// in the UI program when opening.
+///
+/// <paramref name="filePath"/> should be a path to the capture file to add comments to.
+/// If set to NULL or an empty string, the most recent capture file created will be used instead.
+///
+/// <paramref name="comments"/> should be a NULL-terminated UTF-8 string to add as comments.
+///
+/// Any existing comments will be overwritten.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetCaptureFileComments(byte* filePath, byte* comments);
 
-// returns 1 if the RenderDoc UI is connected to this application, 0 otherwise
+/// <summary>
+/// Returns 1 if the RenderDoc UI is connected to this application, 0 otherwise.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_IsTargetControlConnected();
 
-// This function will launch the Replay UI associated with the RenderDoc library injected
-// into the running application.
-//
-// if connectTargetControl is 1, the Replay UI will be launched with a command line parameter
-// to connect to this application
-// cmdline is the rest of the command line, as a UTF-8 string. E.g. a captures to open
-// if cmdline is NULL, the command line will be empty.
-//
-// returns the PID of the replay UI if successful, 0 if not successful.
+/// <summary>
+/// Launches the Replay UI associated with the RenderDoc library injected
+/// into the running application.
+///
+/// If <paramref name="connectTargetControl"/> is 1, the Replay UI will be launched
+/// with a command line parameter to connect to this application.
+///
+/// <paramref name="cmdline"/> is the rest of the command line as a UTF-8 string,
+/// e.g. a capture to open. If <c>cmdline</c> is NULL, the command line will be empty.
+///
+/// Returns the PID of the replay UI if successful, 0 otherwise.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_LaunchReplayUI(uint connectTargetControl, byte* cmdline);
 
-//////////////////////////////////////////////////////////////////////////
-// Capturing functions
-//
-
-// This sets the RenderDoc in-app overlay in the API/window pair as 'active' and it will
-// respond to keypresses. Neither parameter can be NULL
+/// <summary>
+/// Sets the RenderDoc in-app overlay in the API/window pair as active,
+/// allowing it to respond to keypresses. Neither parameter can be NULL.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetActiveWindow(void* device, void* wndHandle);
 
-// capture the next frame on whichever window and API is currently considered active
+/// <summary>
+/// Captures the next frame on whichever window and API is currently considered active.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_TriggerCapture();
 
-// This will return 1 if the request was successfully passed on, though it's not guaranteed that
-// the UI will be on top in all cases depending on OS rules. It will return 0 if there is no current
-// target control connection to make such a request, or if there was another error
+/// <summary>
+/// Returns 1 if the request was successfully passed on. It is not guaranteed that
+/// the UI will be on top in all cases depending on OS rules.
+///
+/// Returns 0 if there is no current target control connection or if there was another error.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_ShowReplayUI();
 
-// capture the next N frames on whichever window and API is currently considered active
+/// <summary>
+/// Captures the next N frames on whichever window and API is currently considered active.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_TriggerMultiFrameCapture(uint numFrames);
 
-// When choosing either a device pointer or a window handle to capture, you can pass NULL.
-// Passing NULL specifies a 'wildcard' match against anything. This allows you to specify
-// any API rendering to a specific window, or a specific API instance rendering to any window,
-// or in the simplest case of one window and one API, you can just pass NULL for both.
-//
-// In either case, if there are two or more possible matching (device,window) pairs it
-// is undefined which one will be captured.
-//
-// Note: for headless rendering you can pass NULL for the window handle and either specify
-// a device pointer or leave it NULL as above.
-
-// Immediately starts capturing API calls on the specified device pointer and window handle.
-//
-// If there is no matching thing to capture (e.g. no supported API has been initialised),
-// this will do nothing.
-//
-// The results are undefined (including crashes) if two captures are started overlapping,
-// even on separate devices and/oror windows.
+/// <summary>
+/// Immediately starts capturing API calls on the specified device pointer and window handle.
+///
+/// You may pass NULL for either parameter as a wildcard match. If there are multiple matching
+/// (device, window) pairs, it is undefined which one will be captured.
+///
+/// If there is no matching API initialised, this call does nothing.
+///
+/// The results are undefined (including crashes) if two captures are started overlapping,
+/// even on separate devices and/or windows.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_StartFrameCapture(void* device, void* wndHandle);
 
-// Returns whether or not a frame capture is currently ongoing anywhere.
-//
-// This will return 1 if a capture is ongoing, and 0 if there is no capture running
+/// <summary>
+/// Returns 1 if a frame capture is currently ongoing anywhere, 0 otherwise.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_IsFrameCapturing();
 
-// Ends capturing immediately.
-//
-// This will return 1 if the capture succeeded, and 0 if there was an error capturing.
+/// <summary>
+/// Ends capturing immediately.
+///
+/// Returns 1 if the capture succeeded, and 0 if there was an error.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_EndFrameCapture(void* device, void* wndHandle);
 
-// Ends capturing immediately and discard any data stored without saving to disk.
-//
-// This will return 1 if the capture was discarded, and 0 if there was an error or no capture
-// was in progress
+/// <summary>
+/// Ends capturing immediately and discards any stored data without saving to disk.
+///
+/// Returns 1 if the capture was discarded, and 0 if there was an error or no capture was in progress.
+/// </summary>
 internal unsafe delegate uint pRENDERDOC_DiscardFrameCapture(void* device, void* wndHandle);
 
-// Only valid to be called between a call to StartFrameCapture and EndFrameCapture. Gives a custom
-// title to the capture produced which will be displayed in the UI.
-//
-// If multiple captures are ongoing, this title will be applied to the first capture to end after
-// this call. The second capture to end will have no title, unless this function is called again.
-//
-// Calling this function has no effect if no capture is currently running, and if it is called
-// multiple times only the last title will be used.
+/// <summary>
+/// Sets a custom title for a capture. Only valid between a call to
+/// <c>pRENDERDOC_StartFrameCapture</c> and <c>pRENDERDOC_EndFrameCapture</c>.
+///
+/// If multiple captures are ongoing, the title will be applied to the first capture
+/// to end after this call.
+///
+/// Calling this function has no effect if no capture is currently running.
+/// If called multiple times, only the last title will be used.
+/// </summary>
 internal unsafe delegate void pRENDERDOC_SetCaptureTitle(byte* title);
+
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // RenderDoc API versions
-//
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct RENDERDOC_API_1_7_0222
-{
-    public pRENDERDOC_GetAPIVersion GetAPIVersion;
-
-    public pRENDERDOC_SetCaptureOptionU32 SetCaptureOptionU32;
-    public pRENDERDOC_SetCaptureOptionF32 SetCaptureOptionF32;
-
-    public pRENDERDOC_GetCaptureOptionU32 GetCaptureOptionU32;
-    public pRENDERDOC_GetCaptureOptionF32 GetCaptureOptionF32;
-
-    public pRENDERDOC_SetFocusToggleKeys SetFocusToggleKeys;
-    public pRENDERDOC_SetCaptureKeys SetCaptureKeys;
-
-    public pRENDERDOC_GetOverlayBits GetOverlayBits;
-    public pRENDERDOC_MaskOverlayBits MaskOverlayBits;
-
-    public pRENDERDOC_RemoveHooks RemoveHooks;
-    public pRENDERDOC_UnloadCrashHandler UnloadCrashHandler;
-
-    public pRENDERDOC_SetCaptureFilePathTemplate SetCaptureFilePathTemplate;
-    public pRENDERDOC_GetCaptureFilePathTemplate GetCaptureFilePathTemplate;
-
-    public pRENDERDOC_GetNumCaptures GetNumCaptures;
-    public pRENDERDOC_GetCapture GetCapture;
-
-    public pRENDERDOC_TriggerCapture TriggerCapture;
-
-    public pRENDERDOC_IsTargetControlConnected IsTargetControlConnected;
-    public pRENDERDOC_LaunchReplayUI LaunchReplayUI;
-
-    public pRENDERDOC_SetActiveWindow SetActiveWindow;
-
-    public pRENDERDOC_StartFrameCapture StartFrameCapture;
-    public pRENDERDOC_IsFrameCapturing IsFrameCapturing;
-    public pRENDERDOC_EndFrameCapture EndFrameCapture;
-
-    // new function in 1.1.0
-    public pRENDERDOC_TriggerMultiFrameCapture TriggerMultiFrameCapture;
-
-    // new function in 1.2.0
-    public pRENDERDOC_SetCaptureFileComments SetCaptureFileComments;
-    // new function in 1.4.0
-    public pRENDERDOC_DiscardFrameCapture DiscardFrameCapture;
-}
+//////////////////////////////////////////////////////////////////////////////////////////////////
 
 [StructLayout(LayoutKind.Sequential)]
 internal struct RENDERDOC_API_1_6_0
 {
-    pRENDERDOC_GetAPIVersion GetAPIVersion;
-
-    pRENDERDOC_SetCaptureOptionU32 SetCaptureOptionU32;
-    pRENDERDOC_SetCaptureOptionF32 SetCaptureOptionF32;
-
-    pRENDERDOC_GetCaptureOptionU32 GetCaptureOptionU32;
-    pRENDERDOC_GetCaptureOptionF32 GetCaptureOptionF32;
-
-    pRENDERDOC_SetFocusToggleKeys SetFocusToggleKeys;
-    pRENDERDOC_SetCaptureKeys SetCaptureKeys;
-
-    pRENDERDOC_GetOverlayBits GetOverlayBits;
-    pRENDERDOC_MaskOverlayBits MaskOverlayBits;
-
-    pRENDERDOC_RemoveHooks RemoveHooks;
-    pRENDERDOC_UnloadCrashHandler UnloadCrashHandler;
-
-    pRENDERDOC_SetCaptureFilePathTemplate SetCaptureFilePathTemplate;
-    pRENDERDOC_GetCaptureFilePathTemplate GetCaptureFilePathTemplate;
-
-
-    pRENDERDOC_GetNumCaptures GetNumCaptures;
-    pRENDERDOC_GetCapture GetCapture;
-
-    pRENDERDOC_TriggerCapture TriggerCapture;
-
-    pRENDERDOC_IsTargetControlConnected IsTargetControlConnected;
-
-    pRENDERDOC_LaunchReplayUI LaunchReplayUI;
-
-    pRENDERDOC_SetActiveWindow SetActiveWindow;
-
-    pRENDERDOC_StartFrameCapture StartFrameCapture;
-    pRENDERDOC_IsFrameCapturing IsFrameCapturing;
-    pRENDERDOC_EndFrameCapture EndFrameCapture;
-
-    // new function in 1.1.0
-    pRENDERDOC_TriggerMultiFrameCapture TriggerMultiFrameCapture;
-
-    // new function in 1.2.0
-    pRENDERDOC_SetCaptureFileComments SetCaptureFileComments;
-
-    // new function in 1.4.0
-    pRENDERDOC_DiscardFrameCapture DiscardFrameCapture;
-
-    // new function in 1.5.0
-    pRENDERDOC_ShowReplayUI ShowReplayUI;
-
-    // new function in 1.6.0
-    pRENDERDOC_SetCaptureTitle SetCaptureTitle;
+    /// <inheritdoc cref="pRENDERDOC_GetAPIVersion"/>
+    public pRENDERDOC_GetAPIVersion GetAPIVersion;
+    /// <inheritdoc cref="pRENDERDOC_SetCaptureOptionU32"/>
+    public pRENDERDOC_SetCaptureOptionU32 SetCaptureOptionU32;
+    /// <inheritdoc cref="pRENDERDOC_SetCaptureOptionF32"/>
+    public pRENDERDOC_SetCaptureOptionF32 SetCaptureOptionF32;
+    /// <inheritdoc cref="pRENDERDOC_GetCaptureOptionU32"/>
+    public pRENDERDOC_GetCaptureOptionU32 GetCaptureOptionU32;
+    /// <inheritdoc cref="pRENDERDOC_GetCaptureOptionF32"/>
+    public pRENDERDOC_GetCaptureOptionF32 GetCaptureOptionF32;
+    /// <inheritdoc cref="pRENDERDOC_SetFocusToggleKeys"/>
+    public pRENDERDOC_SetFocusToggleKeys SetFocusToggleKeys;
+    /// <inheritdoc cref="pRENDERDOC_SetCaptureKeys"/>
+    public pRENDERDOC_SetCaptureKeys SetCaptureKeys;
+    /// <inheritdoc cref="pRENDERDOC_GetOverlayBits"/>
+    public pRENDERDOC_GetOverlayBits GetOverlayBits;
+    /// <inheritdoc cref="pRENDERDOC_MaskOverlayBits"/>
+    public pRENDERDOC_MaskOverlayBits MaskOverlayBits;
+    /// <inheritdoc cref="pRENDERDOC_RemoveHooks"/>
+    public pRENDERDOC_RemoveHooks RemoveHooks;
+    /// <inheritdoc cref="pRENDERDOC_UnloadCrashHandler"/>
+    public pRENDERDOC_UnloadCrashHandler UnloadCrashHandler;
+    /// <inheritdoc cref="pRENDERDOC_SetCaptureFilePathTemplate"/>
+    public pRENDERDOC_SetCaptureFilePathTemplate SetCaptureFilePathTemplate;
+    /// <inheritdoc cref="pRENDERDOC_GetCaptureFilePathTemplate"/>
+    public pRENDERDOC_GetCaptureFilePathTemplate GetCaptureFilePathTemplate;
+    /// <inheritdoc cref="pRENDERDOC_GetNumCaptures"/>
+    public pRENDERDOC_GetNumCaptures GetNumCaptures;
+    /// <inheritdoc cref="pRENDERDOC_GetCapture"/>
+    public pRENDERDOC_GetCapture GetCapture;
+    /// <inheritdoc cref="pRENDERDOC_TriggerCapture"/>
+    public pRENDERDOC_TriggerCapture TriggerCapture;
+    /// <inheritdoc cref="pRENDERDOC_IsTargetControlConnected"/>
+    public pRENDERDOC_IsTargetControlConnected IsTargetControlConnected;
+    /// <inheritdoc cref="pRENDERDOC_LaunchReplayUI"/>
+    public pRENDERDOC_LaunchReplayUI LaunchReplayUI;
+    /// <inheritdoc cref="pRENDERDOC_SetActiveWindow"/>
+    public pRENDERDOC_SetActiveWindow SetActiveWindow;
+    /// <inheritdoc cref="pRENDERDOC_StartFrameCapture"/>
+    public pRENDERDOC_StartFrameCapture StartFrameCapture;
+    /// <inheritdoc cref="pRENDERDOC_IsFrameCapturing"/>
+    public pRENDERDOC_IsFrameCapturing IsFrameCapturing;
+    /// <inheritdoc cref="pRENDERDOC_EndFrameCapture"/>
+    public pRENDERDOC_EndFrameCapture EndFrameCapture;    
+    /// <inheritdoc cref="pRENDERDOC_TriggerMultiFrameCapture"/>
+    public pRENDERDOC_TriggerMultiFrameCapture TriggerMultiFrameCapture; // new function in 1.1.0
+    /// <inheritdoc cref="pRENDERDOC_SetCaptureFileComments"/>
+    public pRENDERDOC_SetCaptureFileComments SetCaptureFileComments; // new function in 1.2.0
+    /// <inheritdoc cref="pRENDERDOC_DiscardFrameCapture"/>
+    public pRENDERDOC_DiscardFrameCapture DiscardFrameCapture; // new function in 1.4.0
+    /// <inheritdoc cref="pRENDERDOC_ShowReplayUI"/>
+    public pRENDERDOC_ShowReplayUI ShowReplayUI; // new function in 1.5.0
+    /// <inheritdoc cref= "pRENDERDOC_SetCaptureTitle" />
+    public pRENDERDOC_SetCaptureTitle SetCaptureTitle; // new function in 1.6.0
+    // functions from 1.7.0 not yet implemented 
 }
