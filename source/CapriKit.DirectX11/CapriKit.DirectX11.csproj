@@ -3,6 +3,7 @@
     <TargetFramework>$(TargetFramework)-windows</TargetFramework>    
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="ImGui.NET" Version="1.91.6.1" />
     <PackageReference Include="Vortice.D3DCompiler" Version="3.8.2" />
     <PackageReference Include="Vortice.Direct3D11" Version="3.8.2" />
   </ItemGroup>
