@@ -20,8 +20,8 @@ public sealed class Device : IDisposable
     private const Format RenderTargetViewFormat = Format.R8G8B8A8_UNorm_SRgb;
 
     private readonly IDXGISwapChain IDXGISwapChain;
-    private readonly ID3D11Device ID3D11Device;
     private readonly ID3D11DeviceContext ID3D11DeviceContext;
+    internal readonly ID3D11Device ID3D11Device;
 
     private ID3D11Texture2D BackBuffer;
     private ID3D11RenderTargetView BackBufferView;
@@ -146,7 +146,7 @@ public sealed class Device : IDisposable
         using var dxgiDevice = device.QueryInterface<IDXGIDevice>();
         using var adapter = dxgiDevice.GetParent<IDXGIAdapter>();
         using var factory = adapter.GetParent<IDXGIFactory2>();
-        
+
         var swapChain = factory.CreateSwapChainForHwnd(device, windowHandle, description);
         factory.MakeWindowAssociation(windowHandle, WindowAssociationFlags.IgnoreAltEnter);
 

@@ -19,3 +19,11 @@ tab_width = 2
 [*.cs]
 indent_size = 4
 tab_width = 4
+
+# this. and Me. preferences
+dotnet_style_qualification_for_event = false:warning
+dotnet_style_qualification_for_field = false:warning
+dotnet_style_qualification_for_method = false:warning
+dotnet_style_qualification_for_property = false:warning
+
+csharp_style_namespace_declarations = file_scoped:warning
