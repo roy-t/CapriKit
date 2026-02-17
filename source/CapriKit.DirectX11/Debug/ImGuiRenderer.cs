@@ -13,7 +13,7 @@ public sealed class ImGuiRenderer : IDisposable
 
     public ImGuiRenderer(Device device)
     {
-        this.Device = device;
+        Device = device;
     }
 
     public void Dispose()

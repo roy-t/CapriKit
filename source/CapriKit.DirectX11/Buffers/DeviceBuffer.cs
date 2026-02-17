@@ -1,4 +1,4 @@
-using CapriKit.DirectX11.Debug;
+using System.Diagnostics.CodeAnalysis;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
@@ -8,28 +8,26 @@ public abstract class DeviceBuffer<T> : IDisposable
 {
     protected readonly ID3D11Device Device;
 
-    internal DeviceBuffer(Device device, string nameHint, int capacity)
+    internal DeviceBuffer(Device device)
     {
         Device = device.ID3D11Device;
         unsafe
         {
-            PrimitiveSizeInBytes = sizeof(T);
+            PrimitiveSizeInBytes = (uint)sizeof(T);
         }
-        Name = DebugName.For<DeviceBuffer<T>>(nameHint);
-
-        EnsureCapacity(capacity);
     }
 
-    internal int PrimitiveSizeInBytes { get; }
+    internal uint PrimitiveSizeInBytes { get; }
 
     public int Capacity { get; private set; }
 
     public int Length { get; private set; }
 
-    internal ID3D11Buffer Buffer { get; private set; } = null!;
+    internal ID3D11Buffer? Buffer { get; private set; }
 
-    public string Name { get; }
+    public abstract string Name { get; }
 
+    [MemberNotNull(nameof(Buffer))]
     public void EnsureCapacity(int primitiveCount, int reserveExtra = 0)
     {
         if (Buffer == null || Capacity < primitiveCount)
@@ -39,8 +37,6 @@ public abstract class DeviceBuffer<T> : IDisposable
             Length = primitiveCount;
 
             var bufferSize = Capacity * PrimitiveSizeInBytes;
-
-
 
             Buffer = CreateBuffer(bufferSize);
 #if DEBUG
@@ -68,20 +64,23 @@ public abstract class DeviceBuffer<T> : IDisposable
     /// </summary>
     public int Read(DeviceContext context, Span<T> target, int offset = 0, int length = int.MaxValue)
     {
-        using var reader = OpenReader(context);
         length = Math.Min(Length, Math.Min(target.Length, length));
-        reader.Read(offset, length, target);
+        if (Buffer == null || length == 0) { return 0; }
 
+        using var reader = OpenReader(context);
+        reader.Read(offset, length, target);
         return length;
     }
 
     public BufferWriter<T> OpenWriter(DeviceContext context)
     {
+        ThrowOnUnallocatedBuffer();
         return new(context.ID3D11DeviceContext, Buffer);
     }
 
     public BufferReader<T> OpenReader(DeviceContext context)
     {
+        ThrowOnUnallocatedBuffer();
         return new BufferReader<T>(context.ID3D11DeviceContext, Buffer);
     }
 
@@ -91,5 +90,13 @@ public abstract class DeviceBuffer<T> : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    protected abstract ID3D11Buffer CreateBuffer(int sizeInBytes);
+    private void ThrowOnUnallocatedBuffer()
+    {
+        if (Buffer == null || Capacity == 0)
+        {
+            throw new InvalidOperationException("Cannot read or write from a buffer that is null or has a capacity of 0");
+        }
+    }
+
+    protected abstract ID3D11Buffer CreateBuffer(uint sizeInBytes);
 }

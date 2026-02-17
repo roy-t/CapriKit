@@ -111,7 +111,7 @@ public sealed class Device : IDisposable
 
         var view = new RenderTargetViewDescription(BackBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
         BackBufferView = ID3D11Device.CreateRenderTargetView(BackBuffer, view);
-        BackBufferView.DebugName = DebugName.For(BackBufferView.GetType(), "BackBuffer_View");
+        BackBufferView.DebugName = DebugName.For(BackBufferView, nameof(BackBufferView));
     }
 
     private static SwapChainDescription1 CreateSwapChainDescription(int width, int height, bool allowTearing)

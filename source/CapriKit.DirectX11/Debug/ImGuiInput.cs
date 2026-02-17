@@ -54,6 +54,10 @@ public sealed class ImGuiInput
                 IO.AddKeyEvent(Map(key), false);
             }
         }
+
+        IO.KeyAlt = Keyboard.Held(VirtualKeyCode.VK_MENU);
+        IO.KeyCtrl = Keyboard.Held(VirtualKeyCode.VK_CONTROL);
+        IO.KeyShift = Keyboard.Held(VirtualKeyCode.VK_SHIFT);
     }
 
     private void UpdateMouseState()
@@ -70,6 +74,9 @@ public sealed class ImGuiInput
             }
 
         }
+
+        IO.MouseWheel += Mouse.ScrollSteps;
+        IO.MouseWheelH += Mouse.HorizontalScrollSteps;
 
         if (IO.WantSetMousePos)
         {
