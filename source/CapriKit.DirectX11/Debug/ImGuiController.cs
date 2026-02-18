@@ -18,7 +18,7 @@ public sealed class ImGuiController : IDisposable
         Renderer = new ImGuiRenderer(device);
         Input = new ImGuiInput(IO, window, keyboard, mouse);
 
-        this.Resize(device.Width, device.Height);
+        Resize(device.Width, device.Height);
     }
 
     public void Resize(int width, int height)

@@ -18,7 +18,7 @@ internal sealed class InfoQueueSubscription
 
         // Ensure we get to read all exception of the DirectX debug device before the application closes
         // due to an (unrelated) first chance exception.
-        AppDomain.CurrentDomain.FirstChanceException += this.CheckExceptions;
+        AppDomain.CurrentDomain.FirstChanceException += CheckExceptions;
     }
 
     public void CheckExceptions()

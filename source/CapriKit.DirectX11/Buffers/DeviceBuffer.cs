@@ -34,11 +34,11 @@ public abstract class DeviceBuffer<T> : IDisposable
         {
             Buffer?.Dispose();
             Capacity = primitiveCount + reserveExtra;
-            Length = primitiveCount;
+            Length = (int)primitiveCount;
 
             var bufferSize = Capacity * PrimitiveSizeInBytes;
 
-            Buffer = CreateBuffer(bufferSize);
+            Buffer = CreateBuffer((uint)bufferSize);
 #if DEBUG
             Buffer.DebugName = Name;
 #endif
