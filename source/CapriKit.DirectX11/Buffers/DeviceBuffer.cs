@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Contexts;
 using System.Diagnostics.CodeAnalysis;
 using Vortice.Direct3D11;
 
@@ -90,6 +91,7 @@ public abstract class DeviceBuffer<T> : IDisposable
         GC.SuppressFinalize(this);
     }
 
+    [MemberNotNull(nameof(Buffer))]
     private void ThrowOnUnallocatedBuffer()
     {
         if (Buffer == null || Capacity == 0)

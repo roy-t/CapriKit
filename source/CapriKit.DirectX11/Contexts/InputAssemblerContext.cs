@@ -1,6 +1,5 @@
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Resources;
-using Vortice.Direct3D;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts;
@@ -20,7 +19,7 @@ public sealed class InputAssemblerContext : DeviceContextPart
 
         var stride = buffer.PrimitiveSizeInBytes;
         var offset = vertexOffset * stride;
-        ID3D11DeviceContext.IASetVertexBuffer(0, buffer.Buffer, stride, offset);
+        ID3D11DeviceContext.IASetVertexBuffer(0, buffer.Buffer, stride, offset);        
     }
 
     public void SetIndexBuffer<T>(IndexBuffer<T> buffer)
@@ -34,14 +33,13 @@ public sealed class InputAssemblerContext : DeviceContextPart
         ID3D11DeviceContext.IASetIndexBuffer(buffer.Buffer, buffer.Format, 0);
     }
 
-    public void SetInputLayout(InputLayout? inputLayout)
+    public void SetInputLayout(IInputLayout? inputLayout)
     {
         ID3D11DeviceContext.IASetInputLayout(inputLayout?.ID3D11InputLayout);
     }
-
-    // TODO: this leaks PrimitiveTopology to the outside world
+    
     public void SetPrimitiveTopology(PrimitiveTopology topology)
     {
-        ID3D11DeviceContext.IASetPrimitiveTopology(topology);
+        ID3D11DeviceContext.IASetPrimitiveTopology((Vortice.Direct3D.PrimitiveTopology)topology);
     }
 }

@@ -32,20 +32,20 @@ public sealed class ComputeShaderContext : DeviceContextPart
     }
 
     public void SetShader(IComputeShader? shader)
-    {        
+    {
         ID3D11DeviceContext.CSSetShader(shader?.ID3D11ComputeShader);
     }
 
     public void SetShaderResource(uint slot, IShaderResourceView? resource)
     {
         ID3D11DeviceContext.CSSetShaderResource(slot, resource?.ID3D11ShaderResourceView);
-    }  
+    }
 
     public void SetConstantBuffer<T>(uint slot, ConstantBuffer<T> buffer)
         where T : unmanaged
     {
         ID3D11DeviceContext.CSSetConstantBuffer(slot, buffer?.Buffer);
-    }    
+    }
 
     public void SetUnorderedAccessView(uint slot, IUnorderedAccessView view)
     {
@@ -55,7 +55,7 @@ public sealed class ComputeShaderContext : DeviceContextPart
     public void SetUnorderedAccessView(uint slot, IUnorderedAccessViewArray views, int mipMapSlice)
     {
         ID3D11DeviceContext.CSSetUnorderedAccessView(slot, views.ID3D11UnorderedAccessViews[mipMapSlice]);
-    }   
+    }
 
     public void Dispatch(uint threadGroupCountX, uint threadGroupCountY, uint threadGroupCountZ)
     {

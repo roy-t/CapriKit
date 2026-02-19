@@ -1,7 +1,9 @@
+using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -59,6 +61,8 @@ public sealed class Device : IDisposable
         ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
         IDXGISwapChain = CreateSwapChain(device, swapChainDescription, window.Handle);
 
+        ImmediateDeviceContext = new ImmediateDeviceContext(ID3D11DeviceContext);
+
         CreateBackBuffer();
     }
 
@@ -68,6 +72,15 @@ public sealed class Device : IDisposable
     public bool VSync { get; set; } = true;
 
     public bool AllowTearing { get; private set; } = false;
+
+    public ImmediateDeviceContext ImmediateDeviceContext { get; }
+
+    public DeferredDeviceContext CreateDeferredContext(string? nameHint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
+    {
+        var context = ID3D11Device.CreateDeferredContext();
+        context.DebugName = DebugName.For(context, nameHint, caller, callerFile);
+        return new DeferredDeviceContext(context);
+    }
 
     public void Clear()
     {

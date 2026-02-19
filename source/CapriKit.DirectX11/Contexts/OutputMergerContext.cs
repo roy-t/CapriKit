@@ -32,7 +32,7 @@ public sealed class OutputMergerContext : DeviceContextPart
     public void SetRenderTarget(IDepthStencilView depthStencil)
     {
 #nullable disable        
-        ID3D11DeviceContext.OMSetRenderTargets((ID3D11RenderTargetView)null, depthStencil.ID3D11DepthStencilView);
+        ID3D11DeviceContext.OMSetRenderTargets((ID3D11RenderTargetView)null!, depthStencil.ID3D11DepthStencilView);
 #nullable restore
     }
 

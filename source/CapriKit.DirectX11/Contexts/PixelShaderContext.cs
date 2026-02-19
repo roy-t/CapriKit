@@ -5,14 +5,14 @@ using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts;
 
-internal class PixelShaderContext : DeviceContextPart
+public sealed class PixelShaderContext : DeviceContextPart
 {
     internal PixelShaderContext(ID3D11DeviceContext context)
         : base(context) { }
 
     public void SetSampler(uint slot, SamplerState sampler)
     {
-        ID3D11DeviceContext.PSSetSampler(slot, sampler.State);
+        ID3D11DeviceContext.PSSetSampler(slot, sampler.State);        
     }
 
     public void SetSamplers(uint startSlot, params SamplerState[] samplers)
