@@ -62,6 +62,8 @@ public abstract class DeviceBuffer<T> : IDisposable
     /// Reads the data from the underlying device buffer. Use <see cref="OpenReader(DeviceContext)"/> when
     /// you plan multiple reads per frame, for improved efficiency.
     /// This method never reads more data than is available or than fits in target.
+    ///
+    /// Note: Not all buffer types support the CPU reading data back from the GPU.
     /// </summary>
     public int Read(DeviceContext context, Span<T> target, int offset = 0, int length = int.MaxValue)
     {
@@ -92,7 +94,7 @@ public abstract class DeviceBuffer<T> : IDisposable
     }
 
     [MemberNotNull(nameof(Buffer))]
-    private void ThrowOnUnallocatedBuffer()
+    protected void ThrowOnUnallocatedBuffer()
     {
         if (Buffer == null || Capacity == 0)
         {

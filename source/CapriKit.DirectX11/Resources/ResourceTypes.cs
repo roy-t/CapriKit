@@ -121,3 +121,28 @@ public sealed class CommandList : ICommandList
 
     ID3D11CommandList ICommandList.ID3D11CommandList => Value;
 }
+
+public class InputLayout : IInputLayout
+{
+    private readonly ID3D11InputLayout Value;
+
+    internal InputLayout(ID3D11InputLayout inputLayout)
+    {
+        Value = inputLayout;
+    }
+
+    ID3D11InputLayout IInputLayout.ID3D11InputLayout => Value;
+}
+
+
+public class ShaderResourceView : IShaderResourceView
+{
+    private readonly ID3D11ShaderResourceView Value;
+
+    internal ShaderResourceView(ID3D11ShaderResourceView view)
+    {
+        Value = view;
+    }
+
+    ID3D11ShaderResourceView IShaderResourceView.ID3D11ShaderResourceView => Value;
+}

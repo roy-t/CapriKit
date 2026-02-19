@@ -2,6 +2,9 @@ using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
 
+/// <summary>
+/// Allows the CPU to read GPU data
+/// </summary>
 public readonly ref struct BufferReader<T> : IDisposable
     where T : unmanaged
 {

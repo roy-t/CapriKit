@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Buffers;
 using ImGuiNET;
 
 namespace CapriKit.DirectX11.Debug;
@@ -10,10 +11,16 @@ namespace CapriKit.DirectX11.Debug;
 public sealed class ImGuiRenderer : IDisposable
 {
     private readonly Device Device;
+    private readonly VertexBuffer<ImDrawVert> VertexBuffer;
+    private readonly IndexBufferU16 IndexBuffer;
+    private readonly ImGuiShader Shader;
 
     public ImGuiRenderer(Device device)
     {
         Device = device;
+        VertexBuffer = new VertexBuffer<ImDrawVert>(device, nameof(ImGuiRenderer));
+        IndexBuffer = new IndexBufferU16(device, nameof(ImGuiRenderer));
+        Shader = new ImGuiShader(device.ID3D11Device);
     }
 
     public void Dispose()

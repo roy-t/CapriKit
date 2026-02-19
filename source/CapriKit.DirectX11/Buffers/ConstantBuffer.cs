@@ -3,6 +3,11 @@ using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
 
+/// <summary>
+/// Constant buffers are usually used in shader to read data that changes every frame. For example, the camera position.
+/// Note: The structures used in constant buffers must match the packing described here:
+/// https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules
+/// </summary>
 public sealed class ConstantBuffer<T> : DeviceBuffer<T>
     where T : unmanaged
 {

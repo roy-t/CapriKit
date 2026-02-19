@@ -2,6 +2,9 @@ using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
 
+/// <summary>
+/// Allows the CPU to write data to the GPU
+/// </summary>
 public readonly ref struct BufferWriter<T> : IDisposable
     where T : unmanaged
 {
