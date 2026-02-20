@@ -33,10 +33,24 @@ public class Program
         using var rd = RenderDoc.TryLoad();
 
         using var device = new Device(window);
+        //using var imgui = new ImGuiController(device, window, keyboard, mouse);
 
         var running = true;
+        var stopwatch = new Stopwatch();
+        const double dt = 1.0 / 60.0; // constant tick rate of simulation
+
+        // update immediately
+        var elapsed = dt;
+        var accumulator = dt;
         while (running)
         {
+            while (accumulator >= dt)
+            {
+                accumulator -= dt;
+            }
+            var alpha = accumulator / dt;
+
+            //imgui.NewFrame((float)elapsed);
             if (keyboard.Pressed(VirtualKeyCode.VK_ESCAPE))
             {
                 running = false;
@@ -65,11 +79,15 @@ public class Program
                 Console.WriteLine($"{window.Width}x{window.Height}");
             }
 
-            // TODO: switch to borderless window?
             device.Clear();
+            //imgui.Render();
             device.Present();
 
             running &= Win32Application.PumpMessages();
+
+            elapsed = stopwatch.Elapsed.TotalSeconds;
+            stopwatch.Restart();
+            accumulator += Math.Min(elapsed, 0.1); // cap elapsed on some worst case value to not explode anything
         }
 
         // Open RenderDoc to analyze the last taken capture

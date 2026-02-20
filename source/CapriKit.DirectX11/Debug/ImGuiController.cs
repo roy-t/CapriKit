@@ -15,6 +15,9 @@ public sealed class ImGuiController : IDisposable
     {
         ImGui.CreateContext();
         IO = ImGui.GetIO();
+        IO.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        IO.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+
         Renderer = new ImGuiRenderer(device);
         Input = new ImGuiInput(IO, window, keyboard, mouse);
 

@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Shaders;
 using System.Runtime.InteropServices;
 using Vortice.D3DCompiler;
@@ -30,7 +31,7 @@ internal struct Constants
     public System.Numerics.Matrix4x4 ProjectionMatrix;
 }
 
-internal sealed class ImGuiShader
+internal sealed class ImGuiShader : IVertexShader, IPixelShader, IInputLayout, IDisposable
 {
     private static readonly ShaderMacro[] Defines = [];
 
@@ -38,6 +39,10 @@ internal sealed class ImGuiShader
     internal ID3D11PixelShader PixelShader { get; }
 
     internal ID3D11InputLayout InputLayout { get; }
+    ID3D11VertexShader IVertexShader.ID3D11VertexShader => VertexShader;
+    ID3D11PixelShader IPixelShader.ID3D11PixelShader => PixelShader;
+
+    ID3D11InputLayout IInputLayout.ID3D11InputLayout => InputLayout;
 
     internal ImGuiShader(ID3D11Device device)
     {
@@ -61,6 +66,13 @@ internal sealed class ImGuiShader
 
         vsBlob.Dispose();
         psBlob.Dispose();
+    }
+
+    public void Dispose()
+    {
+        VertexShader.Dispose();
+        PixelShader.Dispose();
+        InputLayout.Dispose();
     }
 
     private static readonly string ShaderSource = """

@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Contexts;
+using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
 using System.Diagnostics.CodeAnalysis;
@@ -23,10 +24,10 @@ public sealed class Device : IDisposable
 
     private readonly IDXGISwapChain IDXGISwapChain;
     private readonly ID3D11DeviceContext ID3D11DeviceContext;
-    internal readonly ID3D11Device ID3D11Device;
 
-    private ID3D11Texture2D BackBuffer;
-    private ID3D11RenderTargetView BackBufferView;
+    internal readonly ID3D11Device ID3D11Device;
+    internal ID3D11Texture2D BackBuffer;
+    internal ID3D11RenderTargetView BackBufferView;
 
 #if DEBUG
     private static readonly DeviceCreationFlags Flags = DeviceCreationFlags.Debug;
@@ -61,7 +62,12 @@ public sealed class Device : IDisposable
         ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
         IDXGISwapChain = CreateSwapChain(device, swapChainDescription, window.Handle);
 
-        ImmediateDeviceContext = new ImmediateDeviceContext(ID3D11DeviceContext);
+        ImmediateDeviceContext = new ImmediateDeviceContext(this, ID3D11DeviceContext);
+
+        SamplerStates = new SamplerStates(device);
+        BlendStates = new BlendStates(device);
+        DepthStencilStates = new DepthStencilStates(device);
+        RasterizerStates = new RasterizerStates(device);
 
         CreateBackBuffer();
     }
@@ -73,13 +79,18 @@ public sealed class Device : IDisposable
 
     public bool AllowTearing { get; private set; } = false;
 
+    public SamplerStates SamplerStates { get; }
+    public BlendStates BlendStates { get; }
+    public DepthStencilStates DepthStencilStates { get; }
+    public RasterizerStates RasterizerStates { get; }
+
     public ImmediateDeviceContext ImmediateDeviceContext { get; }
 
     public DeferredDeviceContext CreateDeferredContext(string? nameHint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
     {
         var context = ID3D11Device.CreateDeferredContext();
         context.DebugName = DebugName.For(context, nameHint, caller, callerFile);
-        return new DeferredDeviceContext(context);
+        return new DeferredDeviceContext(this, context);
     }
 
     public void Clear()
