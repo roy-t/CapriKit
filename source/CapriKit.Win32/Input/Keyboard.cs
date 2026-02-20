@@ -10,23 +10,23 @@ public sealed class Keyboard : InputDevice
     private string typed;
     private string nextTyped;
 
-    internal Keyboard() : base(Enum.GetValues<VirtualKeyCode>().Length)
+    internal Keyboard() : base(256)
     {
-        this.typed = string.Empty;
-        this.nextTyped = string.Empty;
+        typed = string.Empty;
+        nextTyped = string.Empty;
     }
 
     /// <summary>
     /// Characters typed this frame
     /// </summary>
-    public string Typed => this.typed;
+    public string Typed => typed;
 
     /// <summary>
     /// If the given button state changed to pressed this frame
     /// </summary>
     public bool Pressed(VirtualKeyCode key)
     {
-        return this.State[(int)key] == InputState.Pressed;
+        return State[(int)key] == InputState.Pressed;
     }
 
     /// <summary>
@@ -34,7 +34,7 @@ public sealed class Keyboard : InputDevice
     /// </summary>  
     public bool Held(VirtualKeyCode key)
     {
-        return this.State[(int)key] == InputState.Held;
+        return State[(int)key] == InputState.Held;
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public sealed class Keyboard : InputDevice
     /// </summary>
     public bool Released(VirtualKeyCode key)
     {
-        return this.State[(int)key] == InputState.Released;
+        return State[(int)key] == InputState.Released;
     }
 
     /// <summary>
@@ -50,7 +50,7 @@ public sealed class Keyboard : InputDevice
     /// </summary>    
     public float AsFloat(InputState state, VirtualKeyCode key)
     {
-        return this.State[(int)key] == state ? 1.0f : 0.0f;
+        return State[(int)key] == state ? 1.0f : 0.0f;
     }
 
     /// <summary>
@@ -58,7 +58,7 @@ public sealed class Keyboard : InputDevice
     /// </summary>
     public Vector2 AsVector(InputState state, VirtualKeyCode x, VirtualKeyCode y)
     {
-        return new Vector2(this.AsFloat(state, x), this.AsFloat(state, y));
+        return new Vector2(AsFloat(state, x), AsFloat(state, y));
     }
 
     /// <summary>
@@ -66,7 +66,7 @@ public sealed class Keyboard : InputDevice
     /// </summary>
     public Vector3 AsVector(InputState state, VirtualKeyCode x, VirtualKeyCode y, VirtualKeyCode z)
     {
-        return new Vector3(this.AsFloat(state, x), this.AsFloat(state, y), this.AsFloat(state, z));
+        return new Vector3(AsFloat(state, x), AsFloat(state, y), AsFloat(state, z));
     }
 
     /// <summary>
@@ -74,13 +74,13 @@ public sealed class Keyboard : InputDevice
     /// </summary>
     public Vector4 AsVector(InputState state, VirtualKeyCode x, VirtualKeyCode y, VirtualKeyCode z, VirtualKeyCode w)
     {
-        return new Vector4(this.AsFloat(state, x), this.AsFloat(state, y), this.AsFloat(state, z), this.AsFloat(state, w));
+        return new Vector4(AsFloat(state, x), AsFloat(state, y), AsFloat(state, z), AsFloat(state, w));
     }
 
     public override void NextFrame()
     {
-        this.typed = this.nextTyped;
-        this.nextTyped = string.Empty;
+        typed = nextTyped;
+        nextTyped = string.Empty;
 
         base.NextFrame();
     }
@@ -99,16 +99,16 @@ public sealed class Keyboard : InputDevice
 
     internal void OnChar(char character)
     {
-        this.nextTyped += character;
+        nextTyped += character;
     }
 
     internal void OnKeyDown(VirtualKeyCode key)
     {
-        this.NextState[(int)key] = InputState.Pressed;
+        NextState[(int)key] = InputState.Pressed;
     }
 
     internal void OnKeyUp(VirtualKeyCode key)
     {
-        this.NextState[(int)key] = InputState.Released;
+        NextState[(int)key] = InputState.Released;
     }
 }

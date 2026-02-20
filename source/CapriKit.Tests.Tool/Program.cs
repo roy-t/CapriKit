@@ -2,6 +2,7 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
+using ImGuiNET;
 using System.Diagnostics;
 using System.Text;
 
@@ -33,7 +34,7 @@ public class Program
         using var rd = RenderDoc.TryLoad();
 
         using var device = new Device(window);
-        //using var imgui = new ImGuiController(device, window, keyboard, mouse);
+        using var imgui = new ImGuiController(device, window, keyboard, mouse);
 
         var running = true;
         var stopwatch = new Stopwatch();
@@ -50,7 +51,7 @@ public class Program
             }
             var alpha = accumulator / dt;
 
-            //imgui.NewFrame((float)elapsed);
+            imgui.NewFrame((float)elapsed);
             if (keyboard.Pressed(VirtualKeyCode.VK_ESCAPE))
             {
                 running = false;
@@ -80,7 +81,8 @@ public class Program
             }
 
             device.Clear();
-            //imgui.Render();
+            ImGui.ShowDemoWindow();
+            imgui.Render();
             device.Present();
 
             running &= Win32Application.PumpMessages();

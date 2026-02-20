@@ -47,10 +47,10 @@ internal sealed class ImGuiShader : IVertexShader, IPixelShader, IInputLayout, I
     internal ImGuiShader(ID3D11Device device)
     {
         Compiler.Compile(ShaderSource, [], "VS", "ImGuiShader.vs", "vs_5_0", out var vsBlob, out var vsErrors);
-        ShaderBlobAnalyzer.ThrowOnWarningOrError(vsErrors.AsSpan());
+        if (vsErrors != null) { ShaderBlobAnalyzer.ThrowOnWarningOrError(vsErrors.AsSpan()); }
 
         Compiler.Compile(ShaderSource, [], "PS", "ImGuiShader.ps", "ps_5_0", out var psBlob, out var psErrors);
-        ShaderBlobAnalyzer.ThrowOnWarningOrError(psErrors.AsSpan());
+        if (psErrors != null) { ShaderBlobAnalyzer.ThrowOnWarningOrError(psErrors.AsSpan()); }
 
         VertexShader = device.CreateVertexShader(vsBlob);
         PixelShader = device.CreatePixelShader(psBlob);
