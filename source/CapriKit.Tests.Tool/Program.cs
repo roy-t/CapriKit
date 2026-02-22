@@ -19,6 +19,8 @@ public class Program
             Debug.WriteLine(value);
     }
 
+    private const double DELTA_TIME = 1.0 / 60.0; // constant tick rate of simulation
+
     [STAThread]
     static void Main() // TODO: main loop is getting a bit cluttered
     {
@@ -37,20 +39,10 @@ public class Program
         using var imgui = new ImGuiController(device, window, keyboard, mouse);
 
         var running = true;
-        var stopwatch = new Stopwatch();
-        const double dt = 1.0 / 60.0; // constant tick rate of simulation
-
-        // update immediately
-        var elapsed = dt;
-        var accumulator = dt;
+        var elapsed = DELTA_TIME;
+        var stopwatch = Stopwatch.StartNew();
         while (running)
         {
-            while (accumulator >= dt)
-            {
-                accumulator -= dt;
-            }
-            var alpha = accumulator / dt;
-
             imgui.NewFrame((float)elapsed);
             if (keyboard.Pressed(VirtualKeyCode.VK_ESCAPE))
             {
@@ -89,7 +81,6 @@ public class Program
 
             elapsed = stopwatch.Elapsed.TotalSeconds;
             stopwatch.Restart();
-            accumulator += Math.Min(elapsed, 0.1); // cap elapsed on some worst case value to not explode anything
         }
 
         // Open RenderDoc to analyze the last taken capture
