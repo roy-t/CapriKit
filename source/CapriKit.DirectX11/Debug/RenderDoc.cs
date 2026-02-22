@@ -24,6 +24,16 @@ public sealed unsafe class RenderDoc : IDisposable
         return null;
     }
 
+    public void EnableOverlay()
+    {
+        _api.MaskOverlayBits(OverlayBits.eRENDERDOC_Overlay_None, OverlayBits.eRENDERDOC_Overlay_Default);
+    }
+
+    public void DisableOverlay()
+    {
+        _api.MaskOverlayBits(OverlayBits.eRENDERDOC_Overlay_None, OverlayBits.eRENDERDOC_Overlay_None);
+    }
+
     public void StartFrameCapture(nint device, nint window = default)
     {
         _api.StartFrameCapture((void*)device, (void*)window);

@@ -181,6 +181,31 @@ internal enum RENDERDOC_CaptureOption
 
 }
 
+internal enum OverlayBits : uint
+{
+    // This single bit controls whether the overlay is enabled or disabled globally
+    eRENDERDOC_Overlay_Enabled = 0x1,
+
+    // Show the average framerate over several seconds as well as min/max
+    eRENDERDOC_Overlay_FrameRate = 0x2,
+
+    // Show the current frame number
+    eRENDERDOC_Overlay_FrameNumber = 0x4,
+
+    // Show a list of recent captures, and how many captures have been made
+    eRENDERDOC_Overlay_CaptureList = 0x8,
+
+    // Default values for the overlay mask
+    eRENDERDOC_Overlay_Default = (eRENDERDOC_Overlay_Enabled | eRENDERDOC_Overlay_FrameRate |
+                                  eRENDERDOC_Overlay_FrameNumber | eRENDERDOC_Overlay_CaptureList),
+
+    // Enable all bits
+    eRENDERDOC_Overlay_All = 0x7ffffff,
+
+    // Disable all bits
+    eRENDERDOC_Overlay_None = 0,
+}
+
 /// <summary>
 /// Sets an option that controls how RenderDoc behaves on capture.
 ///
@@ -307,12 +332,12 @@ internal unsafe delegate void pRENDERDOC_SetCaptureKeys(RENDERDOC_InputButton* k
 /// <summary>
 /// Returns the overlay bits that have been set.
 /// </summary>
-internal unsafe delegate uint pRENDERDOC_GetOverlayBits();
+internal unsafe delegate OverlayBits pRENDERDOC_GetOverlayBits();
 
 /// <summary>
 /// Sets the overlay bits with an AND and OR mask.
 /// </summary>
-internal unsafe delegate void pRENDERDOC_MaskOverlayBits(uint And, uint Or);
+internal unsafe delegate void pRENDERDOC_MaskOverlayBits(OverlayBits And, OverlayBits Or);
 
 /// <summary>
 /// Attempts to remove RenderDoc's hooks in the application.
@@ -532,7 +557,7 @@ internal struct RENDERDOC_API_1_6_0
     /// <inheritdoc cref="pRENDERDOC_IsFrameCapturing"/>
     public pRENDERDOC_IsFrameCapturing IsFrameCapturing;
     /// <inheritdoc cref="pRENDERDOC_EndFrameCapture"/>
-    public pRENDERDOC_EndFrameCapture EndFrameCapture;    
+    public pRENDERDOC_EndFrameCapture EndFrameCapture;
     /// <inheritdoc cref="pRENDERDOC_TriggerMultiFrameCapture"/>
     public pRENDERDOC_TriggerMultiFrameCapture TriggerMultiFrameCapture; // new function in 1.1.0
     /// <inheritdoc cref="pRENDERDOC_SetCaptureFileComments"/>

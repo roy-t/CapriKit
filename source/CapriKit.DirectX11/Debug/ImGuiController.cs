@@ -15,7 +15,7 @@ public sealed class ImGuiController : IDisposable
     {
         ImGui.CreateContext();
         IO = ImGui.GetIO();
-        IO.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        IO.ConfigFlags |= ImGuiConfigFlags.DockingEnable | ImGuiConfigFlags.NavEnableKeyboard;
         IO.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
 
         Renderer = new ImGuiRenderer(device);
