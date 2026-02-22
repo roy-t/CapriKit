@@ -44,7 +44,7 @@ public sealed class ComputeShaderContext : DeviceContextPart
     public void SetConstantBuffer<T>(uint slot, ConstantBuffer<T> buffer)
         where T : unmanaged
     {
-        ID3D11DeviceContext.CSSetConstantBuffer(slot, buffer?.Buffer);
+        ID3D11DeviceContext.CSSetConstantBuffer(slot, buffer?.nativeBuffer);
     }
 
     public void SetUnorderedAccessView(uint slot, IUnorderedAccessView view)

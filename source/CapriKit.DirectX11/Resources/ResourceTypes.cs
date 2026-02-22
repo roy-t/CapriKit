@@ -146,3 +146,15 @@ public class ShaderResourceView : IShaderResourceView
 
     ID3D11ShaderResourceView IShaderResourceView.ID3D11ShaderResourceView => Value;
 }
+
+public sealed class UnorderedAccessView : IUnorderedAccessView
+{
+    private readonly ID3D11UnorderedAccessView Value;
+
+    internal UnorderedAccessView(ID3D11UnorderedAccessView view)
+    {
+        Value = view;
+    }
+
+    ID3D11UnorderedAccessView IUnorderedAccessView.ID3D11UnorderedAccessView => Value;
+}

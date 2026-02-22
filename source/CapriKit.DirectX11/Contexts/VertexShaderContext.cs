@@ -13,7 +13,7 @@ public sealed class VertexShaderContext : DeviceContextPart
     public void SetConstantBuffer<T>(uint slot, ConstantBuffer<T> buffer)
         where T : unmanaged
     {
-        ID3D11DeviceContext.VSSetConstantBuffer(slot, buffer.Buffer);
+        ID3D11DeviceContext.VSSetConstantBuffer(slot, buffer.nativeBuffer);
     }
 
     public void SetSampler(uint slot, SamplerState sampler)

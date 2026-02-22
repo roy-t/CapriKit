@@ -46,6 +46,6 @@ public sealed class PixelShaderContext : DeviceContextPart
     public void SetConstantBuffer<T>(uint slot, ConstantBuffer<T> buffer)
         where T : unmanaged
     {
-        ID3D11DeviceContext.PSSetConstantBuffer(slot, buffer.Buffer);
+        ID3D11DeviceContext.PSSetConstantBuffer(slot, buffer.nativeBuffer);
     }
 }
