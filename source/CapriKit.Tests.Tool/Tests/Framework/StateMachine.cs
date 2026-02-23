@@ -1,4 +1,4 @@
-namespace CapriKit.Tests.Tool.Tests;
+namespace CapriKit.Tests.Tool.Tests.Framework;
 
 
 internal interface IState
@@ -18,13 +18,22 @@ internal abstract class AState : IState
     }
 
     public abstract void Main();
+
+    /// <summary>
+    /// Triggered everytime this state becomes active
+    /// </summary>
     public virtual void OnEnter() { }
+
+    /// <summary>
+    /// Triggered everytime this state becomes inactive
+    /// </summary>
     public virtual void OnExit() { }
 }
 
 internal sealed class StateMachine
 {
     private readonly Stack<IState> States = new();
+    private IState? activeState;
 
     public void PushState(IState state)
     {
@@ -35,15 +44,24 @@ internal sealed class StateMachine
     public void PopState()
     {
         var state = States.Pop();
-        state.OnExit();
+        if (state == activeState)
+        {
+            activeState.OnExit();
+            activeState = null;
+        }
     }
-
 
     public void Update()
     {
         if (States.Count > 0)
         {
             var state = States.Peek();
+            if (activeState == null || activeState != state)
+            {
+                activeState = state;
+                state.OnEnter();
+            }
+
             state.Main();
         }
     }

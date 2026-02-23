@@ -1,6 +1,7 @@
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Tests.Tool.Tests;
+using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using ImGuiNET;
@@ -13,7 +14,6 @@ public partial class Program
 
     private const double DELTA_TIME = 1.0 / 60.0; // constant tick rate of simulation
 
-    private static ImmediateTest? currentTest = null;
 
     [STAThread]
     static void Main() // TODO: main loop is getting a bit cluttered
@@ -32,11 +32,15 @@ public partial class Program
 
         using var device = new Device(window);
         using var imgui = new ImGuiController(device, window, keyboard, mouse);
-        ImmediateTest[] tests = [new BorderlessFullScreenTest(window)];
+
+        var stateMachine = new StateMachine();
+        IImmediateTest[] tests = [new ScreenStateTest(stateMachine, window)];
 
         var running = true;
         var elapsed = DELTA_TIME;
         var stopwatch = Stopwatch.StartNew();
+
+
         while (running)
         {
             imgui.NewFrame((float)elapsed);
@@ -58,16 +62,9 @@ public partial class Program
 
 
             device.Clear();
-            ShowMenu(tests);
-            if (currentTest != null && currentTest.LastResult == ImmediateResult.Unknown)
-            {
-                currentTest.Verify();
-                if (currentTest.LastResult != ImmediateResult.Unknown)
-                {
-                    currentTest.Exit();
-                    currentTest = null;
-                }
-            }
+            ShowMenu(stateMachine, tests);
+
+            stateMachine.Update();
 
             imgui.Render();
             device.Present();
@@ -90,7 +87,7 @@ public partial class Program
         }
     }
 
-    internal static void ShowMenu(ImmediateTest[] tests)
+    internal static void ShowMenu(StateMachine stateMachine, IImmediateTest[] tests)
     {
         ImGui.DockSpaceOverViewport(0, ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
         if (ImGui.BeginMainMenuBar())
@@ -99,10 +96,10 @@ public partial class Program
             {
                 foreach (var test in tests)
                 {
-                    if (ImGui.MenuItem($"Test #1 ({test.LastResult})"))
+                    if (ImGui.MenuItem($"Test #1 ({test.Result})"))
                     {
-                        currentTest = test;
-                        test.Enter();
+                        var state = test.Create(stateMachine);
+                        stateMachine.PushState(state);
                     }
                 }
 
