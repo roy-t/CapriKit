@@ -4,6 +4,13 @@ using System.Numerics;
 
 namespace CapriKit.Tests.Tool.Tests;
 
+// TODO: instead use a state machine for the tests.
+// The bottom state should have a list of all tests we want to run
+// and walk through them one by one.
+// Then each tests should just ask confirmation, or push more steps in the test to get through it
+// results should be stored in a way that is accessible for the UI. Maybe as a TestDescription class
+// that contains the last result and factory method to get the initial state machine for the test.
+
 internal enum ImmediateResult
 {
     Unknown,
