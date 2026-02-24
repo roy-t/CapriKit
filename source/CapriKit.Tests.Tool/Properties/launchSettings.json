@@ -3,6 +3,11 @@
     "CapriKit.Tests.Tool": {
       "commandName": "Project",
       "nativeDebugging": true
+    },
+    "CapriKit.Tests.Tool --RenderDoc": {
+      "commandName": "Project",
+      "commandLineArgs": "--renderdoc",
+      "nativeDebugging": true
     }
   }
 }

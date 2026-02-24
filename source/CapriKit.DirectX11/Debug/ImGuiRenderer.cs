@@ -47,7 +47,7 @@ public sealed class ImGuiRenderer : IDisposable
     }
 
     internal void Render(ImDrawDataPtr data)
-    {        
+    {
         if (data.DisplaySize.X <= 0.0f || data.DisplaySize.Y <= 0.0f || data.TotalVtxCount <= 0)
         {
             return;
@@ -113,8 +113,6 @@ public sealed class ImGuiRenderer : IDisposable
     {
         var output = new System.Drawing.Rectangle(0, 0, (int)drawData.DisplaySize.X, (int)drawData.DisplaySize.Y);
         context.Setup(Shader, PrimitiveTopology.TriangleList, Shader, Device.RasterizerStates.CullNone, in output, Shader, Device.BlendStates.NonPreMultiplied, Device.DepthStencilStates.None);
-        context.OM.SetRenderTargetToBackBuffer();
-
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
         context.VS.SetConstantBuffer(0, ConstantBuffer);

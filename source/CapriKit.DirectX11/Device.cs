@@ -2,7 +2,6 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -27,7 +26,6 @@ public sealed class Device : IDisposable
     private readonly ID3D11DeviceContext ID3D11DeviceContext;
 
     internal readonly ID3D11Device ID3D11Device;
-    internal ID3D11Texture2D BackBuffer;
     internal ID3D11RenderTargetView BackBufferView;
 
 #if DEBUG
@@ -50,6 +48,7 @@ public sealed class Device : IDisposable
         IDXGIDebug = DXGIGetDebugInterface1<IDXGIDebug>();
         IDXGIInfoQueue = DXGIGetDebugInterface1<IDXGIInfoQueue>();
         IDXGIInfoQueue.PushEmptyStorageFilter(DebugAll);
+        
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Warning, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Error, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Corruption, true);
@@ -115,7 +114,6 @@ public sealed class Device : IDisposable
     {
         Viewport = new Rectangle(0, 0, width, height);
         BackBufferView.Dispose();
-        BackBuffer.Dispose();
 
         var swapChainDescription = CreateSwapChainDescription(width, height, AllowTearing);
         var result = IDXGISwapChain.ResizeBuffers(swapChainDescription.BufferCount,
@@ -129,13 +127,12 @@ public sealed class Device : IDisposable
         CreateBackBuffer();
     }
 
-    [MemberNotNull(nameof(BackBuffer), nameof(BackBufferView))]
+    [MemberNotNull(nameof(BackBufferView))]
     private void CreateBackBuffer()
     {
-        BackBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
-
-        var view = new RenderTargetViewDescription(BackBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
-        BackBufferView = ID3D11Device.CreateRenderTargetView(BackBuffer, view);
+        using var backBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
+        var view = new RenderTargetViewDescription(backBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
+        BackBufferView = ID3D11Device.CreateRenderTargetView(backBuffer, view);
         BackBufferView.DebugName = DebugName.For(BackBufferView, nameof(BackBufferView));
     }
 
@@ -177,7 +174,7 @@ public sealed class Device : IDisposable
 
         return swapChain;
     }
-    
+
     public void Dispose()
     {
         // Call clear state before dispose to unbind resources
@@ -185,8 +182,12 @@ public sealed class Device : IDisposable
         ID3D11DeviceContext.ClearState();
         ID3D11DeviceContext.Flush();
 
+        BlendStates.Dispose();
+        DepthStencilStates.Dispose();
+        RasterizerStates.Dispose();
+        SamplerStates.Dispose();
+
         BackBufferView.Dispose();
-        BackBuffer.Dispose();
 
         IDXGISwapChain.Dispose();
 
@@ -207,7 +208,6 @@ public sealed class Device : IDisposable
 
         IDXGIInfoQueue.Dispose();
         IDXGIDebug.Dispose();
-        Console.WriteLine("Bye bye");
 #endif
     }
 }
