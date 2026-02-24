@@ -28,15 +28,18 @@ internal sealed class InfoQueueSubscription
         for (var i = 0ul; i < count; i++)
         {
             var message = MessageQueue.GetMessage(DebugAll, i);
-            var description = $"[{message.Id}:{message.Category}] {UnterminateString(message.Description)}";
+            if (IsExceptional(message.Severity))
+            {
+                var description = $"[{message.Id}:{message.Category}] {UnterminateString(message.Description)}";
 
-            if (exception == null)
-            {
-                exception = new Exception(description);
-            }
-            else if (exception is AggregateException aggregate)
-            {
-                exception = new AggregateException([.. aggregate.InnerExceptions, new Exception(description)]);
+                if (exception == null)
+                {
+                    exception = new Exception(description);
+                }
+                else if (exception is AggregateException aggregate)
+                {
+                    exception = new AggregateException([.. aggregate.InnerExceptions, new Exception(description)]);
+                }
             }
         }
 
@@ -51,6 +54,11 @@ internal sealed class InfoQueueSubscription
     private void CheckExceptions(object? _, FirstChanceExceptionEventArgs? e)
     {
         CheckExceptions();
+    }
+
+    private static bool IsExceptional(InfoQueueMessageSeverity severity)
+    {
+        return severity == InfoQueueMessageSeverity.Corruption || severity == InfoQueueMessageSeverity.Error || severity == InfoQueueMessageSeverity.Warning;
     }
 
     private static ReadOnlySpan<char> UnterminateString(ReadOnlySpan<char> message)

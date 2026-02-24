@@ -47,7 +47,7 @@ public sealed class ImGuiRenderer : IDisposable
     }
 
     internal void Render(ImDrawDataPtr data)
-    {
+    {        
         if (data.DisplaySize.X <= 0.0f || data.DisplaySize.Y <= 0.0f || data.TotalVtxCount <= 0)
         {
             return;

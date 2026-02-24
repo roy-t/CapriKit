@@ -52,4 +52,9 @@ public sealed class OutputMergerContext : DeviceContextPart
     {
         ID3D11DeviceContext.OMSetRenderTargets(Device.BackBufferView, depthStenclis?.ID3D11DepthStencilView);
     }
+
+    public void ClearRenderTargets()
+    {
+        ID3D11DeviceContext.OMSetRenderTargets([], null);
+    }
 }

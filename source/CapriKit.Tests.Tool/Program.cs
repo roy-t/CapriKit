@@ -67,6 +67,7 @@ public partial class Program
             stateMachine.Update();
 
             imgui.Render();
+            device.ImmediateDeviceContext.OM.ClearRenderTargets(); // TODO: why do we need this here?
             device.Present();
 
             running &= Win32Application.PumpMessages();

@@ -2,6 +2,7 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Runtime.CompilerServices;
@@ -176,7 +177,7 @@ public sealed class Device : IDisposable
 
         return swapChain;
     }
-
+    
     public void Dispose()
     {
         // Call clear state before dispose to unbind resources
