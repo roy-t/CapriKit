@@ -11,7 +11,7 @@ public sealed class ImGuiController : IDisposable
     private readonly ImGuiRenderer Renderer;
     private readonly ImGuiInput Input;
 
-    public ImGuiController(HeadlessDevice device, Win32Window window, Keyboard keyboard, Mouse mouse)
+    public ImGuiController(Device device, Win32Window window, Keyboard keyboard, Mouse mouse)
     {
         ImGui.CreateContext();
         IO = ImGui.GetIO();

@@ -69,7 +69,7 @@ public sealed class RasterizerStates : IDisposable
     public RasterizerState CullCounterClockwiseNoDepthClip { get; }
     public RasterizerState CullClockwiseNoDepthClip { get; }
 
-    public static RasterizerState CreateBiased(HeadlessDevice device, RasterizerState template, int depthBias, float depthBiasClamp = 0.0f, float slopeScaledDepthBias = 0.0f)
+    public static RasterizerState CreateBiased(Device device, RasterizerState template, int depthBias, float depthBiasClamp = 0.0f, float slopeScaledDepthBias = 0.0f)
     {
         var description = template.Description;
         description.DepthBias = depthBias;

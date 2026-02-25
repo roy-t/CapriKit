@@ -20,7 +20,7 @@ public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
         MiscFlags = ResourceOptionFlags.None,
     };
 
-    public StagingBuffer(HeadlessDevice device, string? nameHint = null) : base(device, BufferDescription)
+    public StagingBuffer(Device device, string? nameHint = null) : base(device, BufferDescription)
     {
         Name = DebugName.For(this, nameHint);
     }

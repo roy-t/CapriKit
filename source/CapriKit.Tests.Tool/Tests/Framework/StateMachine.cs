@@ -20,12 +20,12 @@ internal abstract class AState : IState
     public abstract void Main();
 
     /// <summary>
-    /// Triggered everytime this state becomes active
+    /// Triggered when the state machine transitions to this state.
     /// </summary>
     public virtual void OnEnter() { }
 
     /// <summary>
-    /// Triggered everytime this state becomes inactive
+    /// Triggered after Main runs for the last time
     /// </summary>
     public virtual void OnExit() { }
 }
@@ -38,31 +38,33 @@ internal sealed class StateMachine
     public void PushState(IState state)
     {
         States.Push(state);
-        state.OnEnter();
     }
 
     public void PopState()
     {
         var state = States.Pop();
-        if (state == activeState)
-        {
-            activeState.OnExit();
-            activeState = null;
-        }
     }
 
     public void Update()
     {
         if (States.Count > 0)
         {
-            var state = States.Peek();
-            if (activeState == null || activeState != state)
+            var currentState = States.Peek();
+
+            if (activeState != currentState)
             {
-                activeState = state;
-                state.OnEnter();
+                activeState?.OnExit();
+                currentState.OnEnter();
+                activeState = currentState;
             }
 
-            state.Main();
+            currentState.Main();
+        }
+        // Ensure OnExit also triggers for the last one
+        else if (activeState != null)
+        {
+            activeState.OnExit();
+            activeState = null;
         }
     }
 }

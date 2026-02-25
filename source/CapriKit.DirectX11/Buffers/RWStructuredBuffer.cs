@@ -18,7 +18,7 @@ public sealed class RWStructuredBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<
         MiscFlags = ResourceOptionFlags.BufferStructured,
     };
 
-    public RWStructuredBuffer(HeadlessDevice device, string? nameHint = null) : base(device, BufferDescription)
+    public RWStructuredBuffer(Device device, string? nameHint = null) : base(device, BufferDescription)
     {
         Name = DebugName.For(this, nameHint);
     }

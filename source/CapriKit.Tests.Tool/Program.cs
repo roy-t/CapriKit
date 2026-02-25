@@ -31,6 +31,7 @@ public partial class Program
         private readonly Keyboard Keyboard;
 
         private readonly Device Device;
+        private readonly SwapChain SwapChain;
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
@@ -51,7 +52,8 @@ public partial class Program
 
             RenderDoc?.DisableOverlay();
 
-            Device = new Device(Window);
+            Device = new Device();
+            SwapChain = new SwapChain(Device, Window);
             ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
 
             StateMachine = new StateMachine();
@@ -73,13 +75,13 @@ public partial class Program
                 UpdateMenu(StateMachine, Tests);
                 StateMachine.Update();
 
-                Device.Clear();
-                Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer(Device.SwapChain);
+                SwapChain.Clear(Device.ImmediateDeviceContext);
+                Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer(SwapChain);
 
                 ImGuiController.Render();
 
                 Device.ImmediateDeviceContext.OM.UnsetRenderTargets();
-                Device.Present();
+                SwapChain.Present();
 
                 running &= Win32Application.PumpMessages();
 
@@ -89,8 +91,6 @@ public partial class Program
 
             AnalyzeRenderDocCaptures();
         }
-
-
 
         internal static void UpdateMenu(StateMachine stateMachine, IImmediateTest[] tests)
         {
@@ -116,9 +116,9 @@ public partial class Program
 
         private void HandleResize()
         {
-            if (!Window.IsMinimized && (Window.Width != Device.Width || Window.Height != Device.Height))
+            if (!Window.IsMinimized && (Window.Width != SwapChain.Width || Window.Height != SwapChain.Height))
             {
-                Device.Resize(Window.Width, Window.Height);
+                SwapChain.Resize(Device, Window.Width, Window.Height);
                 ImGuiController.Resize(Window.Width, Window.Height);
             }
         }
@@ -159,6 +159,7 @@ public partial class Program
         public void Dispose()
         {
             ImGuiController.Dispose();
+            SwapChain.Dispose();
             Device.Dispose();
             RenderDoc?.Dispose();
         }

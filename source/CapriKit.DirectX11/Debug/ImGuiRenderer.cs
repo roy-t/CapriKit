@@ -17,7 +17,7 @@ public sealed class ImGuiRenderer : IDisposable
 {
     private const int FONT_TEXTURE_ID = 1;
 
-    private readonly HeadlessDevice Device;
+    private readonly Device Device;
     private readonly VertexBuffer<ImDrawVert> VertexBuffer;
     private readonly IndexBufferU16 IndexBuffer;
     private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
@@ -25,7 +25,7 @@ public sealed class ImGuiRenderer : IDisposable
     private readonly ID3D11Texture2D FontTexture;
     private readonly ID3D11ShaderResourceView FontTextureView;
 
-    public ImGuiRenderer(HeadlessDevice device)
+    public ImGuiRenderer(Device device)
     {
         Device = device;
         VertexBuffer = new VertexBuffer<ImDrawVert>(device, nameof(ImGuiRenderer));

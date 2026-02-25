@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Win32;
 using System.Diagnostics.CodeAnalysis;
@@ -18,7 +19,7 @@ public sealed class SwapChain : IDisposable
     internal readonly IDXGISwapChain IDXGISwapChain;
     internal ID3D11RenderTargetView BackBufferView;
 
-    public SwapChain(HeadlessDevice device, Win32Window window)
+    public SwapChain(Device device, Win32Window window)
     {
         Viewport = new Rectangle(0, 0, window.Width, window.Height);
 
@@ -35,12 +36,12 @@ public sealed class SwapChain : IDisposable
     public bool VSync { get; set; } = true;
     public bool AllowTearing { get; private set; } = false;
 
-    public void Clear(HeadlessDevice device)
+    public void Clear(DeviceContext context)
     {
-        device.ImmediateDeviceContext.ID3D11DeviceContext.ClearRenderTargetView(BackBufferView, Colors.CornflowerBlue);
+        context.ID3D11DeviceContext.ClearRenderTargetView(BackBufferView, Colors.CornflowerBlue);
     }
 
-    public void Resize(HeadlessDevice device, int width, int height)
+    public void Resize(Device device, int width, int height)
     {
         Viewport = new Rectangle(0, 0, width, height);
         BackBufferView.Dispose();
@@ -70,7 +71,7 @@ public sealed class SwapChain : IDisposable
     }
 
     [MemberNotNull(nameof(BackBufferView))]
-    private void CreateBackBuffer(HeadlessDevice device)
+    private void CreateBackBuffer(Device device)
     {
         using var backBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
         var view = new RenderTargetViewDescription(backBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);

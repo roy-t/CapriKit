@@ -8,7 +8,7 @@ namespace CapriKit.DirectX11.Contexts;
 
 public sealed class ImmediateDeviceContext : DeviceContext
 {
-    public ImmediateDeviceContext(HeadlessDevice device, ID3D11DeviceContext context)
+    public ImmediateDeviceContext(Device device, ID3D11DeviceContext context)
         : base(device, context)
     {
         Name = DebugName.For(this);
@@ -30,7 +30,7 @@ public sealed class ImmediateDeviceContext : DeviceContext
 
 public sealed class DeferredDeviceContext : DeviceContext
 {
-    public DeferredDeviceContext(HeadlessDevice device, ID3D11DeviceContext context, string? nameHint = null)
+    public DeferredDeviceContext(Device device, ID3D11DeviceContext context, string? nameHint = null)
         : base(device, context)
     {
         Name = DebugName.For(this, nameHint);
@@ -55,7 +55,7 @@ public sealed class DeferredDeviceContext : DeviceContext
 
 public abstract class DeviceContext : IDisposable
 {
-    internal DeviceContext(HeadlessDevice device, ID3D11DeviceContext context)
+    internal DeviceContext(Device device, ID3D11DeviceContext context)
     {
         ID3D11DeviceContext = context;
 
