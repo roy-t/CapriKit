@@ -11,7 +11,7 @@ public sealed class ImGuiController : IDisposable
     private readonly ImGuiRenderer Renderer;
     private readonly ImGuiInput Input;
 
-    public ImGuiController(Device device, Win32Window window, Keyboard keyboard, Mouse mouse)
+    public ImGuiController(HeadlessDevice device, Win32Window window, Keyboard keyboard, Mouse mouse)
     {
         ImGui.CreateContext();
         IO = ImGui.GetIO();
@@ -21,7 +21,7 @@ public sealed class ImGuiController : IDisposable
         Renderer = new ImGuiRenderer(device);
         Input = new ImGuiInput(IO, window, keyboard, mouse);
 
-        Resize(device.Width, device.Height);
+        Resize(window.Width, window.Height);
     }
 
     public void Resize(int width, int height)

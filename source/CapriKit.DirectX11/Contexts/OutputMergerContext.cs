@@ -6,13 +6,8 @@ namespace CapriKit.DirectX11.Contexts;
 
 public sealed class OutputMergerContext : DeviceContextPart
 {
-    private readonly Device Device;
-
-    internal OutputMergerContext(Device device, ID3D11DeviceContext context)
-        : base(context)
-    {
-        Device = device;
-    }
+    internal OutputMergerContext(ID3D11DeviceContext context)
+        : base(context) { }
 
     public void SetBlendState(BlendState state)
     {
@@ -48,9 +43,9 @@ public sealed class OutputMergerContext : DeviceContextPart
 #nullable restore
     }
 
-    public void SetRenderTargetToBackBuffer(IDepthStencilView? depthStenclis = null)
+    public void SetRenderTargetToBackBuffer(SwapChain swapChain, IDepthStencilView? depthStencil = null)
     {
-        ID3D11DeviceContext.OMSetRenderTargets(Device.BackBufferView, depthStenclis?.ID3D11DepthStencilView);
+        ID3D11DeviceContext.OMSetRenderTargets(swapChain.BackBufferView, depthStencil?.ID3D11DepthStencilView);
     }
 
     public void UnsetRenderTargets()

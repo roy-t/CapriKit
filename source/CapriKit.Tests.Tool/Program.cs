@@ -74,7 +74,7 @@ public partial class Program
                 StateMachine.Update();
 
                 Device.Clear();
-                Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer();
+                Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer(Device.SwapChain);
 
                 ImGuiController.Render();
 

@@ -19,7 +19,7 @@ public sealed class ConstantBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>
         CPUAccessFlags = CpuAccessFlags.Write,
     };
 
-    public ConstantBuffer(Device device, string? nameHint = null) : base(device, BufferDescription)
+    public ConstantBuffer(HeadlessDevice device, string? nameHint = null) : base(device, BufferDescription)
     {
         Name = DebugName.For(this, nameHint);
         EnsureCapacity(1);

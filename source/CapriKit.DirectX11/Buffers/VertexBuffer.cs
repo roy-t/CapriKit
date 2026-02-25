@@ -16,7 +16,7 @@ public sealed class VertexBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>
         CPUAccessFlags = CpuAccessFlags.Write,
     };
 
-    public VertexBuffer(Device device, string? nameHint = null)
+    public VertexBuffer(HeadlessDevice device, string? nameHint = null)
         : base(device, BufferDescription)
     {
         Name = DebugName.For(this, nameHint);

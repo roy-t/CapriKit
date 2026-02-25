@@ -7,7 +7,7 @@ namespace CapriKit.DirectX11.Buffers;
 /// <inheritdoc/>
 public sealed class IndexBufferU16 : IndexBuffer<ushort>
 {
-    public IndexBufferU16(Device device, string? nameHint = null) : base(device, Format.R16_UInt)
+    public IndexBufferU16(HeadlessDevice device, string? nameHint = null) : base(device, Format.R16_UInt)
     {
         Name = DebugName.For(this, nameHint);
     }
@@ -18,7 +18,7 @@ public sealed class IndexBufferU16 : IndexBuffer<ushort>
 /// <inheritdoc/>
 public sealed class IndexBufferU32 : IndexBuffer<uint>
 {
-    public IndexBufferU32(Device device, string? nameHint = null) : base(device, Format.R32_UInt)
+    public IndexBufferU32(HeadlessDevice device, string? nameHint = null) : base(device, Format.R32_UInt)
     {
         Name = DebugName.For(this, nameHint);
     }
@@ -42,7 +42,7 @@ public abstract class IndexBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>
     };
 
 
-    internal IndexBuffer(Device device, Format format)
+    internal IndexBuffer(HeadlessDevice device, Format format)
         : base(device, BufferDescription)
     {
         Format = format;

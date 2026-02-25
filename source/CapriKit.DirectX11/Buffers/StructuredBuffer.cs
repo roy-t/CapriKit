@@ -17,7 +17,7 @@ public sealed class StructuredBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>,
         MiscFlags = ResourceOptionFlags.BufferStructured,
     };
 
-    public StructuredBuffer(Device device, string? nameHint = null) : base(device, BufferDescription)
+    public StructuredBuffer(HeadlessDevice device, string? nameHint = null) : base(device, BufferDescription)
     {
         Name = DebugName.For(this, nameHint);
     }

@@ -62,7 +62,7 @@ public static class BufferExtensions
         return length;
     }
 
-    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device)
+    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, HeadlessDevice device)
         where T : unmanaged
     {
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
@@ -73,7 +73,7 @@ public static class BufferExtensions
         return srv;
     }
 
-    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device, uint firstElement, uint numElements)
+    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, HeadlessDevice device, uint firstElement, uint numElements)
         where T : unmanaged
     {
         var bufferDescription = new BufferShaderResourceView()
@@ -97,7 +97,7 @@ public static class BufferExtensions
         return srv;
     }
 
-    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device)
+    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, HeadlessDevice device)
         where T : unmanaged
     {
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
@@ -108,7 +108,7 @@ public static class BufferExtensions
         return uav;
     }
 
-    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device, uint firstElement, uint numElements)
+    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, HeadlessDevice device, uint firstElement, uint numElements)
     where T : unmanaged
     {
         var bufferDescription = new BufferUnorderedAccessView()

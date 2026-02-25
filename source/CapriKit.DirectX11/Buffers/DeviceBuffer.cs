@@ -12,7 +12,7 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     internal readonly uint PrimitiveSizeInBytes;
     internal ID3D11Buffer? nativeBuffer;
 
-    internal DeviceBuffer(Device device, BufferDescription description)
+    internal DeviceBuffer(HeadlessDevice device, BufferDescription description)
     {
         Device = device.ID3D11Device;
         BufferDescription = description;
