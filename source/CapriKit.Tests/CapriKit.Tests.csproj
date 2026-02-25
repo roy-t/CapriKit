@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <IsPackable>False</IsPackable>
+    <!-- To support testin DirectX11 and Win32 packages -->
+    <TargetFramework>$(TargetFramework)-windows</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing" Version="1.1.2" />
@@ -14,8 +16,10 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
+    <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
+    <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
 </Project>
