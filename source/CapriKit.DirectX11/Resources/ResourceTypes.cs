@@ -52,6 +52,13 @@ public enum PrimitiveTopology
 public interface IComputeShader
 {
     internal ID3D11ComputeShader ID3D11ComputeShader { get; }
+
+    /// <summary>
+    /// The shader kernel defines how big the groups for each dimension are.
+    /// Use this method to compute the minimum number of groups to dispatch to
+    /// cover your entire volume.
+    /// </summary>    
+    (uint X, uint Y, uint Z) GetDispatchSize(uint dimX, uint dimY, uint dimZ);
 }
 
 public interface IShaderResourceView
@@ -103,6 +110,8 @@ public interface IPixelShader
 public interface IVertexShader
 {
     internal ID3D11VertexShader ID3D11VertexShader { get; }
+
+    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements); // TODO: use a non Vortice struct for this    
 }
 
 public interface ICommandList

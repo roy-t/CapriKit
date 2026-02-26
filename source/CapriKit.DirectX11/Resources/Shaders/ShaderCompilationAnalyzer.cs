@@ -2,7 +2,7 @@ using System.Text;
 
 namespace CapriKit.DirectX11.Resources.Shaders;
 
-public static class ShaderBlobAnalyzer
+public static class ShaderCompilationAnalyzer
 {
     public static void ThrowOnWarningOrError(ReadOnlySpan<byte> errorBlob, params string[] ignores)
     {
