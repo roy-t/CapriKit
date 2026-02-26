@@ -49,72 +49,47 @@ public enum PrimitiveTopology
     PatchListWith31ControlPoints = 63,
     PatchListWith32ControlPoints = 64
 }
-public interface IComputeShader
-{
-    internal ID3D11ComputeShader ID3D11ComputeShader { get; }
 
-    /// <summary>
-    /// The shader kernel defines how big the groups for each dimension are.
-    /// Use this method to compute the minimum number of groups to dispatch to
-    /// cover your entire volume.
-    /// </summary>    
-    (uint X, uint Y, uint Z) GetDispatchSize(uint dimX, uint dimY, uint dimZ);
-}
-
-public interface IShaderResourceView
+public interface IShaderResourceView : IDisposable
 {
     internal ID3D11ShaderResourceView ID3D11ShaderResourceView { get; }
 }
 
-
-public interface IUnorderedAccessView
+public interface IUnorderedAccessView : IDisposable
 {
     internal ID3D11UnorderedAccessView ID3D11UnorderedAccessView { get; }
 }
-
-public interface IUnorderedAccessViewArray
+public interface IUnorderedAccessViewArray : IDisposable
 {
     internal ID3D11UnorderedAccessView[] ID3D11UnorderedAccessViews { get; }
 }
 
-public interface IInputLayout
+public interface IInputLayout : IDisposable
 {
     internal ID3D11InputLayout ID3D11InputLayout { get; }
 }
 
-public interface IRenderTargetView
+public interface IRenderTargetView : IDisposable
 {
     internal ID3D11RenderTargetView ID3D11RenderTargetView { get; }
 }
 
-public interface IRenderTargetViewArray
+public interface IRenderTargetViewArray : IDisposable
 {
     internal ID3D11RenderTargetView[] ID3D11RenderTargetViews { get; }
 }
 
-public interface IDepthStencilView
+public interface IDepthStencilView : IDisposable
 {
     internal ID3D11DepthStencilView ID3D11DepthStencilView { get; }
 }
 
-public interface IDepthStencilViewArray
+public interface IDepthStencilViewArray : IDisposable
 {
     internal ID3D11DepthStencilView[] ID3D11DepthStencilViews { get; }
 }
 
-public interface IPixelShader
-{
-    internal ID3D11PixelShader ID3D11PixelShader { get; }
-}
-
-public interface IVertexShader
-{
-    internal ID3D11VertexShader ID3D11VertexShader { get; }
-
-    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements); // TODO: use a non Vortice struct for this    
-}
-
-public interface ICommandList
+public interface ICommandList : IDisposable
 {
     internal ID3D11CommandList ID3D11CommandList { get; }
 }
@@ -129,6 +104,11 @@ public sealed class CommandList : ICommandList
     }
 
     ID3D11CommandList ICommandList.ID3D11CommandList => Value;
+
+    public void Dispose()
+    {
+        Value.Dispose();
+    }
 }
 
 public class InputLayout : IInputLayout
@@ -141,6 +121,11 @@ public class InputLayout : IInputLayout
     }
 
     ID3D11InputLayout IInputLayout.ID3D11InputLayout => Value;
+
+    public void Dispose()
+    {
+        Value.Dispose();
+    }
 }
 
 
@@ -154,6 +139,11 @@ public class ShaderResourceView : IShaderResourceView
     }
 
     ID3D11ShaderResourceView IShaderResourceView.ID3D11ShaderResourceView => Value;
+
+    public void Dispose()
+    {
+        Value.Dispose();
+    }
 }
 
 public sealed class UnorderedAccessView : IUnorderedAccessView
@@ -166,4 +156,9 @@ public sealed class UnorderedAccessView : IUnorderedAccessView
     }
 
     ID3D11UnorderedAccessView IUnorderedAccessView.ID3D11UnorderedAccessView => Value;
+
+    public void Dispose()
+    {
+        Value.Dispose();
+    }
 }

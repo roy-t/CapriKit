@@ -1,6 +1,7 @@
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Resources;
+using CapriKit.DirectX11.Resources.Shaders;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts;
@@ -12,7 +13,7 @@ public sealed class PixelShaderContext : DeviceContextPart
 
     public void SetSampler(uint slot, SamplerState sampler)
     {
-        ID3D11DeviceContext.PSSetSampler(slot, sampler.State);        
+        ID3D11DeviceContext.PSSetSampler(slot, sampler.State);
     }
 
     public void SetSamplers(uint startSlot, params SamplerState[] samplers)

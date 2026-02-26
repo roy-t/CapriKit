@@ -21,7 +21,7 @@ public sealed class ImGuiRenderer : IDisposable
     private readonly VertexBuffer<ImDrawVert> VertexBuffer;
     private readonly IndexBufferU16 IndexBuffer;
     private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
-    private readonly ImGuiShader Shader;
+    private readonly ImGuiEffect Effect;
     private readonly ID3D11Texture2D FontTexture;
     private readonly ID3D11ShaderResourceView FontTextureView;
 
@@ -31,7 +31,7 @@ public sealed class ImGuiRenderer : IDisposable
         VertexBuffer = new VertexBuffer<ImDrawVert>(device, nameof(ImGuiRenderer));
         IndexBuffer = new IndexBufferU16(device, nameof(ImGuiRenderer));
         ConstantBuffer = new ConstantBuffer<Matrix4x4>(device, nameof(ImGuiRenderer));
-        Shader = new ImGuiShader(device.ID3D11Device);
+        Effect = new ImGuiEffect(device);
 
         var io = ImGui.GetIO();
         unsafe
@@ -112,7 +112,7 @@ public sealed class ImGuiRenderer : IDisposable
     private void SetupRenderState(ImDrawDataPtr drawData, ImmediateDeviceContext context)
     {
         var output = new System.Drawing.Rectangle(0, 0, (int)drawData.DisplaySize.X, (int)drawData.DisplaySize.Y);
-        context.Setup(Shader, PrimitiveTopology.TriangleList, Shader, Device.RasterizerStates.CullNone, in output, Shader, Device.BlendStates.NonPreMultiplied, Device.DepthStencilStates.None);
+        context.Setup(Effect.InputLayout, PrimitiveTopology.TriangleList, Effect.VertexShader, Device.RasterizerStates.CullNone, in output, Effect.PixelShader, Device.BlendStates.NonPreMultiplied, Device.DepthStencilStates.None);
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
         context.VS.SetConstantBuffer(0, ConstantBuffer);
@@ -123,7 +123,7 @@ public sealed class ImGuiRenderer : IDisposable
     {
         FontTextureView.Dispose();
         FontTexture.Dispose();
-        Shader.Dispose();
+        Effect.Dispose();
         ConstantBuffer.Dispose();
         IndexBuffer.Dispose();
         VertexBuffer.Dispose();
