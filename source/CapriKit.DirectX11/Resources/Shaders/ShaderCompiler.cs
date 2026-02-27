@@ -43,13 +43,14 @@ public static class ShaderCompiler
     {
         using var includeResolver = new ShaderIncludeResolver(includes);
 
-        var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);
-        result.CheckError();
-
+        var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);        
         if (errorBlob != null)
         {
             ShaderCompilationAnalyzer.ThrowOnWarningOrError(errorBlob.AsSpan());
         }
+
+        // Check the general return value for problems, AFTER having analyzed the errors        
+        result.CheckError();
 
         return blob;
     }

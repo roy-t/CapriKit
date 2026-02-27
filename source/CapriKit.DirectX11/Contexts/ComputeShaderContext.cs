@@ -1,14 +1,10 @@
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Resources;
+using CapriKit.DirectX11.Resources.Shaders;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts;
-
-public interface IComputeShader
-{
-    internal ID3D11ComputeShader ID3D11ComputeShader { get; }
-}
 
 public sealed class ComputeShaderContext : DeviceContextPart
 {

@@ -23,6 +23,13 @@ internal sealed class InfoQueueSubscription
 
     public void CheckExceptions()
     {
+        // Prevents errors if a first chance exception happens after the message queue was disposed
+        // TODO: it might be bettert if this class takes ownership and unsubscribes from the events on dispose?
+        if (MessageQueue.NativePointer == nint.Zero)
+        {
+            return;
+        }
+
         Exception? exception = null;
         var count = MessageQueue.GetNumStoredMessages(DebugAll);
         for (var i = 0ul; i < count; i++)
