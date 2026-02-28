@@ -30,6 +30,7 @@ public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
     /// </summary>    
     public void CopyResourceToStagingBuffer(DeviceContext context, DeviceBuffer<T> source)
     {
+        // TODO: this method should later get overloads for other resources, like render targets/textures.
         EnsureCapacity(source.Length);
         context.ID3D11DeviceContext.CopyResource(nativeBuffer, source.nativeBuffer);
     }
