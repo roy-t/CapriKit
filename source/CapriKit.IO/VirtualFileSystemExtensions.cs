@@ -51,4 +51,14 @@ public static class VirtualFileSystemExtensions
         using var stream = system.CreateReadWrite(file);
         await stream.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
+
+    public static VirtualFileSystemSpy SpyOn(this IVirtualFileSystem system)
+    {
+        return new VirtualFileSystemSpy(system);
+    }
+
+    public static ReadOnlyVirtualFileSystemSpy SpyOn(this IReadOnlyVirtualFileSystem system)
+    {
+        return new ReadOnlyVirtualFileSystemSpy(system);
+    }
 }
