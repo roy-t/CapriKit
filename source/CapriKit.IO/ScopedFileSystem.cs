@@ -14,20 +14,20 @@ public sealed class ScopedFileSystem(DirectoryPath basePath) : FileSystem
 {
     public string BasePath { get; } = basePath;
 
-    protected override FilePath GetFilePath(string path)
+    internal override FilePath GetFilePath(string path)
     {
         var originalPath = base.GetFilePath(path);
         return originalPath.GetPathRelativeTo(BasePath);
     }
 
-    protected override FileInfo GetFileInfo(FilePath file)
+    internal override FileInfo GetFileInfo(FilePath file)
     {
         var absolutePath = file.IsAbsolute ? file : file.ToAbsolute(BasePath);
         ThrowIfPathIsOutsideBasePath(absolutePath);
         return new FileInfo(absolutePath.ToString());
     }
 
-    protected override DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    internal override DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
         var absolutePath = path.IsAbsolute ? path : path.ToAbsolute(BasePath);
         ThrowIfPathIsOutsideBasePath(absolutePath);

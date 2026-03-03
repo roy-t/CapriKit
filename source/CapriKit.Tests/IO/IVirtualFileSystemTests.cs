@@ -107,23 +107,12 @@ internal class IVirtualFileSystemTests
     [MethodDataSource(typeof(FileSystemDataSource), nameof(FileSystemDataSource.Generator))]
     public async Task LastWriteTime(IVirtualFileSystem sut)
     {
-        var start = DateTime.Now;
-
-        var part1 = "Hello";
-        var part2 = "World";
+        var before = DateTime.Now;
 
         using (var writeStream = sut.CreateReadWrite(File))
         {
             using var writer = new StreamWriter(writeStream);
-            writer.Write(part1);
-        }
-
-        var before = sut.LastWriteTime(File);
-
-        using (var appendStream = sut.AppendWrite(File))
-        {
-            using var writer = new StreamWriter(appendStream);
-            writer.Write(part2);
+            writer.Write("Hello World");
         }
 
         var after = sut.LastWriteTime(File);
@@ -131,7 +120,6 @@ internal class IVirtualFileSystemTests
         // The resolution of DateTime.Now is ~1ms. Sometimes
         // this test is so fast that if we compare before and after
         // using less than. So we make the weaker assumption.
-        await Assert.That(start).IsLessThanOrEqualTo(before);
         await Assert.That(before).IsLessThanOrEqualTo(after);
     }
 

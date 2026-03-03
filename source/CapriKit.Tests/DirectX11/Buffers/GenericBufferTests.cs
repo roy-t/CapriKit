@@ -6,6 +6,7 @@ using TUnit.Assertions.Enums;
 
 namespace CapriKit.Tests.DirectX11.Buffers;
 
+[NotInParallel("DirectX")]
 internal class GenericBufferTests
 {
     /// <summary>

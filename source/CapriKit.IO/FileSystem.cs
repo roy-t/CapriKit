@@ -65,6 +65,11 @@ public class FileSystem : IVirtualFileSystem
         return filePaths;
     }
 
+    public FileSystemEventListener Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        return new FileSystemEventListener(this, directory, includeSubDirectories);
+    }
+
     private FileInfo FindOrThrow(FilePath file)
     {
         var info = GetFileInfo(file);
@@ -76,18 +81,18 @@ public class FileSystem : IVirtualFileSystem
         throw new FileNotFoundException(null, file.ToString());
     }
 
-    protected virtual FilePath GetFilePath(string path)
+    internal virtual FilePath GetFilePath(string path)
     {
         return new FilePath(path);
     }
 
-    protected virtual FileInfo GetFileInfo(FilePath file)
+    internal virtual FileInfo GetFileInfo(FilePath file)
     {
         var absolutePath = file.IsAbsolute ? file : file.ToAbsolute();
         return new FileInfo(absolutePath.ToString());
     }
 
-    protected virtual DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    internal virtual DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
         var absolutePath = path.IsAbsolute ? path : path.ToAbsolute();
         return new DirectoryInfo(absolutePath.ToString());
