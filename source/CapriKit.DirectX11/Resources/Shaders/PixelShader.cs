@@ -7,7 +7,7 @@ public interface IPixelShader : IDisposable
     internal ID3D11PixelShader ID3D11PixelShader { get; }
 }
 
-public sealed class PixelShader : IPixelShader
+internal sealed class PixelShader : IPixelShader
 {
     private readonly ID3D11PixelShader Shader;
 

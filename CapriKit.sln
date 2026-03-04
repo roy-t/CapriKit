@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Tests.Tool", "sour
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.DirectX11", "source\CapriKit.DirectX11\CapriKit.DirectX11.csproj", "{3FB1AB75-9707-4B51-9D69-1782855C0C35}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.HLSL.TypeGenerator", "source\CapriKit.HLSL.TypeGenerator\CapriKit.HLSL.TypeGenerator.csproj", "{9649ED84-5D2F-4180-A0D0-96097CE866EA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -105,6 +107,12 @@ Global
 		{3FB1AB75-9707-4B51-9D69-1782855C0C35}.Release|x64.Build.0 = Release|x64
 		{3FB1AB75-9707-4B51-9D69-1782855C0C35}.Test|x64.ActiveCfg = Test|x64
 		{3FB1AB75-9707-4B51-9D69-1782855C0C35}.Test|x64.Build.0 = Test|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Debug|x64.ActiveCfg = Debug|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Debug|x64.Build.0 = Debug|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Release|x64.ActiveCfg = Release|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Release|x64.Build.0 = Release|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Test|x64.ActiveCfg = Test|x64
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Test|x64.Build.0 = Test|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -114,6 +122,7 @@ Global
 		{3FB8A5B9-80EE-46B1-9CDB-4CA7ACB8E9BB} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
 		{006D65D3-7A30-DADB-2984-F576BEEEC3B5} = {4ECB6237-E7E4-410E-817A-C37E66F178C2}
 		{602BFF15-4CED-4C16-B6EA-6D86D6AE662C} = {FDBE1BF3-A33F-4918-A21E-74E14258C669}
+		{9649ED84-5D2F-4180-A0D0-96097CE866EA} = {4ECB6237-E7E4-410E-817A-C37E66F178C2}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BF91BE50-7986-48A2-9280-B42EA8551B73}

@@ -14,7 +14,7 @@ public interface IComputeShader : IDisposable
     (uint X, uint Y, uint Z) GetDispatchSize(uint dimX, uint dimY, uint dimZ);
 }
 
-public sealed class ComputeShader : IComputeShader
+internal sealed class ComputeShader : IComputeShader
 {
     private readonly uint NumThreadsX;
     private readonly uint NumThreadsY;

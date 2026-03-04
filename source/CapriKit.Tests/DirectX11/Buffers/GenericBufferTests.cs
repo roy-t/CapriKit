@@ -51,8 +51,8 @@ internal class GenericBufferTests
         await Assert.That(rwTarget[3]).IsEqualTo(28.0f);
 
         // Not all GPU buffers are directly readable by the CPU. In those cases
-        // you can use a staging buffer to copy GPU data to GPU buffer that is CPU
-        // readable. In this case simulate that to test the staging buffer.
+        // you can use a staging buffer to copy GPU data to a GPU buffer that is
+        // CPU readable.
         using var stagingBuffer = new StagingBuffer<float>(device, "stagingBuffer");
         stagingBuffer.CopyResourceToStagingBuffer(context, downloadBuffer);
 

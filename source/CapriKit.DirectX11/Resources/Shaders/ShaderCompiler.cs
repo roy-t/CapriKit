@@ -1,10 +1,15 @@
 using CapriKit.DirectX11.Debug;
 using CapriKit.IO;
 using Vortice.D3DCompiler;
-using Vortice.Direct3D;
 using Vortice.Direct3D11.Shader;
 
 namespace CapriKit.DirectX11.Resources.Shaders;
+
+public record VertexShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
+
+public record PixelShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
+
+public record ComputeShaderByteCode(byte[] Bytes, uint NumThreadsX, uint NumThreadsY, uint NumThreadsZ, string EntryPoint, string Name);
 
 public static class ShaderCompiler
 {
@@ -14,36 +19,66 @@ public static class ShaderCompiler
 
     public static IVertexShader CompileVertexShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
     {
+        var byteCode = CompileVertexShader(includes, source, entryPoint, name);
+        return CreateVertexShader(byteCode, device);
+    }
+
+    public static VertexShaderByteCode CompileVertexShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    {
         var blob = Compile(includes, source, entryPoint, name, VERTEX_SHADER_PROFILE);
-        var shader = device.ID3D11Device.CreateVertexShader(blob);
-        shader.DebugName = DebugName.For(shader, $"{source}${entryPoint}");
-        return new VertexShader(blob, shader);
+        return new VertexShaderByteCode(blob.ToArray(), entryPoint, name);
+    }
+
+    public static IVertexShader CreateVertexShader(VertexShaderByteCode byteCode, Device device)
+    {
+        var shader = device.ID3D11Device.CreateVertexShader(byteCode.Bytes);
+        shader.DebugName = DebugName.For(shader, $"{byteCode.Name}:{byteCode.EntryPoint}");
+        return new VertexShader(byteCode.Bytes, shader);
     }
 
     public static IPixelShader CompilePixelShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
     {
+        var byteCode = CompilePixelShader(includes, source, entryPoint, name);
+        return CreatePixelShader(byteCode, device);
+    }
+
+    public static PixelShaderByteCode CompilePixelShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    {
         var blob = Compile(includes, source, entryPoint, name, PIXEL_SHADER_PROFILE);
-        var shader = device.ID3D11Device.CreatePixelShader(blob);
-        shader.DebugName = DebugName.For(shader, $"{source}${entryPoint}");
+        return new PixelShaderByteCode(blob.ToArray(), entryPoint, name);
+    }
+    public static IPixelShader CreatePixelShader(PixelShaderByteCode byteCode, Device device)
+    {
+        var shader = device.ID3D11Device.CreatePixelShader(byteCode.Bytes);
+        shader.DebugName = DebugName.For(shader, $"{byteCode.Name}:{byteCode.EntryPoint}");
         return new PixelShader(shader);
     }
 
     public static IComputeShader CompileComputeShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
     {
-        var blob = Compile(includes, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
-        var shader = device.ID3D11Device.CreateComputeShader(blob);
-        shader.DebugName = DebugName.For(shader, $"{source}${entryPoint}");
-
-        var (x, y, z) = QueryNumThreads(blob.AsSpan(), name);
-
-        return new ComputeShader(shader, x, y, z);
+        var byteCode = CompileComputeShader(includes, source, entryPoint, name);
+        return CreateComputeShader(byteCode, device);
     }
 
-    private static Blob Compile(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name, string profile)
+    public static ComputeShaderByteCode CompileComputeShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    {
+        var blob = Compile(includes, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
+        var (x, y, z) = QueryNumThreads(blob, name);
+        return new ComputeShaderByteCode(blob.ToArray(), x, y, z, entryPoint, name);
+    }
+
+    public static IComputeShader CreateComputeShader(ComputeShaderByteCode byteCode, Device device)
+    {
+        var shader = device.ID3D11Device.CreateComputeShader(byteCode.Bytes);
+        shader.DebugName = DebugName.For(shader, $"{byteCode.Name}:{byteCode.EntryPoint}");
+        return new ComputeShader(shader, byteCode.NumThreadsX, byteCode.NumThreadsY, byteCode.NumThreadsZ);
+    }
+
+    private static ReadOnlySpan<byte> Compile(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name, string profile)
     {
         using var includeResolver = new ShaderIncludeResolver(includes);
 
-        var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);        
+        var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);
         if (errorBlob != null)
         {
             ShaderCompilationAnalyzer.ThrowOnWarningOrError(errorBlob.AsSpan());
@@ -52,7 +87,7 @@ public static class ShaderCompiler
         // Check the general return value for problems, AFTER having analyzed the errors        
         result.CheckError();
 
-        return blob;
+        return blob.AsSpan();
     }
 
     /// <summary>
