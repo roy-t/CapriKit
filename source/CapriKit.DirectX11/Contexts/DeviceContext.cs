@@ -1,5 +1,6 @@
 using CapriKit.DirectX11.Debug;
 using CapriKit.DirectX11.Resources;
+using CapriKit.DirectX11.Resources.Views;
 using System.Numerics;
 using Vortice.Direct3D11;
 using Vortice.Mathematics;

@@ -1,6 +1,7 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
 using CapriKit.DirectX11.Resources;
+using CapriKit.DirectX11.Resources.Views;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 

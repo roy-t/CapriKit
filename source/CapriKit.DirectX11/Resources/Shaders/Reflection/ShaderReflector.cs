@@ -1,9 +1,12 @@
-using CapriKit.IO;
-using System.Text;
+using Vortice.D3DCompiler;
+using Vortice.Direct3D11.Shader;
 
 namespace CapriKit.DirectX11.Resources.Shaders.Reflection;
 
-internal sealed class ShaderReflector
+// TODO: maybe its easier to use SLANG? https://www.nuget.org/packages/Slang.Sdk#readme-body-tab
+// https://github.com/Aqqorn/Slang.Sdk
+
+internal static class ShaderReflector
 {
     private enum ShaderType
     {
@@ -14,10 +17,47 @@ internal sealed class ShaderReflector
 
     private record ShaderEntryPoint(string Name, ShaderType Type);
 
-    public async Task Reflect(IReadOnlyVirtualFileSystem fileSystem, FilePath fileName)
+    public static void Reflect(ShaderByteCode byteCode)
     {
-        var text = await fileSystem.ReadAllText(fileName, Encoding.UTF8);
+        // TODO: reflect using 3 different methods
+        // - Constant Buffers pReflector->GetConstantBufferByIndex(i);
+        // - Structured Buffers:  pReflector->GetResourceBindingDesc(i, &bindDesc);
+        // - VS_INPUT etc...: pReflector->GetInputParameterDesc(i, &paramDesc);
 
+        var result = Compiler.Reflect<ID3D11ShaderReflection>(byteCode.Bytes, out var reflection);
+        result.CheckError();
+
+        if (reflection == null)
+        {
+            throw new Exception($"Shader reflection failed on shader: {byteCode.Name}");
+        }
+
+        ReflectInputParameters(reflection.InputParameters);
+
+        //foreach (var constantBuffer in reflection.ConstantBuffers)
+        //{
+        //    var name = constantBuffer.Description.Name;
+        //    var size = constantBuffer.Description.Size;
+
+        //    foreach(var variable in constantBuffer.Variables)
+        //    {
+        //        variable.VariableType
+        //    }            
+        //}
+
+        reflection.Dispose();
+    }
+
+    private static void ReflectInputParameters(ShaderParameterDescription[] inputParameters)
+    {
+        foreach (var parameter in inputParameters)
+        {
+            // TODO: you can't get the name of it after compilation :(
+            var semanticName = parameter.SemanticName;
+            var semanticIndex = parameter.SemanticIndex;
+            var mask = parameter.UsageMask; // X Y Z W
+            var componentType = parameter.ComponentType;
+        }
     }
 
     // TODO: this sounds fun but needs quite a bit of work

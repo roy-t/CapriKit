@@ -5,11 +5,13 @@ using Vortice.Direct3D11.Shader;
 
 namespace CapriKit.DirectX11.Resources.Shaders;
 
-public record VertexShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
+public abstract record ShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
 
-public record PixelShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
+public sealed record VertexShaderByteCode(byte[] Bytes, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
 
-public record ComputeShaderByteCode(byte[] Bytes, uint NumThreadsX, uint NumThreadsY, uint NumThreadsZ, string EntryPoint, string Name);
+public sealed record PixelShaderByteCode(byte[] Bytes, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
+
+public sealed record ComputeShaderByteCode(byte[] Bytes, uint NumThreadsX, uint NumThreadsY, uint NumThreadsZ, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
 
 public static class ShaderCompiler
 {
@@ -102,7 +104,7 @@ public static class ShaderCompiler
 
         if (reflection == null)
         {
-            throw new Exception($"Failed to reflect shader: {name}");
+            throw new Exception($"Shader reflection failed on shader: {name}");
         }
 
         reflection.GetThreadGroupSize(out var x, out var y, out var z);
