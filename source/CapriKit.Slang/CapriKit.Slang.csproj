@@ -1,0 +1,14 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="SharpGenTools.Sdk" Version="2.4.2-beta" />
+  <ItemGroup>
+    <PackageReference Include="SharpGen.Runtime.COM" Version="2.4.2-beta" />
+  </ItemGroup>
+
+  <ItemGroup>    
+    <SharpGenMapping Include="Mappings.xml" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <CastXmlArg>-std=c++17</CastXmlArg> <!-- DOesn't do anything? How to fix? -->
+  </PropertyGroup>
+</Project>

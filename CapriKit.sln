@@ -40,6 +40,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.DirectX11", "sourc
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.HLSL.TypeGenerator", "source\CapriKit.HLSL.TypeGenerator\CapriKit.HLSL.TypeGenerator.csproj", "{9649ED84-5D2F-4180-A0D0-96097CE866EA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CapriKit.Slang", "source\CapriKit.Slang\CapriKit.Slang.csproj", "{82366B1C-33B8-4DCB-963F-F727B4FE53B5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -113,6 +115,12 @@ Global
 		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Release|x64.Build.0 = Release|Any CPU
 		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Test|x64.ActiveCfg = Test|Any CPU
 		{9649ED84-5D2F-4180-A0D0-96097CE866EA}.Test|x64.Build.0 = Test|Any CPU
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Debug|x64.ActiveCfg = Debug|x64
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Debug|x64.Build.0 = Debug|x64
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Release|x64.ActiveCfg = Release|x64
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Release|x64.Build.0 = Release|x64
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Test|x64.ActiveCfg = Test|x64
+		{82366B1C-33B8-4DCB-963F-F727B4FE53B5}.Test|x64.Build.0 = Test|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
