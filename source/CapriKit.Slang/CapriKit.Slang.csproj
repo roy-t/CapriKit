@@ -8,6 +8,7 @@
     <CppStandard>c++17</CppStandard>    
   </PropertyGroup>
 
+  <!-- TODO see: https://github.com/SharpGenTools/SharpGenTools/issues/221 for fix? -->
   <ItemGroup>
     <SharpGenMapping Include="Mappings.xml" />
   </ItemGroup>
