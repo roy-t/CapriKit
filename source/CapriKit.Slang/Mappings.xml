@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config id="caprikit-slang" xmlns="urn:SharpGen.Config">
   <namespace>CapriKit.Slang</namespace>
-  <depends>SharpGen.Runtime</depends>
+  <!--<depends>SharpGen.Runtime</depends>
   <depends>SharpGen.Runtime.COM</depends>
 
   <sdk name="WindowsSdk" version="10.0.26100.7705" />  CHANGED 
-  <sdk name="StdLib" />
+  <sdk name="StdLib" />-->
   <include-dir override="true">$(THIS_CONFIG_PATH)/native</include-dir>
 
   <include-prolog>
@@ -18,52 +18,20 @@
     <create class="CapriKit.Slang.FreeFunctions" visibility="public static" />
   </extension>
 
-  <mapping>
-    <map struct="slang::SessionDesc"/>
+  <bindings>
+    <bind from="SlangReflectionType" to="IntPtr" />
+    <bind from="ICompileRequest" to="IntPtr" />
+  </bindings>
 
+  <mapping>
+    <map struct="VMExecOperand" name="VMExecOperand" native="true" marshal="true" />
+    <remove field="VMExecOperand::.+" />
+
+    <map struct="SpecializationArg" name="SpecializationArg" native="true" marshal="true" />
+    <remove field="SpecializationArg::.+" />
+    
     <!-- Global functions go into a static SlangNative class -->
     <map function="slang_(.*)" group="CapriKit.Slang.FreeFunctions"/>
-    <map function="spGetBuildTagString" group="CapriKit.Slang.FreeFunctions"/>
-
-    <!-- Basic enum mappings --><!--
-    <map enum="SlangResult"/>
-    <map enum="SlangStage"/>
-    <map enum="SlangSourceLanguage"/>
-    <map enum="SlangCompileTarget"/>
-
-    --><!-- Basic struct mappings --><!--
-    <map struct="SlangSessionDesc"/>
-    <map struct="SlangTargetDesc"/>
-    <map struct="SlangPreprocessorMacroDesc"/>
-
-    --><!-- Core COM-style interfaces --><!--
-    <map interface="ISlangUnknown"/>
-    <map interface="ISlangBlob"/>
-    <map interface="ISlangGlobalSession"/>
-    <map interface="ISlangSession"/>
-    <map interface="ISlangModule"/>
-    <map interface="ISlangEntryPoint"/>
-    <map interface="ISlangComponentType"/>
-
-    --><!-- Optional reflection interfaces --><!--
-    <map interface="slang::TypeReflection"/>
-    <map interface="slang::TypeLayoutReflection"/>
-    <map interface="slang::VariableReflection"/>
-    <map interface="slang::VariableLayoutReflection"/>
-    <map interface="slang::FunctionReflection"/>
-    <map interface="slang::ProgramLayout"/>
-
-    --><!-- Rename interfaces to nicer C# names --><!--
-    <rename from="ISlangBlob" to="SlangBlob"/>
-    <rename from="ISlangSession" to="SlangSession"/>
-    <rename from="ISlangGlobalSession" to="SlangGlobalSession"/>
-    <rename from="ISlangModule" to="SlangModule"/>
-    <rename from="ISlangEntryPoint" to="SlangEntryPoint"/>
-    <rename from="ISlangComponentType" to="SlangComponentType"/>
-
-    --><!-- Common native type mappings --><!--
-    <map type="size_t" to="nuint"/>
-    <map type="ptrdiff_t" to="nint"/>-->
-
+    <map function="spGetBuildTagString" group="CapriKit.Slang.FreeFunctions"/>   
   </mapping>
 </config>

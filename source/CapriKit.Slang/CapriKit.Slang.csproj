@@ -2,13 +2,13 @@
   <Sdk Name="SharpGenTools.Sdk" Version="2.4.2-beta" />
   <ItemGroup>
     <PackageReference Include="SharpGen.Runtime.COM" Version="2.4.2-beta" />
-  </ItemGroup>
+  </ItemGroup>  
 
-  <ItemGroup>    
+  <PropertyGroup>    
+    <CppStandard>c++17</CppStandard>    
+  </PropertyGroup>
+
+  <ItemGroup>
     <SharpGenMapping Include="Mappings.xml" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <CastXmlArg>-std=c++17</CastXmlArg> <!-- DOesn't do anything? How to fix? -->
-  </PropertyGroup>
 </Project>
