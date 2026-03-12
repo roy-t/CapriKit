@@ -12,4 +12,8 @@
   <ItemGroup>
     <SharpGenMapping Include="Mappings.xml" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+  </PropertyGroup>
 </Project>

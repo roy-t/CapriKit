@@ -12,14 +12,26 @@
     #define SLANG_DISABLE_EXCEPTIONS
   </include-prolog>
 
-  <include file="slang-c.h" namespace="CapriKit.Slang" attach="true"/>
+  <include file="slang.h" namespace="CapriKit.Slang" attach="true"/>
 
   <bindings>
     <bind from="SlangReflectionType" to="IntPtr" />
     <bind from="ICompileRequest" to="IntPtr" />
   </bindings>
 
-  <mapping>    
+  <extension>
+    <create class="CapriKit.Slang.FreeFunctions" visibility="public static" />
+  </extension>
+
+  <mapping>
+    <map struct="VMExecOperand" name="VMExecOperand" native="true" marshal="true" />
+    <remove field="VMExecOperand::.+" />
+
+    <map struct="SpecializationArg" name="SpecializationArg" native="true" marshal="true" />
+    <remove field="SpecializationArg::.+" />
+
+    <!-- Global functions go into a static SlangNative class -->
+    <!--<map function="slang_(.*)" group="CapriKit.Slang.FreeFunctions"/>-->
     <remove function="spGetBuildTagString" /> <!-- causes null pointer exception in SharpGen, maybe because of SLANG_API define?-->
   </mapping>
 </config>
