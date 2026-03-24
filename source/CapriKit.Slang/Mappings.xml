@@ -1,11 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <config id="caprikit-slang" xmlns="urn:SharpGen.Config">
   <namespace>CapriKit.Slang</namespace>
-  <!--<depends>SharpGen.Runtime</depends>
-  <depends>SharpGen.Runtime.COM</depends>
 
-  <sdk name="WindowsSdk" version="10.0.26100.7705" />  CHANGED 
-  <sdk name="StdLib" />-->
   <include-dir override="true">$(THIS_CONFIG_PATH)/native</include-dir>
 
   <include-prolog>
@@ -17,6 +13,7 @@
   <bindings>
     <bind from="SlangReflectionType" to="IntPtr" />
     <bind from="ICompileRequest" to="IntPtr" />
+    <bind from="IGlobalSession" to="IntPtr" />
   </bindings>
 
   <extension>
@@ -24,23 +21,27 @@
   </extension>
 
   <mapping>
-    <!--<map struct="VMExecOperand" name="VMExecOperand" native="true" marshal="true" />
-    <remove field="VMExecOperand::.+" />-->
+    <remove function="slang_shutdown" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_getEmbeddedCoreModule" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createBlob" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_loadModuleInfoFromIRBlob" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_disassembleByteCode" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createGlobalSessionWithoutCoreModule" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createGlobalSession2" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createGlobalSession" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createByteCodeRunner" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createByteCodeRunner" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_loadModuleFromSource" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_loadModuleFromIRBlob" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_getLastInternalErrorMessage" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="spGetBuildTagString" />
 
-    <!-- TODO: there is something special about SpecializationArg's members that I need to double check
+    <!-- TODO: there is something special about the members of these two structs that I need to double check
           right now I just remove all fields to pretend there is no problem -->
-    <!--<map struct="SpecializationArgHandle" name="IntPtr" native="true" marshal="true"  />-->
-    <map struct="SpecializationArg" name="SpecializationArg" />
-    <remove field="SpecializationArg::.+" />
+    <map struct="VMExecOperand" name="VMExecOperand" />
+    <remove field="VMExecOperand::.+" />
 
-    <!--
-      I remove all global functions here, because forcing them into a namespace/function crashes sharpgen
-      but I am not sure yet if I might need them, for example, to init the library!
-      For example: SLANG_EXTERN_C SLANG_API ISlangBlob* slang_createBlob(const void* data, size_t size);
-    -->
-    <!-- Global functions go into a static SlangNative class -->
-    <!--<map function="slang_(.*)" group="CapriKit.Slang.FreeFunctions"/>-->
-    <remove function="slang_(.*)" />
-    <remove function="spGetBuildTagString" /> <!-- causes null pointer exception in SharpGen, maybe because of SLANG_API define?-->
+    <map struct="SpecializationArg" name="SpecializationArg" />
+    <remove field="SpecializationArg::.+" />    
   </mapping>
 </config>

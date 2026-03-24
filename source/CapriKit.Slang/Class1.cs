@@ -7,6 +7,8 @@ public class Class1
 
     public static void Go()
     {
-        //Slang.
+        
+        //IGlobalSession? session = null;
+        
     }
 }

@@ -33,3 +33,10 @@ But without that mapping, SharpGen cannot place the method somewhere.
 ## Debugging
 Generate a better log using `dotnet build -bl` (make sure it does a full build by removing the .build directory first) and open it using the MSBuild Structured Log Viewer.
 
+
+
+## ALT: ClangSharp
+https://github.com/dotnet/ClangSharp?tab=readme-ov-file
+```
+dotnet tool install --global ClangSharpPInvokeGenerator
+```

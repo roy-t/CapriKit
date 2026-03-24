@@ -1,0 +1,13 @@
+// Copyright (c) .NET Foundation and Contributors. All Rights Reserved. Licensed under the MIT License (MIT). See License.md in the repository root for more information.
+
+using System;
+using System.Diagnostics;
+
+namespace ClangSharp.Interop;
+
+[Conditional("DEBUG")]
+[AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
+internal sealed class NativeTypeNameAttribute(string name) : Attribute
+{
+    public string Name { get; } = name;
+}
