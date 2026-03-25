@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace ClangSharp.Interop;
 
 [Conditional("DEBUG")]
-[AttributeUsage(AttributeTargets.All, AllowMultiple = false, Inherited = true)]
+[AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = false, Inherited = true)]
 internal sealed class NativeTypeNameAttribute(string name) : Attribute
 {
     public string Name { get; } = name;

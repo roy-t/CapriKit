@@ -9,6 +9,9 @@
   </include-prolog>
 
   <include file="slang.h" namespace="CapriKit.Slang" attach="true"/>
+  <!-- TODO: it looks like functions from the slang-deprecated.h are not generated even though its included
+       double check if that is actually an issue we need to resolve or if the C++ api has adequate replacements
+  -->
 
   <bindings>
     <bind from="SlangReflectionType" to="IntPtr" />
@@ -21,6 +24,10 @@
   </extension>
 
   <mapping>
+    <!-- TODO: https://github.com/SharpGenTools/SharpGenTools/issues/246
+          free functions cause an exception in SharpGen
+    -->
+    
     <remove function="slang_shutdown" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_getEmbeddedCoreModule" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_createBlob" group="CapriKit.Slang.FreeFunctions" />
@@ -29,8 +36,7 @@
     <remove function="slang_createGlobalSessionWithoutCoreModule" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_createGlobalSession2" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_createGlobalSession" group="CapriKit.Slang.FreeFunctions" />
-    <remove function="slang_createByteCodeRunner" group="CapriKit.Slang.FreeFunctions" />
-    <remove function="slang_createByteCodeRunner" group="CapriKit.Slang.FreeFunctions" />
+    <remove function="slang_createByteCodeRunner" group="CapriKit.Slang.FreeFunctions" />    
     <remove function="slang_loadModuleFromSource" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_loadModuleFromIRBlob" group="CapriKit.Slang.FreeFunctions" />
     <remove function="slang_getLastInternalErrorMessage" group="CapriKit.Slang.FreeFunctions" />
