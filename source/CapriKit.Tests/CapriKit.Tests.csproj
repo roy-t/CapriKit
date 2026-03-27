@@ -18,6 +18,7 @@
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj" />
+    <ProjectReference Include="..\CapriKit.HLSL.TypeGenerator\CapriKit.HLSL.TypeGenerator.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />

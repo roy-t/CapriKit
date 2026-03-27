@@ -4,87 +4,131 @@ namespace CapriKit.HLSL.TypeGenerator.Parsers;
 public enum TokenKind : byte
 {
     Unknown = 0,
+
+    // Keywords
     Struct,
-    Identifier,
+    CBuffer,
+
+    // Brackets
     LeftCurlyBracket,
     RightCurlyBracket,
+    LeftSquareBracket,
+    RightSquareBracket,
+    LeftAngleBracket,
+    RightAngleBracket,
+    LeftParenthesis,
+    RightParenthesis,
+
+    // Separators
+    Comma,
     Colon,
     SemiColon,
+
+    // Operators
+    Equals,
+    Plus,
+    Minus,
+    Multiply,
+    Divide,
+
+    // Comments
+    LineComment,
+    BlockComment,
+    Directive,
+
+    // Complex
+    Identifier,
+    Number,
 }
 
-public readonly record struct Token(ReadOnlyMemory<char> Slice, TokenKind Kind)
-{
-    public static Token Empty = new(ReadOnlyMemory<char>.Empty, TokenKind.Unknown);
-}
+public readonly record struct Token(string Source, int Offset, int Length, TokenKind Kind);
 
-public interface ITokenizerRule
-{
-    int Consume(ReadOnlyMemory<char> segment, out Token token);
-}
-
-public class SingleCharTokenizer : ITokenizerRule
-{
-    private static readonly Dictionary<char, TokenKind> Rules = new()
-    {
-        ['{'] = TokenKind.LeftCurlyBracket,
-        ['}'] = TokenKind.RightCurlyBracket,
-        [':'] = TokenKind.Colon,
-        [';'] = TokenKind.SemiColon,
-    };
-
-    public int Consume(ReadOnlyMemory<char> segment, out Token token)
-    {
-        if (segment.Length < 1)
-        {
-            throw new Exception("Cannot consume a token on an empty segment");
-        }
-
-        var c = segment.Span[0];
-        if (Rules.TryGetValue(c, out var kind))
-        {
-            token = new Token(segment.Slice(0, 1), kind);
-            return 1;
-        }
-
-        token = Token.Empty;
-        return 0;
-    }
-}
 
 public sealed class Tokenizer
 {
-    private readonly List<ITokenizerRule> Rules =
-    [
-        new SingleCharTokenizer(),
-    ];
+    private static readonly Dictionary<string, TokenKind> SimpleTokens = new()
+    {
+        ["struct"] = TokenKind.Struct,
+        ["cbuffer"] = TokenKind.CBuffer,
 
-    public IReadOnlyList<Token> Parse(ReadOnlySpan<char> source)
+        ["{"] = TokenKind.LeftCurlyBracket,
+        ["}"] = TokenKind.RightCurlyBracket,
+        ["["] = TokenKind.LeftSquareBracket,
+        ["]"] = TokenKind.RightSquareBracket,
+        ["<"] = TokenKind.LeftAngleBracket,
+        [">"] = TokenKind.RightAngleBracket,
+        ["("] = TokenKind.LeftParenthesis,
+        [")"] = TokenKind.RightParenthesis,
+
+        [","] = TokenKind.Comma,
+        [":"] = TokenKind.Colon,
+        [";"] = TokenKind.SemiColon,
+
+        ["="] = TokenKind.Equals,
+        ["+"] = TokenKind.Plus,
+        ["-"] = TokenKind.Minus,
+        ["*"] = TokenKind.Multiply,
+        ["/"] = TokenKind.Divide,
+    };
+
+    public IReadOnlyList<Token> Parse(string source)
     {
         var tokens = new List<Token>();
 
         var i = 0;
         while (i < source.Length)
         {
-            var c = source[i];
+            var start = i;
+            i = ReadWhitespace(source, i);
+            i = ReadSimpleToken(source, i, tokens);
 
-            foreach (var rule in Rules)
+            // TODO: comments (x2), directives, identifiers, numbers
+
+            // Ensure 'i' advances even if we encounter something unexpected
+            if (i == start)
             {
-                var segment = source.Slice(i);
-                var consumed = rule.Consume(segment, out var token);
-                if (consumed > 0)
-                {
-                    tokens.Add(token);
-                    i += consumed;
-                }
+                i = ReadUnknownToken(source, i, tokens);
             }
         }
 
         return tokens;
     }
-}
 
+    private static int ReadWhitespace(string source, int offset)
+    {
+        var i = offset;
+        while (i < source.Length && char.IsWhiteSpace(source[i]))
+        {
+            i++;
+        }
 
+        return i;
+    }
 
-public sealed class HLSLParser
-{
+    private static int ReadSimpleToken(string source, int offset, List<Token> tokens)
+    {
+        var span = source.AsSpan(offset);
+        foreach (var kv in SimpleTokens)
+        {
+            var key = kv.Key;
+            if (span.StartsWith(key, StringComparison.Ordinal))
+            {
+                tokens.Add(new Token(source, offset, key.Length, kv.Value));
+                return key.Length;
+            }
+        }
+
+        return 0;
+    }
+    private static int ReadUnknownToken(string source, int offset, List<Token> tokens)
+    {
+        var i = offset;
+        while (i < source.Length && !char.IsWhiteSpace(source[i]))
+        {
+            i++;
+        }
+
+        tokens.Add(new Token(source, offset, i, TokenKind.Unknown));
+        return i;
+    }
 }
