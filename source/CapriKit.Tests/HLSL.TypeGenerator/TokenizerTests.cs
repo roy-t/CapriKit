@@ -81,14 +81,16 @@ internal class TokenizerTests
     {
         var tokenizer = new Tokenizer();
         var input = """
+            .123
+            .123e4
+            .123e-4
+            .123e+4f
+            0.123e+4f
             1
-            128
-            1.0
-            1.0f
-            .5
-            1e3
-            1e-3
-            1e+321
+            123
+            123e4
+            123e-4
+            123e-4f
             ;
             """;
 
