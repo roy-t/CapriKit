@@ -3,65 +3,85 @@ namespace CapriKit.HLSL.TypeGenerator.Parsers;
 
 public enum TokenKind : byte
 {
-    // Keywords
-    Struct,
-    CBuffer,
+    Unknown,
 
-    // Brackets
-    LeftCurlyBracket,
-    RightCurlyBracket,
-    LeftSquareBracket,
-    RightSquareBracket,
-    LeftAngleBracket,
-    RightAngleBracket,
-    LeftParenthesis,
-    RightParenthesis,
-
-    // Separators
-    Comma,
-    Colon,
-    SemiColon,
-
-    // Operators
-    Equals,
-    Plus,
-    Minus,
-    Multiply,
-    Divide,
-
-    // Multi character operators
-    Increment,
-    Decrement,
-    EqualsEquals,
-    NotEquals,
-    LessThanEquals,
-    GreaterThanEquals,
-    LeftShift,
-    RightShift,
-    LogicalAnd,
-    LogicalOr,
-    AddAssign,
-    SubtractAssign,
-    MultiplyAssign,
-    DivideAssign,
-    ModulusAssign,
-    BitwiseAndAssign,
-    BitwiseOrAssign,
-    BitwiseXorAssign,
-    ScopeResolution,
-    PointerMemberAccess,
-    LeftShiftAssign,
-    RightShiftAssign,
-
-    // Comments
-    LineComment,
-    BlockComment,
+    Keyword,
+    Comment,
     Directive,
-
-    // Complex
+    Reserved,
+    Whitespace,
+    FloatingPointLiteral,
+    IntegerLiteral,
+    Character,
+    String,
     Identifier,
-    Number,
-    NumberSuffix,
+    Operator
+
+    //// Keywords
+    //Struct,
+    //CBuffer,
+
+    //// Brackets
+    //LeftCurlyBracket,
+    //RightCurlyBracket,
+    //LeftSquareBracket,
+    //RightSquareBracket,
+    //LeftAngleBracket,
+    //RightAngleBracket,
+    //LeftParenthesis,
+    //RightParenthesis,
+
+    //// Separators
+    //Comma,
+    //Colon,
+    //SemiColon,
+
+    //// Operators
+    //Divide,
+    //Equals,
+    //Minus,
+    //Multiply,
+    //Plus,
+
+    //// Multi character operators
+    //AddAssign,
+    //AndAssign,
+    //Arrow,
+    //Decrement,
+    //DivideAssign,
+    //Ellipsis,
+    //EqualsEquals,
+    //GreaterThanEquals,
+    //Increment,
+    //LeftShift,
+    //LeftShiftAssign,
+    //LessThanEquals,
+    //LogicalAnd,
+    //LogicalOr,
+    //ModulusAssign,
+    //MultiplyAssign,
+    //NotEquals,
+    //OrAssign,
+    //RightShift,
+    //RightShiftAssign,
+    //ScopeResolution,
+    //StringizeWithAt,
+    //SubtractAssign,
+    //TokenPaste,
+    //XorAssign,
+
+    //// Comments
+    //LineComment,
+    //BlockComment,
+    //Directive,
+
+    //// Complex
+    //Identifier,
+    //Number,
+    //NumberSuffix,
+
+    ////
+    //NumericExpansion
 }
 
 public readonly record struct Token(string Source, int Offset, int Length, TokenKind Kind)

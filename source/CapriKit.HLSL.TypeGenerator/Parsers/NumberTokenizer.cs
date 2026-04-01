@@ -1,13 +1,10 @@
+using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
+
 namespace CapriKit.HLSL.TypeGenerator.Parsers;
 
 public class NumberTokenizer
 {
     private readonly record struct State(int Cursor, bool HasDecimalPoint, bool HasExponent, bool HasDigits, bool HasSuffix);
-
-    public int Advance(string source, int offset, List<Token> tokens)
-    {
-        return ReadNumber(source, offset, tokens);
-    }
 
     public static int ReadNumber(string source, int offset, List<Token> tokens)
     {
@@ -123,7 +120,7 @@ public class NumberTokenizer
     {
         var cursor = state.Cursor;
         if (TryPeek(source, cursor, out var s) &&
-            s is 'h' or 'H' or 'f' or 'F' or 'l' or 'L')
+            s is 'h' or 'H' or 'f' or 'F' or 'l' or 'L' or 'u' or 'U')
         {
             return state with
             {
@@ -133,17 +130,5 @@ public class NumberTokenizer
         }
 
         return state;
-    }
-
-    private static bool TryPeek(string source, int cursor, out char c)
-    {
-        if (cursor < source.Length)
-        {
-            c = source[cursor];
-            return true;
-        }
-
-        c = default;
-        return false;
     }
 }

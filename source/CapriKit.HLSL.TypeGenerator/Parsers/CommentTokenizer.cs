@@ -1,3 +1,5 @@
+using static System.Net.WebRequestMethods;
+
 namespace CapriKit.HLSL.TypeGenerator.Parsers;
 
 public static class CommentTokenizer
@@ -40,6 +42,10 @@ public static class CommentTokenizer
         return 0;
     }
 
+    /// <summary>
+    /// Parses HLSL Preprocessor directive. For example #pragma
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-preprocessor"/>
     public static int ReadDirective(string source, int offset, List<Token> tokens)
     {
         if (source.Length < offset && source[offset] == '#')
