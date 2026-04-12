@@ -1,5 +1,3 @@
-using CapriKit.HLSL.TypeGenerator.Parsers;
-
 namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
 
 public static class ReservedTokenizer

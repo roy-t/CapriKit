@@ -1,3 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <Import Project="..\..\Generators.Build.props" />
+  <ItemGroup>
+    <Folder Include="Parsers\" />
+  </ItemGroup>
 </Project>

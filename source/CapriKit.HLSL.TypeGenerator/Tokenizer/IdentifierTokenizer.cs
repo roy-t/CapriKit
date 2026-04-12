@@ -1,4 +1,3 @@
-using CapriKit.HLSL.TypeGenerator.Parsers;
 using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.HLSL.TypeGenerator.Tokenizer;

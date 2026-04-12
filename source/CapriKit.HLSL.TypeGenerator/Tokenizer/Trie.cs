@@ -1,5 +1,3 @@
-using CapriKit.HLSL.TypeGenerator.Parsers;
-
 namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
 
 public sealed class Trie
@@ -13,9 +11,7 @@ public sealed class Trie
         }
 
         public Dictionary<char, Node> Leafs { get; }
-        public TokenKind Result { get; set}
-
-
+        public TokenKind Result { get; set; }
     }
 
     private readonly Node Root;
@@ -25,10 +21,21 @@ public sealed class Trie
         Root = new Node();
     }
 
+    public int ReadToken(string source, int offset, List<Token> tokens)
+    {
+        if (Read(source, offset, out var token))
+        {
+            tokens.Add(token);
+            return token.Length;
+        }
+
+        return 0;
+    }
+
     public bool Read(string source, int offset, out Token token)
     {
         var node = Root;
-        for (var i = 0; i < source.Length; i++)
+        for (var i = offset; i < source.Length; i++)
         {
             var c = source[i];
             if (node.Leafs.TryGetValue(c, out var leaf))
@@ -37,8 +44,9 @@ public sealed class Trie
             }
             else
             {
-                token = new Token(source, offset, i + 1, node.Result);
-                return true;
+                var length = i - offset;
+                token = new Token(source, offset, length, node.Result);
+                return node.Result != TokenKind.Unknown;
             }
         }
 

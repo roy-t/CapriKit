@@ -1,0 +1,38 @@
+using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
+
+namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
+
+public static class StringTokenizer
+{
+    /// <summary>
+    /// Reads string literals.
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-grammar#strings"/>
+    public static int ReadString(string source, int offset, List<Token> tokens)
+    {
+        var cursor = offset;
+        if (TryPeek(source, cursor, out var start) && start == '\"')
+        {
+            cursor++;
+            while (TryPeek(source, cursor, out var c) && c != '\"')
+            {
+                // skip escaped characters so that we don't stop at \"
+                if (c == '\\')
+                {
+                    cursor++;
+                }
+                cursor++;
+            }
+
+            if (TryPeek(source, cursor, out var end) && end == '\"')
+            {
+                cursor++;
+                var length = cursor - offset;
+                tokens.Add(new Token(source, offset, length, TokenKind.String));
+                return length;
+            }
+        }
+
+        return 0;
+    }
+}

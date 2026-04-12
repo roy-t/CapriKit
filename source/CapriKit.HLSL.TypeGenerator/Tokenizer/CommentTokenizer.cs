@@ -1,4 +1,3 @@
-using CapriKit.HLSL.TypeGenerator.Parsers;
 using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
@@ -43,8 +42,6 @@ public static class CommentTokenizer
 
         return 0;
     }
-
-
     private static int ReadLineComment(string source, int offset, List<Token> tokens)
     {
         if ((offset + 1) < source.Length && source[offset] == '/' && source[offset + 1] == '/')
