@@ -39,4 +39,32 @@ public static class TokenizerUtils
 
         return advanced;
     }
+
+    /// <summary>
+    /// Counts how many consecutive digits are available in source, starting at offset
+    /// </summary>
+    public static int CountDigitSequence(string source, int offset)
+    {
+        var cursor = offset;
+        while (TryPeek(source, cursor, out var d) && char.IsDigit(d))
+        {
+            cursor++;
+        }
+
+        return cursor - offset;
+    }
+
+    /// <summary>
+    /// Counts how many consecutive octals are available in source, starting at offset
+    /// </summary>
+    public static int CountOctalSequence(string source, int offset)
+    {
+        var cursor = offset;
+        while (TryPeek(source, cursor, out var d) && d >= '0' && d <= '7')
+        {
+            cursor++;
+        }
+
+        return cursor - offset;
+    }
 }

@@ -4,6 +4,8 @@ namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
 
 public static class StringTokenizer
 {
+    private const char Delimiter = '\"';
+
     /// <summary>
     /// Reads string literals.
     /// </summary>
@@ -11,10 +13,10 @@ public static class StringTokenizer
     public static int ReadString(string source, int offset, List<Token> tokens)
     {
         var cursor = offset;
-        if (TryPeek(source, cursor, out var start) && start == '\"')
+        if (TryPeek(source, cursor, out var start) && start == Delimiter)
         {
             cursor++;
-            while (TryPeek(source, cursor, out var c) && c != '\"')
+            while (TryPeek(source, cursor, out var c) && c != Delimiter)
             {
                 // skip escaped characters so that we don't stop at \"
                 if (c == '\\')
@@ -24,7 +26,7 @@ public static class StringTokenizer
                 cursor++;
             }
 
-            if (TryPeek(source, cursor, out var end) && end == '\"')
+            if (TryPeek(source, cursor, out var end) && end == Delimiter)
             {
                 cursor++;
                 var length = cursor - offset;
