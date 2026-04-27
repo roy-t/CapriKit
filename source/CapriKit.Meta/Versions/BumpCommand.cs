@@ -31,7 +31,7 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         public string? BuildMetaData { get; init; }
     }
 
-    public override int Execute(CommandContext context, Settings bump, CancellationToken _)
+    protected override int Execute(CommandContext context, Settings bump, CancellationToken _)
     {
 
         var oldVersion = VersionUtilities.ReadVersionFromFile();
@@ -53,7 +53,7 @@ internal sealed class BumpCommand : Command<BumpCommand.Settings>
         return 0;
     }
 
-    public override ValidationResult Validate(CommandContext context, Settings settings)
+    protected override ValidationResult Validate(CommandContext context, Settings settings)
     {
         if (!context.Remaining.Raw.Any())
         {

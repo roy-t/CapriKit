@@ -10,7 +10,7 @@ namespace CapriKit.Meta.Benchmarks;
 
 internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 {
-    public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var startTime = DateTime.Now;
 

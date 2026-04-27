@@ -1,0 +1,50 @@
+<Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Test" />
+    <Platform Name="x64" />
+  </Configurations>
+  <Folder Name="/Generators/">
+    <Project Path="source/CapriKit.Generators.PrecisionVariants/CapriKit.Generators.PrecisionVariants.csproj" />
+    <Project Path="source/CapriKit.HLSL.TypeGenerator/CapriKit.HLSL.TypeGenerator.csproj" />
+  </Folder>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path=".runsettings" />
+    <File Path="Directory.Build.props" />
+    <File Path="Generators.Build.props" />
+    <File Path="global.json" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="source/CapriKit.Benchmarks/CapriKit.Benchmarks.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="source/CapriKit.Tests.Tool/CapriKit.Tests.Tool.csproj">
+      <Platform Project="x64" />
+    </Project>
+    <Project Path="source/CapriKit.Tests/CapriKit.Tests.csproj">
+      <Platform Project="x64" />
+    </Project>
+  </Folder>
+  <Project Path="source/CapriKit.Build/CapriKit.Build.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.DirectX11/CapriKit.DirectX11.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.IO/CapriKit.IO.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.Mathematics/CapriKit.Mathematics.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.Meta/CapriKit.Meta.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.Win32/CapriKit.Win32.csproj">
+    <Platform Project="x64" />
+  </Project>
+</Solution>

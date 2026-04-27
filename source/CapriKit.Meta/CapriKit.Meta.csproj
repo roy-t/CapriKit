@@ -4,8 +4,8 @@
     <IsPackable>False</IsPackable>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
-    <PackageReference Include="TrxFileParser" Version="4.3.0" />
+    <PackageReference Include="Spectre.Console.Cli" />
+    <PackageReference Include="TrxFileParser" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />

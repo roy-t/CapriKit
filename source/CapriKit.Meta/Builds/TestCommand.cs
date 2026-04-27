@@ -8,7 +8,7 @@ namespace CapriKit.Meta.Builds;
 
 internal sealed class TestCommand : Command<TestCommand.Settings>
 {
-    public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var startTime = DateTime.Now;
 
