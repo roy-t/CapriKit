@@ -3,47 +3,31 @@ using CapriKit.HLSL.TypeGenerator.Tokenizer;
 
 namespace CapriKit.Tests.HLSL.TypeGenerator;
 
-internal class NumberTokenizerTests
+internal class FloatingPointNumberTokenizerTest
 {
 
     [Test]
-    public async Task ParseDigit()
+    public async Task ParseFloat()
     {
-        var input = "1";
+        var input = "1.0";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
         await Assert.That(list).Count().IsEqualTo(1);
-        await Assert.That(list[0].Value).IsEqualTo("1");
-        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.IntegerLiteral);
+        await Assert.That(list[0].Value).IsEqualTo("1.0");
+        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.FloatingPointLiteral);
     }
 
     [Test]
-    public async Task ParseInteger()
+    public async Task ParseSignedFloat()
     {
-        var input = "123";
+        var input = "-1.0";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
         await Assert.That(list).Count().IsEqualTo(1);
-        await Assert.That(list[0].Value).IsEqualTo("123");
-        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.IntegerLiteral);
-    }
-
-
-    [Test]
-    public async Task ParseIntegerWithSuffix()
-    {
-        var input = "123L";
-        var list = new List<Token>(2);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
-        await Assert.That(consumed).IsEqualTo(input.Length);
-        await Assert.That(list).Count().IsEqualTo(2);
-        await Assert.That(list[0].Value).IsEqualTo("123");
-        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.IntegerLiteral);
-
-        await Assert.That(list[1].Value).IsEqualTo("L");
-        await Assert.That(list[1].Kind).IsEqualTo(TokenKind.NumberSuffix);
+        await Assert.That(list[0].Value).IsEqualTo("-1.0");
+        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.FloatingPointLiteral);
     }
 
     [Test]
@@ -51,7 +35,7 @@ internal class NumberTokenizerTests
     {
         var input = ".123";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
         await Assert.That(list).Count().IsEqualTo(1);
         await Assert.That(list[0].Value).IsEqualTo(".123");
@@ -63,7 +47,7 @@ internal class NumberTokenizerTests
     {
         var input = ".123e4";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
         await Assert.That(list).Count().IsEqualTo(1);
         await Assert.That(list[0].Value).IsEqualTo(".123e4");
@@ -75,7 +59,7 @@ internal class NumberTokenizerTests
     {
         var input = ".123e+4";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
         await Assert.That(list).Count().IsEqualTo(1);
         await Assert.That(list[0].Value).IsEqualTo(".123e+4");
@@ -87,14 +71,11 @@ internal class NumberTokenizerTests
     {
         var input = ".123e+4f";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
-        await Assert.That(list).Count().IsEqualTo(2);
-        await Assert.That(list[0].Value).IsEqualTo(".123e+4");
+        await Assert.That(list).Count().IsEqualTo(1);
+        await Assert.That(list[0].Value).IsEqualTo(".123e+4f");
         await Assert.That(list[0].Kind).IsEqualTo(TokenKind.FloatingPointLiteral);
-
-        await Assert.That(list[1].Value).IsEqualTo("f");
-        await Assert.That(list[1].Kind).IsEqualTo(TokenKind.NumberSuffix);
     }
 
     [Test]
@@ -102,14 +83,11 @@ internal class NumberTokenizerTests
     {
         var input = "0.123e+4f";
         var list = new List<Token>(2);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(input.Length);
-        await Assert.That(list).Count().IsEqualTo(2);
-        await Assert.That(list[0].Value).IsEqualTo("0.123e+4");
+        await Assert.That(list).Count().IsEqualTo(1);
+        await Assert.That(list[0].Value).IsEqualTo("0.123e+4f");
         await Assert.That(list[0].Kind).IsEqualTo(TokenKind.FloatingPointLiteral);
-
-        await Assert.That(list[1].Value).IsEqualTo("f");
-        await Assert.That(list[1].Kind).IsEqualTo(TokenKind.NumberSuffix);
     }
 
     [Test]
@@ -117,7 +95,7 @@ internal class NumberTokenizerTests
     {
         var input = "E4f";
         var list = new List<Token>(0);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(0);
         await Assert.That(list).Count().IsEqualTo(0);
     }
@@ -127,7 +105,7 @@ internal class NumberTokenizerTests
     {
         var input = "1.0.0f";
         var list = new List<Token>(1);
-        var consumed = NumberTokenizer.ReadNumber(input, 0, list);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
         await Assert.That(consumed).IsEqualTo(3);
         await Assert.That(list).Count().IsEqualTo(1);
 
