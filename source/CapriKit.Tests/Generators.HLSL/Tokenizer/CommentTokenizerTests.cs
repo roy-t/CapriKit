@@ -1,6 +1,6 @@
 using CapriKit.Generators.HLSL.Tokenizer;
 
-namespace CapriKit.Tests.Generators.HLSL;
+namespace CapriKit.Tests.Generators.HLSL.Tokenizer;
 
 internal class CommentTokenizerTests
 {

@@ -12,7 +12,7 @@ public static class DirectiveTokenizer
     {
         if (TryPeek(source, offset, out var c) && c == '#')
         {
-            var advanced = AdvancePastEndOfLine(source, offset);
+            var advanced = AdvanceToEndOfLine(source, offset);
             var token = new Token(source, offset, advanced, TokenKind.Directive);
             tokens.Add(token);
 

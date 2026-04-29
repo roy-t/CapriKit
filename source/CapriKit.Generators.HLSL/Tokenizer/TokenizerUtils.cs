@@ -19,25 +19,16 @@ public static class TokenizerUtils
     }
 
     /// <summary>
-    /// Consumes all characters remaining on this line. If this is not the last line in the file
-    /// it will also consume the \n character itself.
+    /// Consumes all characters remaining on this line
     /// </summary>
-    public static int AdvancePastEndOfLine(string source, int offset)
+    public static int AdvanceToEndOfLine(string source, int offset)
     {
-        var advanced = 0;
-        var cursor = offset + advanced;
-        while (cursor < source.Length && source[cursor] != '\n')
+        var cursor = offset;
+        while (TryPeek(source, cursor, out var c) && c != '\n')
         {
-            advanced++;
-            cursor = offset + advanced;
+            cursor++;
         }
-
-        if (cursor + 1 < source.Length)
-        {
-            advanced++;
-        }
-
-        return advanced;
+        return cursor - offset;
     }
 
     /// <summary>

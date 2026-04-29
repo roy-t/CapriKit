@@ -47,7 +47,7 @@ public static class CommentTokenizer
         if (TryPeek(source, offset, out var first) && first == '/' &&
             TryPeek(source, offset + 1, out var second) && second == '/')
         {            
-            var advanced = AdvancePastEndOfLine(source, offset);
+            var advanced = AdvanceToEndOfLine(source, offset);
             tokens.Add(new Token(source, offset, advanced, TokenKind.Comment));
             return advanced;
         }

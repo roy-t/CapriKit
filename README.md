@@ -1,9 +1,10 @@
 # CapriKit
-__Roy Triesscheijn's collection of code libraries_
+_Roy Triesscheijn's collection of code libraries_
 
-GitHub: https://github.com/roy-t/
-LinkedIn: https://www.linkedin.com/in/roy-triesscheijn/
-Blog: https://roy-t.nl
+- GitHub: https://github.com/roy-t/
+- Blog: https://roy-t.nl
+- Mastodon: https://mastodon.social/@roytries (rarely used)
+- LinkedIn: https://www.linkedin.com/in/roy-triesscheijn/
 
 ## Goal
 

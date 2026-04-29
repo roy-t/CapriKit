@@ -34,7 +34,7 @@ public static class HLSLTokenizer
 {
     public static bool IsTrivia(Token token)
     {
-        return token.Kind is TokenKind.Directive or TokenKind.Comment or TokenKind.Whitespace;
+        return token.Kind is TokenKind.Comment or TokenKind.Whitespace;
     }
 
     public static IReadOnlyList<Token> Parse(string source)
