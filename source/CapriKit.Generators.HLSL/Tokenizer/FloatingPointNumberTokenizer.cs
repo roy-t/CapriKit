@@ -92,10 +92,6 @@ public static class FloatingPointNumberTokenizer
     {
         var cursor = state.Cursor;
         var hasDigit = false;
-        if (TryPeek(source, cursor, out var s) && (s == '-' || s == '+'))
-        {
-            cursor++;
-        }
         while (TryPeek(source, cursor, out var c) && char.IsDigit(c))
         {
             hasDigit = true;

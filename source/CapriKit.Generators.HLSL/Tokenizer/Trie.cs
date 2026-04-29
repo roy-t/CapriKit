@@ -1,17 +1,13 @@
+using System.Diagnostics;
+
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public sealed class Trie
 {
     private class Node
     {
-        public Node()
-        {
-            Leafs = [];
-            Result = TokenKind.Unknown;
-        }
-
-        public Dictionary<char, Node> Leafs { get; }
-        public TokenKind Result { get; set; }
+        public Dictionary<char, Node> Leafs { get; } = [];
+        public TokenKind Result { get; set; } = TokenKind.Unknown;
     }
 
     private readonly Node Root;
@@ -23,40 +19,29 @@ public sealed class Trie
 
     public int ReadToken(string source, int offset, List<Token> tokens)
     {
-        if (Read(source, offset, out var token))
+        var node = Root;
+        var cursor = offset;
+        while (cursor < source.Length && node.Leafs.TryGetValue(source[cursor], out var leaf))
         {
-            tokens.Add(token);
-            return token.Length;
+            node = leaf;
+            cursor++;
+        }
+
+        if (node.Result != TokenKind.Unknown)
+        {
+            var length = cursor - offset;
+            tokens.Add(new Token(source, offset, length, node.Result));
+            return length;
         }
 
         return 0;
     }
 
-    public bool Read(string source, int offset, out Token token)
-    {
-        var node = Root;
-        for (var i = offset; i < source.Length; i++)
-        {
-            var c = source[i];
-            if (node.Leafs.TryGetValue(c, out var leaf))
-            {
-                node = leaf;
-            }
-            else
-            {
-                var length = i - offset;
-                token = new Token(source, offset, length, node.Result);
-                return node.Result != TokenKind.Unknown;
-            }
-        }
-
-        token = default;
-        return false;
-    }
-
     public void AddString(string value, TokenKind result)
     {
         var leaf = AddString(value);
+        Debug.Assert(leaf.Result != result, "You should not add a path to the Trie twice");
+        Debug.Assert(leaf.Result == TokenKind.Unknown, "You should not change the result of an existing path in the Trie");
         leaf.Result = result;
     }
 
@@ -72,9 +57,8 @@ public sealed class Trie
     private Node AddString(string value)
     {
         var node = Root;
-        for (var i = 0; i < value.Length; i++)
+        foreach (var c in value)
         {
-            var c = value[i];
             if (!node.Leafs.TryGetValue(c, out var leaf))
             {
                 leaf = new Node();

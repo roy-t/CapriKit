@@ -5,12 +5,12 @@ public static class ReservedTokenizer
     private static readonly Dictionary<string, TokenKind> Reserved = new()
     {
         ["auto"] = TokenKind.Reserved,
-        ["case"] = TokenKind.Reserved,
+        // ["case"] = TokenKind.Reserved, // Both a reserved token and keyword
         ["catch"] = TokenKind.Reserved,
         ["char"] = TokenKind.Reserved,
-        ["class"] = TokenKind.Reserved,
+        // ["class"] = TokenKind.Reserved,  // Both a reserved token and keyword
         ["const_cast"] = TokenKind.Reserved,
-        ["default"] = TokenKind.Reserved,
+        // ["default"] = TokenKind.Reserved,  // Both a reserved token and keyword
         ["delete"] = TokenKind.Reserved,
         ["dynamic_cast"] = TokenKind.Reserved,
         ["enum"] = TokenKind.Reserved,
@@ -35,7 +35,7 @@ public static class ReservedTokenizer
         ["try"] = TokenKind.Reserved,
         ["typename"] = TokenKind.Reserved,
         ["union"] = TokenKind.Reserved,
-        ["unsigned"] = TokenKind.Reserved,
+        // ["unsigned"] = TokenKind.Reserved, // Both a reserved token and keyword
         ["using"] = TokenKind.Reserved,
         ["virtual"] = TokenKind.Reserved,
     };

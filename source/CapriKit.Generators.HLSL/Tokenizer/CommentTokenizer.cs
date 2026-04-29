@@ -20,22 +20,22 @@ public static class CommentTokenizer
 
     private static int ReadBlockComment(string source, int offset, List<Token> tokens)
     {
-        if ((offset + 1) < source.Length && source[offset] == '/' && source[offset + 1] == '*')
+        var cursor = offset;
+        if (TryPeek(source, cursor, out var first) && first == '/' &&
+            TryPeek(source, cursor + 1, out var second) && second == '*')
         {
-            var advanced = 2;
-            var cursor = offset + advanced;
-
-            while (cursor < source.Length && !(source[cursor - 1] == '*' && source[cursor] == '/'))
+            cursor += 2;
+            while (TryPeek(source, cursor, out var c))
             {
-                advanced++;
-                cursor = offset + advanced;
+                if (c == '*' && TryPeek(source, cursor + 1, out var next) && next == '/')
+                {
+                    cursor += 2;
+                    break;
+                }
+                cursor++;
             }
 
-            if (cursor + 1 < source.Length)
-            {
-                advanced++;
-            }
-
+            var advanced = cursor - offset;
             tokens.Add(new Token(source, offset, advanced, TokenKind.Comment));
             return advanced;
         }
@@ -43,9 +43,10 @@ public static class CommentTokenizer
         return 0;
     }
     private static int ReadLineComment(string source, int offset, List<Token> tokens)
-    {
-        if ((offset + 1) < source.Length && source[offset] == '/' && source[offset + 1] == '/')
-        {
+    {        
+        if (TryPeek(source, offset, out var first) && first == '/' &&
+            TryPeek(source, offset + 1, out var second) && second == '/')
+        {            
             var advanced = AdvancePastEndOfLine(source, offset);
             tokens.Add(new Token(source, offset, advanced, TokenKind.Comment));
             return advanced;

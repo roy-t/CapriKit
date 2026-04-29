@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-internal class OperatorTokenizer
+public static class OperatorTokenizer
 {
     private static readonly Dictionary<string, TokenKind> Operators = new()
     {
