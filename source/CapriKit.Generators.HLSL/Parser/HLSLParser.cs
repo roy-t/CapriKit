@@ -8,7 +8,13 @@ public enum EntryPointKind
     PixelShader,
     ComputeShader,
 }
+public enum IncludeKind
+{
+    Local,
+    System
+}
 
+public record Include(string Path, IncludeKind Kind);
 public record Field(string Type, string Name, string Semantic);
 public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
 public record Structure(string Name, IReadOnlyList<Field> Fields);
