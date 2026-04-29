@@ -1,7 +1,7 @@
 
-using CapriKit.HLSL.TypeGenerator.Tokenizer;
+using CapriKit.Generators.HLSL.Tokenizer;
 
-namespace CapriKit.Tests.HLSL.TypeGenerator;
+namespace CapriKit.Tests.Generators.HLSL;
 
 internal class IntegerTokenizerTests
 {
@@ -31,15 +31,13 @@ internal class IntegerTokenizerTests
     }
 
     [Test]
-    public async Task ParseSignedInteger()
+    public async Task DoNotIncludeSign() // signs are a seperate operator
     {
         var input = "-123";
         var list = new List<Token>(1);
         var consumed = IntegerTokenizer.ReadInteger(input, 0, list);
-        await Assert.That(consumed).IsEqualTo(input.Length);
-        await Assert.That(list).Count().IsEqualTo(1);
-        await Assert.That(list[0].Value).IsEqualTo("-123");
-        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.IntegerLiteral);
+        await Assert.That(consumed).IsEqualTo(0);
+        await Assert.That(list).Count().IsEqualTo(0);
     }
 
     [Test]

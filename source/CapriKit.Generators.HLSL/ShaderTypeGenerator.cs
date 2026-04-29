@@ -1,6 +1,6 @@
 using Microsoft.CodeAnalysis;
 
-namespace CapriKit.HLSL.TypeGenerator;
+namespace CapriKit.Generators.HLSL;
 
 [Generator]
 public class ShaderTypeGenerator

@@ -1,6 +1,6 @@
-using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
+using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
-namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
+namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public static class IntegerTokenizer
 {
@@ -40,7 +40,7 @@ public static class IntegerTokenizer
 
     private static State ReadOctal(string source, State state)
     {
-        var cursor = SkipSign(source, state.Cursor);
+        var cursor = state.Cursor;
         if (TryPeek(source, cursor, out var o) && o == '0')
         {
             cursor++;
@@ -66,7 +66,7 @@ public static class IntegerTokenizer
 
     private static State ReadHex(string source, State state)
     {
-        var cursor = SkipSign(source, state.Cursor);
+        var cursor = state.Cursor;
         if (TryPeek(source, cursor, out var o) && o == '0')
         {
             cursor++;
@@ -96,7 +96,7 @@ public static class IntegerTokenizer
 
     private static State ReadDecimal(string source, State state)
     {
-        var cursor = SkipSign(source, state.Cursor);
+        var cursor = state.Cursor;
         var hasDigit = false;
         while (TryPeek(source, cursor, out var c) && char.IsDigit(c))
         {
@@ -129,14 +129,5 @@ public static class IntegerTokenizer
         }
 
         return state;
-    }
-    private static int SkipSign(string source, int cursor)
-    {
-        if (TryPeek(source, cursor, out var s) && (s == '-' || s == '+'))
-        {
-            cursor++;
-        }
-
-        return cursor;
-    }
+    }   
 }

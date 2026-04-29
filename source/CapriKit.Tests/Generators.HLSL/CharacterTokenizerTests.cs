@@ -1,6 +1,6 @@
-using CapriKit.HLSL.TypeGenerator.Tokenizer;
+using CapriKit.Generators.HLSL.Tokenizer;
 
-namespace CapriKit.Tests.HLSL.TypeGenerator;
+namespace CapriKit.Tests.Generators.HLSL;
 
 internal class CharacterTokenizerTests
 {

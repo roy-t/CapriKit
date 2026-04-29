@@ -1,7 +1,7 @@
-using CapriKit.HLSL.TypeGenerator.Tokenizer;
+using CapriKit.Generators.HLSL.Tokenizer;
 using System.Text;
 
-namespace CapriKit.Tests.HLSL.TypeGenerator;
+namespace CapriKit.Tests.Generators.HLSL;
 
 internal class StringTokenizerTests
 {

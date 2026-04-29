@@ -1,6 +1,6 @@
-using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
+using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
-namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
+namespace CapriKit.Generators.HLSL.Tokenizer;
 
 internal class OperatorTokenizer
 {

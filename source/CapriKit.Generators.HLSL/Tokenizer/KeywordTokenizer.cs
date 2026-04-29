@@ -1,4 +1,4 @@
-namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
+namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public static class KeywordTokenizer
 {

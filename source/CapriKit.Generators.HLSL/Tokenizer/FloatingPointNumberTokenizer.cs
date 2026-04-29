@@ -1,6 +1,6 @@
-using static CapriKit.HLSL.TypeGenerator.Tokenizer.TokenizerUtils;
+using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
-namespace CapriKit.HLSL.TypeGenerator.Tokenizer;
+namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public static class FloatingPointNumberTokenizer
 {
@@ -54,7 +54,7 @@ public static class FloatingPointNumberTokenizer
     private static State ReadFractionalConstant(string source, State state)
     {
         // The integer part is optional        
-        var cursor = SkipSign(source, state.Cursor);
+        var cursor = state.Cursor;
         var hasDigit = false;
         while (TryPeek(source, cursor, out var c) && char.IsDigit(c))
         {

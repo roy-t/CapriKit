@@ -1,7 +1,7 @@
 
-using CapriKit.HLSL.TypeGenerator.Tokenizer;
+using CapriKit.Generators.HLSL.Tokenizer;
 
-namespace CapriKit.Tests.HLSL.TypeGenerator;
+namespace CapriKit.Tests.Generators.HLSL;
 
 internal class FloatingPointNumberTokenizerTest
 {
@@ -19,15 +19,13 @@ internal class FloatingPointNumberTokenizerTest
     }
 
     [Test]
-    public async Task ParseSignedFloat()
+    public async Task DoNotIncludeSign() // signs are a seperate operator
     {
         var input = "-1.0";
         var list = new List<Token>(1);
         var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
-        await Assert.That(consumed).IsEqualTo(input.Length);
-        await Assert.That(list).Count().IsEqualTo(1);
-        await Assert.That(list[0].Value).IsEqualTo("-1.0");
-        await Assert.That(list[0].Kind).IsEqualTo(TokenKind.FloatingPointLiteral);
+        await Assert.That(consumed).IsEqualTo(0);
+        await Assert.That(list).Count().IsEqualTo(0);
     }
 
     [Test]
