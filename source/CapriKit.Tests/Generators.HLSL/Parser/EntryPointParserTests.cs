@@ -22,6 +22,7 @@ internal class EntryPointParserTests
         await Assert.That(entry.Kind).IsEqualTo(EntryPointKind.VertexShader);
         await Assert.That(entry.Name).IsEqualTo("VS");
         await Assert.That(entry.Semantic).IsEqualTo("SV_POSITION");
+        await Assert.That(state.IsAtEnd).IsTrue();
     }
 
     [Test]
@@ -41,5 +42,6 @@ internal class EntryPointParserTests
         await Assert.That(entry.Kind).IsEqualTo(EntryPointKind.ComputeShader);
         await Assert.That(entry.Name).IsEqualTo("Main");
         await Assert.That(entry.Semantic).IsEqualTo(string.Empty);
+        await Assert.That(state.IsAtEnd).IsTrue();
     }
 }

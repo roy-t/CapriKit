@@ -21,9 +21,16 @@ internal class HLSLParserTests
         await Assert.That(result.EntryPoints[0].Name).IsEqualTo("VS");
         await Assert.That(result.EntryPoints[1].Kind).IsEqualTo(EntryPointKind.PixelShader);
         await Assert.That(result.EntryPoints[1].Name).IsEqualTo("PS");
+        await Assert.That(result.Includes[0].Kind).IsEqualTo(IncludeKind.System);
+        await Assert.That(result.Includes[0].Path).IsEqualTo("std.io");
+        await Assert.That(result.Includes[1].Kind).IsEqualTo(IncludeKind.Local);
+        await Assert.That(result.Includes[1].Path).IsEqualTo("defines.hlsl");
     }
 
     private static readonly string LineShader = """
+        #include <std.io>
+        #include "defines.hlsl"
+
         struct VS_INPUT
         {
             float3 position : POSITION;

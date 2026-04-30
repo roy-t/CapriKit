@@ -6,21 +6,32 @@ internal static class ParserUtils
 {
     public static void SkipArgumentList(ParseState state)
     {
-        state.ExpectOperator("(");
-        while (!state.IsAtEnd && !state.Peek(TokenKind.Operator, ")"))
-        {
-            state.Advance();
-        }
-        state.ExpectOperator(")");
+        SkipSegment(state, "(", ")");
     }
 
     public static void SkipMethodBlock(ParseState state)
     {
-        state.ExpectOperator("{");
-        while (!state.IsAtEnd && !state.Peek(TokenKind.Operator, "}"))
+        SkipSegment(state, "{", "}");
+    }
+
+    private static void SkipSegment(ParseState state, string open, string close)
+    {
+        state.ExpectOperator(open);
+        var depth = 1;
+        while (!state.IsAtEnd && depth > 0)
         {
-            state.Advance();
+            var token = state.Advance();
+            if (token.Kind == TokenKind.Operator)
+            {
+                if (token.Value == open)
+                {
+                    depth++;
+                }
+                else if (token.Value == close)
+                {
+                    depth--;
+                }
+            }
         }
-        state.ExpectOperator("}");
     }
 }

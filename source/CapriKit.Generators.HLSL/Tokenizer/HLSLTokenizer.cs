@@ -29,7 +29,6 @@ public readonly record struct Token(string Source, int Offset, int Length, Token
 // Every rule returns how many characters it read from the source
 public delegate int Rule(string source, int cursor, List<Token> tokens);
 
-
 public static class HLSLTokenizer
 {
     public static bool IsTrivia(Token token)
