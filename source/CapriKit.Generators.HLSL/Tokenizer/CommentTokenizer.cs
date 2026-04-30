@@ -43,10 +43,10 @@ public static class CommentTokenizer
         return 0;
     }
     private static int ReadLineComment(string source, int offset, List<Token> tokens)
-    {        
+    {
         if (TryPeek(source, offset, out var first) && first == '/' &&
             TryPeek(source, offset + 1, out var second) && second == '/')
-        {            
+        {
             var advanced = AdvanceToEndOfLine(source, offset);
             tokens.Add(new Token(source, offset, advanced, TokenKind.Comment));
             return advanced;

@@ -12,8 +12,8 @@ public sealed class InputEventProcessor(Win32Window Target, Mouse Mouse, Keyboar
         var position = Target.GetCursorPosition();
         Mouse.UpdatePosition(position);
 
-        Mouse.NextFrame();        
-        Keyboard.NextFrame();        
+        Mouse.NextFrame();
+        Keyboard.NextFrame();
     }
 
     internal void OnEvent(HWND hWnd, uint msg, WPARAM wParam, LPARAM lParam)

@@ -19,8 +19,8 @@ internal sealed class CommandLogger : IDisposable
 
     public void Dispose()
     {
-        this.Writer.Dispose();
-        this.LogStream.Dispose();
+        Writer.Dispose();
+        LogStream.Dispose();
     }
 
     public static CommandLogger CreateBuildLogger()

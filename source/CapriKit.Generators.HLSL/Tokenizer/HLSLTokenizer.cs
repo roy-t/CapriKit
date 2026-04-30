@@ -9,7 +9,7 @@ public enum TokenKind : byte
     Reserved,
     Whitespace,
     FloatingPointLiteral,
-    IntegerLiteral,    
+    IntegerLiteral,
     Character,
     String,
     Identifier,
@@ -58,7 +58,7 @@ public static class HLSLTokenizer
             WhitespaceTokenizer.ReadWhitespace,
             CommentTokenizer.ReadComment,
             // needs to happen before integers to prevent parsing 1.0 as integer 1 + float .0
-            FloatingPointNumberTokenizer.ReadFloatingPointNumber, 
+            FloatingPointNumberTokenizer.ReadFloatingPointNumber,
             IntegerTokenizer.ReadInteger,
             CharacterTokenizer.ReadCharacter,
             StringTokenizer.ReadString,

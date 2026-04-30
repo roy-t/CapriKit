@@ -16,7 +16,7 @@ public sealed class RasterizerContext : DeviceContextPart
 
     public void SetScissorRect(int x, int y, int width, int height)
     {
-        ID3D11DeviceContext.RSSetScissorRect(x, y, width, height);        
+        ID3D11DeviceContext.RSSetScissorRect(x, y, width, height);
     }
 
     public void SetScissorRect(in Rectangle rectangle)

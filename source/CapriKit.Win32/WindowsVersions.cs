@@ -9,9 +9,9 @@ public static class WindowsVersions
     public const string Windows2000 = "windows5.0.0";
 
     public const string WindowsXP = "windows5.1.2600";
-    public const string WindowsXP_SP1 = "windows5.1.2600.1106"; 
-    public const string WindowsXP_SP2 = "windows5.1.2600.2180"; 
-    public const string WindowsXP_SP3 = "windows5.1.2600.5512"; 
+    public const string WindowsXP_SP1 = "windows5.1.2600.1106";
+    public const string WindowsXP_SP2 = "windows5.1.2600.2180";
+    public const string WindowsXP_SP3 = "windows5.1.2600.5512";
 
     // Windows Server 2003 / Windows XP x64
     public const string WindowsServer2003 = "windows5.2.3790";
@@ -34,6 +34,6 @@ public static class WindowsVersions
     public const string WindowsServer2012R2 = "windows6.3.9600";
 
     // Windows 10 / Windows 11
-    public const string Windows10 = "windows10.0.10240"; 
+    public const string Windows10 = "windows10.0.10240";
     public const string Windows11 = "windows10.0.22000";
 }

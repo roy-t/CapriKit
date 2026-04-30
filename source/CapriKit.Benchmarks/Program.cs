@@ -4,20 +4,19 @@ using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 
-namespace CapriKit.Benchmarks
+namespace CapriKit.Benchmarks;
+
+internal class Program
 {
-    internal class Program
+    static void Main(string[] args)
     {
-        static void Main(string[] args)
-        {
-            var config = DefaultConfig.Instance
-                .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0).AsDefault())
-                .AddExporter(JsonExporter.Default);
+        var config = DefaultConfig.Instance
+            .AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0).AsDefault())
+            .AddExporter(JsonExporter.Default);
 
 
-            var assembly = typeof(Program).Assembly;
-            BenchmarkSwitcher.FromAssembly(assembly).Run(args, config);
-        }
+        var assembly = typeof(Program).Assembly;
+        BenchmarkSwitcher.FromAssembly(assembly).Run(args, config);
     }
 }
 

@@ -29,7 +29,7 @@ public static class FieldParser
         var type = state.ExpectType();
         var name = state.ExpectIdentifier();
         var semantic = SemanticParser.ParseSemantic(state);
-        
+
         state.ExpectOperator(";");
         return new Field(type, name, semantic);
     }

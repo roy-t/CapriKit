@@ -114,7 +114,7 @@ public static class IntegerTokenizer
         }
 
         return state;
-    }  
+    }
     private static State ReadSuffix(string source, State state)
     {
         var cursor = state.Cursor;
@@ -129,5 +129,5 @@ public static class IntegerTokenizer
         }
 
         return state;
-    }   
+    }
 }

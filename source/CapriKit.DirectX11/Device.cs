@@ -15,7 +15,7 @@ public class Device : IDisposable
 {
     private readonly ID3D11DeviceContext ID3D11DeviceContext;
 
-    internal readonly ID3D11Device ID3D11Device;    
+    internal readonly ID3D11Device ID3D11Device;
 
 #if DEBUG
     private static readonly DeviceCreationFlags Flags = DeviceCreationFlags.Debug;
@@ -27,7 +27,7 @@ public class Device : IDisposable
 #endif
 
     public Device()
-    {        
+    {
         var deviceResult = D3D11CreateDevice(null, DriverType.Hardware, Flags, [FeatureLevel.Level_11_1], out var device, out _, out var context);
         deviceResult.CheckError();
 
@@ -35,22 +35,22 @@ public class Device : IDisposable
         IDXGIDebug = DXGIGetDebugInterface1<IDXGIDebug>();
         IDXGIInfoQueue = DXGIGetDebugInterface1<IDXGIInfoQueue>();
         IDXGIInfoQueue.PushEmptyStorageFilter(DebugAll);
-        
+
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Warning, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Error, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Corruption, true);
         InfoQueueSubscription = new InfoQueueSubscription(IDXGIInfoQueue);
 #endif
-        
+
         ID3D11Device = device ?? throw new Exception($"Failed to create {nameof(ID3D11Device)}");
         ID3D11DeviceContext = context ?? throw new Exception($"Failed to create {nameof(IDXGISwapChain)}");
-        
+
         ImmediateDeviceContext = new ImmediateDeviceContext(this, ID3D11DeviceContext);
 
         SamplerStates = new SamplerStates(device);
         BlendStates = new BlendStates(device);
         DepthStencilStates = new DepthStencilStates(device);
-        RasterizerStates = new RasterizerStates(device);        
+        RasterizerStates = new RasterizerStates(device);
     }
 
     public SamplerStates SamplerStates { get; }
