@@ -5,7 +5,7 @@ namespace CapriKit.Generators.HLSL.Tokenizer;
 public static class WhitespaceTokenizer
 {
     /// <summary>
-    /// Reads and discards whitespace tokens
+    /// Reads whitespace tokens
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-grammar#whitespace"/>
     public static int ReadWhitespace(string source, int offset, List<Token> tokens)

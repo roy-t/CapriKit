@@ -7,7 +7,7 @@ public static class StructureParser
         state.ExpectKeyword("struct");
         var name = state.ExpectIdentifier();
         state.ExpectOperator("{");
-        var fields = FieldParser.ParseList(state);
+        var fields = MemberParser.ParseList(state);
         state.ExpectOperator("}");
         state.ExpectOperator(";");
         return new Structure(name, fields);

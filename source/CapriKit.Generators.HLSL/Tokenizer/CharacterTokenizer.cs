@@ -3,7 +3,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public static class CharacterTokenizer
-{
+{    
     private const char Delimiter = '\'';
     private readonly record struct State(int Cursor, bool HasOpening, bool HasEscapeSequence, bool HasCharacter, bool HasClosing);
 
@@ -13,6 +13,9 @@ public static class CharacterTokenizer
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-grammar#characters"/>
     public static int ReadCharacter(string source, int offset, List<Token> tokens)
     {
+        // Note: the character tokenizer is much more complex than the string tokenizer because
+        // we have to check if an escape sequence leads to a valid single character. While
+        // for the string tokenizer we can just skip the escape sequences
         var state = new State(offset, false, false, false, false);
 
         state = ReadOpening(source, state);

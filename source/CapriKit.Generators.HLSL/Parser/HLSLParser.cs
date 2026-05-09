@@ -52,6 +52,8 @@ public static class HLSLParser
             }
             else
             {
+                // Since this is an incomplete parser silently advance
+                // past tokens we cannot parse.
                 state.Advance();
             }
         }

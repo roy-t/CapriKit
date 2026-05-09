@@ -18,6 +18,16 @@ internal class FloatingPointNumberTokenizerTest
     }
 
     [Test]
+    public async Task DoNotParseInteger()
+    {
+        var input = "123";
+        var list = new List<Token>(0);
+        var consumed = FloatingPointNumberTokenizer.ReadFloatingPointNumber(input, 0, list);
+        await Assert.That(consumed).IsEqualTo(0);
+        await Assert.That(list).Count().IsEqualTo(0);        
+    }
+
+    [Test]
     public async Task DoNotIncludeSign() // signs are a seperate operator
     {
         var input = "-1.0";

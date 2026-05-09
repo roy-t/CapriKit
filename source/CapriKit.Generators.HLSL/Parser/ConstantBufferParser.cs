@@ -20,7 +20,7 @@ public static class ConstantBufferParser
         }
 
         state.ExpectOperator("{");
-        var fields = FieldParser.ParseList(state);
+        var fields = MemberParser.ParseList(state);
         state.ExpectOperator("}");
         state.ExpectOperator(";");
         return new ConstantBuffer(name, register, fields);

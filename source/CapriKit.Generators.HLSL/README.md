@@ -5,7 +5,7 @@ A source generator that analyzes HLSL shader files and generates strongly typed 
 ## Implementation Details & Quirks
 
 - HLSL defines every unmatched single character as an operator. For example `-4.0f` matches as `<operator><floating-point-number>`. The tokenizer follows this rule, but it means that you need to be mindful in parsers when trying to match number literals.
-- The parser assumes that methods preceeded by one of the following pragma statements are entrypoints
+- The parser assumes that methods preceded by one of the following pragma statements are entrypoints
   - `#pragma VertexShader`
   - `#pragma PixelShader`
   - `#pragma ComputeShader`

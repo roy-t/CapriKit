@@ -10,9 +10,7 @@ public static class OperatorTokenizer
         ["#@"] = TokenKind.Operator,
         ["++"] = TokenKind.Operator,
         ["--"] = TokenKind.Operator,
-        ["&"] = TokenKind.Operator,
-        ["&"] = TokenKind.Operator,
-        ["&"] = TokenKind.Operator,
+        ["&&"] = TokenKind.Operator,
         ["||"] = TokenKind.Operator,
         ["=="] = TokenKind.Operator,
         ["::"] = TokenKind.Operator,
@@ -49,6 +47,7 @@ public static class OperatorTokenizer
 
     /// <summary>
     /// In HLSL any other single character that did not match another rule is an operator.
+    /// Which means this rule should always be checked last.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-grammar#operators"/>
     public static int ReadSingleCharacterOperator(string source, int offset, List<Token> tokens)
