@@ -24,6 +24,16 @@ public sealed class ParseState
 
     public Token Advance() => tokens[cursor++];
 
+    /// <summary>
+    /// Captures the current cursor so a speculative parse can be rewound with <see cref="Restore"/>.
+    /// </summary>
+    public int Mark() => cursor;
+
+    /// <summary>
+    /// Rewinds the cursor to a position previously returned by <see cref="Mark"/>.
+    /// </summary>
+    public void Restore(int mark) => cursor = mark;
+
     public bool Match(TokenKind kind, string value)
     {
         if (Peek(kind, value))
