@@ -15,17 +15,20 @@ public enum IncludeKind
 }
 
 public record Include(string Path, IncludeKind Kind);
-public record Field(string Type, string Name, string Semantic);
+
+public record Variable(string Type, string Name, int Register);
+public record Member(string Type, string Name, string Semantic);
 public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
-public record Structure(string Name, IReadOnlyList<Field> Fields);
-public record ConstantBuffer(string Name, string Register, IReadOnlyList<Field> Fields);
-public record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
+public record Structure(string Name, IReadOnlyList<Member> Members);
+public record ConstantBuffer(string Name, string Register, IReadOnlyList<Member> Members);
+public record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
 
 public static class HLSLParser
 {
     public static ShaderMetadata Parse(IReadOnlyList<Token> tokens)
     {
         var state = new ParseState(tokens);
+        var variables = new List<Variable>();
         var structures = new List<Structure>();
         var constantBuffers = new List<ConstantBuffer>();
         var entryPoints = new List<EntryPoint>();
@@ -58,6 +61,6 @@ public static class HLSLParser
             }
         }
 
-        return new ShaderMetadata(includes, structures, constantBuffers, entryPoints);
+        return new ShaderMetadata(includes, variables, structures, constantBuffers, entryPoints);
     }
 }

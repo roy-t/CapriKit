@@ -22,9 +22,9 @@ internal class ConstantBufferParserTests
 
         await Assert.That(buffer.Name).IsEqualTo("Constants");
         await Assert.That(buffer.Register).IsEqualTo("b0");
-        await Assert.That(buffer.Fields).Count().IsEqualTo(2);
-        await Assert.That(buffer.Fields[0].Type).IsEqualTo("float4x4");
-        await Assert.That(buffer.Fields[0].Name).IsEqualTo("WorldViewProjection");
+        await Assert.That(buffer.Members).Count().IsEqualTo(2);
+        await Assert.That(buffer.Members[0].Type).IsEqualTo("float4x4");
+        await Assert.That(buffer.Members[0].Name).IsEqualTo("WorldViewProjection");
     }
 
     [Test]
@@ -37,6 +37,6 @@ internal class ConstantBufferParserTests
 
         await Assert.That(buffer.Name).IsEqualTo("Globals");
         await Assert.That(buffer.Register).IsEqualTo(string.Empty);
-        await Assert.That(buffer.Fields).Count().IsEqualTo(1);
+        await Assert.That(buffer.Members).Count().IsEqualTo(1);
     }
 }

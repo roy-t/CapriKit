@@ -13,9 +13,9 @@ public static class MemberParser
     /// Parses HLSL struct members
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct"/>
-    public static List<Field> ParseList(ParseState state)
+    public static List<Member> ParseList(ParseState state)
     {
-        var fields = new List<Field>();
+        var fields = new List<Member>();
         while (!state.IsAtEnd && !state.Peek(TokenKind.Operator, "}"))
         {
             fields.Add(Parse(state));
@@ -23,7 +23,7 @@ public static class MemberParser
         return fields;
     }
 
-    public static Field Parse(ParseState state)
+    public static Member Parse(ParseState state)
     {
         while (state.Peek(TokenKind.Keyword, InterpolationModifiers))
         {
@@ -35,6 +35,6 @@ public static class MemberParser
         var semantic = SemanticParser.ParseSemantic(state);
 
         state.ExpectOperator(";");
-        return new Field(type, name, semantic);
+        return new Member(type, name, semantic);
     }
 }

@@ -21,10 +21,10 @@ internal class StructureParserTests
         var structure = StructureParser.Parse(state);
 
         await Assert.That(structure.Name).IsEqualTo("VS_INPUT");
-        await Assert.That(structure.Fields).Count().IsEqualTo(2);
-        await Assert.That(structure.Fields[0].Type).IsEqualTo("float3");
-        await Assert.That(structure.Fields[0].Name).IsEqualTo("position");
-        await Assert.That(structure.Fields[0].Semantic).IsEqualTo("POSITION");
-        await Assert.That(structure.Fields[1].Name).IsEqualTo("id");
+        await Assert.That(structure.Members).Count().IsEqualTo(2);
+        await Assert.That(structure.Members[0].Type).IsEqualTo("float3");
+        await Assert.That(structure.Members[0].Name).IsEqualTo("position");
+        await Assert.That(structure.Members[0].Semantic).IsEqualTo("POSITION");
+        await Assert.That(structure.Members[1].Name).IsEqualTo("id");
     }
 }

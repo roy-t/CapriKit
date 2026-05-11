@@ -11,6 +11,15 @@ internal class HLSLParserTests
         var tokens = HLSLTokenizer.Parse(LineShader);
         var result = HLSLParser.Parse(tokens);
 
+        await Assert.That(result.Variables).Count().IsEqualTo(2);
+        await Assert.That(result.Variables[0].Type).IsEqualTo("sampler");
+        await Assert.That(result.Variables[0].Name).IsEqualTo("TextureSampler");
+        await Assert.That(result.Variables[0].Register).IsEqualTo(0);
+
+        await Assert.That(result.Variables[1].Type).IsEqualTo("Texture2D");
+        await Assert.That(result.Variables[1].Name).IsEqualTo("Color");
+        await Assert.That(result.Variables[1].Register).IsEqualTo(4);
+
         await Assert.That(result.Structures).Count().IsEqualTo(3);
         await Assert.That(result.ConstantBuffers).Count().IsEqualTo(1);
         await Assert.That(result.EntryPoints).Count().IsEqualTo(2);
@@ -30,6 +39,9 @@ internal class HLSLParserTests
     private static readonly string LineShader = """
         #include <std.io>
         #include "defines.hlsl"
+
+        sampler TextureSampler : register(s0);
+        precise rowmajor Matrix2x2 Color : register(t4);
 
         struct VS_INPUT
         {
