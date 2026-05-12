@@ -15,28 +15,41 @@ internal class ConstantBufferParserTests
                 float4 Color;
             };
             """;
-        var tokens = HLSLTokenizer.Parse(source);
-        var state = new ParseState(tokens);
+        var state = new ParseState(HLSLTokenizer.Parse(source));
 
-        var buffer = ConstantBufferParser.Parse(state);
+        var success = ConstantBufferParser.TryParse(state, out var buffer);
 
+        await Assert.That(success).IsTrue();
         await Assert.That(buffer.Name).IsEqualTo("Constants");
         await Assert.That(buffer.Register).IsEqualTo("b0");
         await Assert.That(buffer.Members).Count().IsEqualTo(2);
         await Assert.That(buffer.Members[0].Type).IsEqualTo("float4x4");
         await Assert.That(buffer.Members[0].Name).IsEqualTo("WorldViewProjection");
+        await Assert.That(state.IsAtEnd).IsTrue();
     }
 
     [Test]
     public async Task ParseConstantBufferWithoutRegister()
     {
-        var tokens = HLSLTokenizer.Parse("cbuffer Globals { float4 tint; };");
-        var state = new ParseState(tokens);
+        var state = new ParseState(HLSLTokenizer.Parse("cbuffer Globals { float4 tint; };"));
 
-        var buffer = ConstantBufferParser.Parse(state);
+        var success = ConstantBufferParser.TryParse(state, out var buffer);
 
+        await Assert.That(success).IsTrue();
         await Assert.That(buffer.Name).IsEqualTo("Globals");
         await Assert.That(buffer.Register).IsEqualTo(string.Empty);
         await Assert.That(buffer.Members).Count().IsEqualTo(1);
+        await Assert.That(state.IsAtEnd).IsTrue();
+    }
+
+    [Test]
+    public async Task RejectsNonCBufferAndRewinds()
+    {
+        var state = new ParseState(HLSLTokenizer.Parse("struct Foo { float a; };"));
+
+        var success = ConstantBufferParser.TryParse(state, out _);
+
+        await Assert.That(success).IsFalse();
+        await Assert.That(state.Peek().Value).IsEqualTo("struct");
     }
 }

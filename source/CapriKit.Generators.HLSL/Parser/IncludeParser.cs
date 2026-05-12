@@ -4,33 +4,40 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 public static class IncludeParser
 {
-    public const string IncludeDirective = "#include";
+    private const string IncludeDirective = "#include";
 
-    public static Include Parse(ParseState state)
+    /// <summary>
+    /// Parses an include directive
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-reference"/>
+    public static bool TryParse(ParseState state, out Include include)
     {
-        var token = state.Advance();
+        include = default!;
+
+        var token = state.Peek();
         if (token.Kind != TokenKind.Directive || !token.Value.StartsWith(IncludeDirective))
         {
-            throw new Exception($"Expected include directive but got {token.Kind} '{token.Value}'.");
+            return false;
         }
+        state.Advance();
 
         if (token.Value.Length <= IncludeDirective.Length)
         {
-            throw new Exception($"Include directive is missing an argument");
+            throw new Exception("Include directive is missing an argument");
         }
 
         var argument = token.Value.Substring(IncludeDirective.Length).Trim();
 
         if (argument.StartsWith("<") && argument.EndsWith(">"))
         {
-            argument = argument.Substring(1, argument.Length - 2);
-            return new Include(argument, IncludeKind.System);
+            include = new Include(argument.Substring(1, argument.Length - 2), IncludeKind.System);
+            return true;
         }
 
         if (argument.StartsWith("\"") && argument.EndsWith("\""))
         {
-            argument = argument.Substring(1, argument.Length - 2);
-            return new Include(argument, IncludeKind.Local);
+            include = new Include(argument.Substring(1, argument.Length - 2), IncludeKind.Local);
+            return true;
         }
 
         throw new Exception($"Could not parse #include argument: {argument}");

@@ -5,12 +5,35 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 public static class EntryPointParser
 {
+    private static readonly Dictionary<string, EntryPointKind> EntryPointPragmas = new()
+    {
+        ["VertexShader"] = EntryPointKind.VertexShader,
+        ["PixelShader"] = EntryPointKind.PixelShader,
+        ["ComputeShader"] = EntryPointKind.ComputeShader,
+    };
+
     /// <summary>
-    /// Parses a HLSL function that could be a valid shader entrypoint
+    /// Parses a HLSL entry-point, a function tagged by a #pragma directive.    
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-function-syntax"/>
-    public static EntryPoint Parse(ParseState state, EntryPointKind kind)
+    public static bool TryParse(ParseState state, out EntryPoint entry)
     {
+        entry = default!;
+
+        if (!state.Peek(TokenKind.Directive))
+        {
+            return false;
+        }
+
+        var directive = state.Peek();
+        var parts = directive.Value.Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length < 2 || parts[0] != "#pragma" || !EntryPointPragmas.TryGetValue(parts[1], out var kind))
+        {
+            return false;
+        }
+
+        state.Advance();
+
         state.Match(TokenKind.Keyword, "inline");
         state.Match(TokenKind.Keyword, "precise");
 
@@ -21,6 +44,7 @@ public static class EntryPointParser
         var semantic = SemanticParser.ParseSemantic(state);
         SkipMethodBlock(state);
 
-        return new EntryPoint(kind, name, semantic);
+        entry = new EntryPoint(kind, name, semantic);
+        return true;
     }
 }

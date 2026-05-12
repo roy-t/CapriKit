@@ -4,9 +4,20 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 public static class ConstantBufferParser
 {
-    public static ConstantBuffer Parse(ParseState state)
+    /// <summary>
+    /// Parses a cbuffer.
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants#organizing-constant-buffers"/>
+    public static bool TryParse(ParseState state, out ConstantBuffer buffer)
     {
-        state.ExpectKeyword("cbuffer");
+        buffer = default!;
+
+        if (!state.Peek(TokenKind.Keyword, "cbuffer"))
+        {
+            return false;
+        }
+        state.Advance();
+
         var name = state.ExpectIdentifier();
 
         var register = string.Empty;
@@ -23,6 +34,8 @@ public static class ConstantBufferParser
         var fields = MemberParser.ParseList(state);
         state.ExpectOperator("}");
         state.ExpectOperator(";");
-        return new ConstantBuffer(name, register, fields);
+
+        buffer = new ConstantBuffer(name, register, fields);
+        return true;
     }
 }

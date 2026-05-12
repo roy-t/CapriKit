@@ -36,22 +36,25 @@ public static class HLSLParser
 
         while (!state.IsAtEnd)
         {
-            if (DirectiveParser.TryParseInclude(state.Peek()))
+            if (IncludeParser.TryParse(state, out var include))
             {
-                includes.Add(IncludeParser.Parse(state));
+                includes.Add(include);
             }
-            else if (state.Peek(TokenKind.Keyword, "struct"))
+            else if (StructureParser.TryParse(state, out var structure))
             {
-                structures.Add(StructureParser.Parse(state));
+                structures.Add(structure);
             }
-            else if (state.Peek(TokenKind.Keyword, "cbuffer"))
+            else if (ConstantBufferParser.TryParse(state, out var buffer))
             {
-                constantBuffers.Add(ConstantBufferParser.Parse(state));
+                constantBuffers.Add(buffer);
             }
-            else if (DirectiveParser.TryParseEntryPoint(state.Peek(), out var kind))
+            else if (EntryPointParser.TryParse(state, out var entry))
             {
-                state.Advance();
-                entryPoints.Add(EntryPointParser.Parse(state, kind));
+                entryPoints.Add(entry);
+            }
+            else if (VariableParser.TryParse(state, out var variable))
+            {
+                variables.Add(variable);
             }
             else
             {

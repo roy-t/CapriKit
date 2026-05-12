@@ -14,13 +14,14 @@ public sealed class ParseState
     }
 
     public bool IsAtEnd => cursor >= tokens.Count;
+
     public Token Peek() => tokens[cursor];
 
-    public bool Peek(TokenKind kind) => tokens[cursor].Kind == kind;
+    public bool Peek(TokenKind kind) => !IsAtEnd && tokens[cursor].Kind == kind;
 
-    public bool Peek(TokenKind kind, string value) => tokens[cursor].Kind == kind && tokens[cursor].Value.Equals(value);
+    public bool Peek(TokenKind kind, string value) => !IsAtEnd && tokens[cursor].Kind == kind && tokens[cursor].Value.Equals(value);
 
-    public bool Peek(TokenKind kind, HashSet<string> values) => tokens[cursor].Kind == kind && values.Contains(tokens[cursor].Value);
+    public bool Peek(TokenKind kind, HashSet<string> values) => !IsAtEnd && tokens[cursor].Kind == kind && values.Contains(tokens[cursor].Value);
 
     public Token Advance() => tokens[cursor++];
 
@@ -37,6 +38,16 @@ public sealed class ParseState
     public bool Match(TokenKind kind, string value)
     {
         if (Peek(kind, value))
+        {
+            Advance();
+            return true;
+        }
+        return false;
+    }
+
+    public bool Match(TokenKind kind, HashSet<string> values)
+    {
+        if (Peek(kind, values))
         {
             Advance();
             return true;

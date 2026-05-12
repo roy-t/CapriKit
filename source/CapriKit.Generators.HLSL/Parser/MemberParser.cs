@@ -16,7 +16,7 @@ public static class MemberParser
     public static List<Member> ParseList(ParseState state)
     {
         var fields = new List<Member>();
-        while (!state.IsAtEnd && !state.Peek(TokenKind.Operator, "}"))
+        while (!state.Peek(TokenKind.Operator, "}"))
         {
             fields.Add(Parse(state));
         }

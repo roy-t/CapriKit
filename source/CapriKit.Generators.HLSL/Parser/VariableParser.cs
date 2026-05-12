@@ -16,9 +16,7 @@ internal static class VariableParser
     ];
 
     /// <summary>
-    /// Speculatively parses a HLSL variable declaration. Returns false and rewinds the cursor when the
-    /// upcoming tokens cannot be a variable (e.g. function declaration). Throws on malformed input once
-    /// it has committed to "this is a variable".
+    /// Parses HLSL variable declarations.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-variable-syntax"/>
     public static bool TryParse(ParseState state, out Variable variable)
@@ -26,33 +24,36 @@ internal static class VariableParser
         variable = default!;
         var mark = state.Mark();
 
-        ParseModifiers(state, out _, out _);
+        // Skip optional storage class and type modifiers
+        SkipModifiers(state);
 
-        if (state.IsAtEnd || (!state.Peek(TokenKind.Keyword) && !state.Peek(TokenKind.Identifier)))
+        // Expect a type, which could be a keyword (such as bool) or any identifier)
+        if (!state.Peek(TokenKind.Keyword) && !state.Peek(TokenKind.Identifier))
         {
             state.Restore(mark);
             return false;
         }
         var type = state.Advance().Value;
 
-        if (state.IsAtEnd || !state.Peek(TokenKind.Identifier))
+        if (!state.Peek(TokenKind.Identifier))
         {
             state.Restore(mark);
             return false;
         }
         var name = state.Advance().Value;
 
-        if (!state.IsAtEnd && state.Peek(TokenKind.Operator, "("))
+        if (state.Peek(TokenKind.Operator, "("))
         {
             // Function declaration, not a variable.
             state.Restore(mark);
             return false;
         }
 
-        TryParseArraySuffix(state);
+        // We are no pretty sure this is a variable
+        SkipArraySuffix(state);
 
         var register = 0;
-        while (!state.IsAtEnd && state.Peek(TokenKind.Operator, ":"))
+        while (state.Peek(TokenKind.Operator, ":"))
         {
             state.Advance();
             if (state.Match(TokenKind.Keyword, "register"))
@@ -84,28 +85,16 @@ internal static class VariableParser
         return true;
     }
 
-    private static void ParseModifiers(ParseState state, out List<string> storage, out List<string> typeModifiers)
+    private static void SkipModifiers(ParseState state)
     {
-        storage = [];
-        typeModifiers = [];
-        while (!state.IsAtEnd)
+        var isRelevant = true;
+        while (isRelevant && !state.IsAtEnd)
         {
-            if (state.Peek(TokenKind.Keyword, StorageClasses))
-            {
-                storage.Add(state.Advance().Value);
-            }
-            else if (state.Peek(TokenKind.Keyword, TypeModifiers))
-            {
-                typeModifiers.Add(state.Advance().Value);
-            }
-            else
-            {
-                break;
-            }
+            isRelevant = state.Match(TokenKind.Keyword, StorageClasses) || state.Match(TokenKind.Keyword, TypeModifiers);
         }
     }
 
-    private static void TryParseArraySuffix(ParseState state)
+    private static void SkipArraySuffix(ParseState state)
     {
         if (!state.Match(TokenKind.Operator, "[")) return;
         if (!state.Peek(TokenKind.Operator, "]"))

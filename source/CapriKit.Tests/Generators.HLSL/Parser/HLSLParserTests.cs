@@ -16,8 +16,8 @@ internal class HLSLParserTests
         await Assert.That(result.Variables[0].Name).IsEqualTo("TextureSampler");
         await Assert.That(result.Variables[0].Register).IsEqualTo(0);
 
-        await Assert.That(result.Variables[1].Type).IsEqualTo("Texture2D");
-        await Assert.That(result.Variables[1].Name).IsEqualTo("Color");
+        await Assert.That(result.Variables[1].Type).IsEqualTo("Matrix2x2");
+        await Assert.That(result.Variables[1].Name).IsEqualTo("Mat");
         await Assert.That(result.Variables[1].Register).IsEqualTo(4);
 
         await Assert.That(result.Structures).Count().IsEqualTo(3);
@@ -41,7 +41,7 @@ internal class HLSLParserTests
         #include "defines.hlsl"
 
         sampler TextureSampler : register(s0);
-        precise rowmajor Matrix2x2 Color : register(t4);
+        precise row_major Matrix2x2 Mat : register(t4);
 
         struct VS_INPUT
         {
