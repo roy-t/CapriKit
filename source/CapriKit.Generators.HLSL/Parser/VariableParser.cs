@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -19,9 +20,9 @@ internal static class VariableParser
     /// Parses HLSL variable declarations.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-variable-syntax"/>
-    public static bool TryParse(ParseState state, out Variable variable)
+    public static bool TryParse(ParseState state, [NotNullWhen(true)] out Variable? variable)
     {
-        variable = default!;
+        variable = default;
         var mark = state.Mark();
 
         // Skip optional storage class and type modifiers

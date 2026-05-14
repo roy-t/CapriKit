@@ -15,7 +15,6 @@ public enum IncludeKind
 }
 
 public record Include(string Path, IncludeKind Kind);
-
 public record Variable(string Type, string Name, int Register);
 public record Member(string Type, string Name, string Semantic);
 public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);

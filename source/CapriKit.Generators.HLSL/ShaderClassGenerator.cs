@@ -1,10 +1,15 @@
-using System.Runtime.Serialization;
+using Microsoft.CodeAnalysis.Text;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL;
 
 public static class ShaderClassGenerator
 {
-
+    public static bool TryGenerateShader(SourceText? shaderText, [NotNullWhen(true)] out SourceText? classText)
+    {
+        classText = default;
+        return false;
+    }
 }
 
 /*

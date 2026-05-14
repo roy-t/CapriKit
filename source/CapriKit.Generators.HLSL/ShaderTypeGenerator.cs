@@ -3,10 +3,27 @@ using Microsoft.CodeAnalysis;
 namespace CapriKit.Generators.HLSL;
 
 [Generator]
-public class ShaderTypeGenerator
+public class ShaderTypeGenerator : IIncrementalGenerator
 {
-    // TODO: find entrypoints based on convention. For example any methods that ends with _vs is a vertex shader entrypoint
-    // TODO: compile shaders without any optimizations for fast turn-around
-    // TODO: use test tool project for testing. Any AdditionalFile that ends with hlsl is fair game. Files without an entrypoint are probably include files and can be ignored (they will be included later)
-    // TODO: figure out how to generate types for includes files only once. Maybe by figuring out an EQUALS for structs? Use 'nested types' for structs that are used only once or conflict. Use a bigger namespace for shared structs.
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        var shaders = context.AdditionalTextsProvider.Where(static file => file.Path.EndsWith(".hlsl", StringComparison.OrdinalIgnoreCase));
+        var provider = shaders.Select(static (text, cancellationToken) => (text.Path, text.GetText(cancellationToken)));
+
+        // TODO: We need to handle includes but right now we only have a list of files
+        // parsing files is expensive and we need to be careful that it does not lead
+        // to all shader types being regenerated because the incremental values provider
+        // loses track of which files are generated from which inputs.
+        // There is also the question of how includes should be namespaced. (If we should
+        // because technically an include means the entire text is just copied into the file).        
+
+        context.RegisterSourceOutput(provider, static (outputContext, file) =>
+        {
+            var (path, text) = file;
+            if (ShaderClassGenerator.TryGenerateShader(text, out var result))
+            {
+                outputContext.AddSource(path, result);
+            }
+        });
+    }
 }

@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -8,9 +9,9 @@ public static class ConstantBufferParser
     /// Parses a cbuffer.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-constants#organizing-constant-buffers"/>
-    public static bool TryParse(ParseState state, out ConstantBuffer buffer)
+    public static bool TryParse(ParseState state, [NotNullWhen(true)] out ConstantBuffer? buffer)
     {
-        buffer = default!;
+        buffer = default;
 
         if (!state.Peek(TokenKind.Keyword, "cbuffer"))
         {

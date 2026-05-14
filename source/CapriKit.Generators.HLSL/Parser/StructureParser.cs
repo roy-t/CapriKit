@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -8,9 +9,9 @@ public static class StructureParser
     /// Parses a struct declaration.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct"/>
-    public static bool TryParse(ParseState state, out Structure structure)
+    public static bool TryParse(ParseState state, [NotNullWhen(true)] out Structure? structure)
     {
-        structure = default!;
+        structure = default;
 
         if (!state.Peek(TokenKind.Keyword, "struct"))
         {

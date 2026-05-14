@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -10,9 +11,9 @@ public static class IncludeParser
     /// Parses an include directive
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-reference"/>
-    public static bool TryParse(ParseState state, out Include include)
+    public static bool TryParse(ParseState state, [NotNullWhen(true)] out Include? include)
     {
-        include = default!;
+        include = default;
 
         var token = state.Peek();
         if (token.Kind != TokenKind.Directive || !token.Value.StartsWith(IncludeDirective))

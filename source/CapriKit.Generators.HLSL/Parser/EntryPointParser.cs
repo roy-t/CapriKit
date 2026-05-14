@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Diagnostics.CodeAnalysis;
 using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
@@ -16,9 +17,9 @@ public static class EntryPointParser
     /// Parses a HLSL entry-point, a function tagged by a #pragma directive.    
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-function-syntax"/>
-    public static bool TryParse(ParseState state, out EntryPoint entry)
+    public static bool TryParse(ParseState state, [NotNullWhen(true)] out EntryPoint? entry)
     {
-        entry = default!;
+        entry = default;
 
         if (!state.Peek(TokenKind.Directive))
         {
