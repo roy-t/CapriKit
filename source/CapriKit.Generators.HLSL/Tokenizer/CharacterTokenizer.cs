@@ -3,7 +3,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
 public static class CharacterTokenizer
-{    
+{
     private const char Delimiter = '\'';
     private readonly record struct State(int Cursor, bool HasOpening, bool HasEscapeSequence, bool HasCharacter, bool HasClosing);
 
