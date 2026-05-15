@@ -6,58 +6,98 @@ namespace CapriKit.Generators.HLSL;
 public enum Modifiers
 {
     None,
-    Private,
-    Protected,
-    Internal,
-    Public,
-    Static,
-    Sealed,
-    ReadOnly,
-    Const,
+    Private = 1,
+    Protected = 2,
+    Internal = 4,
+    Public = 8,
+    Static = 16,
+    Unsafe = 32,
+    Sealed = 64,
+    ReadOnly = 128,
+    Const = 256,
+    Fixed = 512
 }
 
 public sealed class SourceCodeBuilder
 {
     private readonly StringBuilder builder = new();
-    private int indent = 0;
+    private int level = 0;
 
     public void WriteUsing(string @namespace)
     {
-        builder.AppendLine($"using {@namespace};");
+        WriteLine($"using {@namespace};");
     }
 
     public void WriteUsingStatic(string @namespace, string @class)
     {
-        builder.AppendLine($"using static {@namespace}.{@class};");
+        WriteLine($"using static {@namespace}.{@class};");
     }
 
     public void WriteNamespace(string @namespace)
     {
-        builder.AppendLine($"namespace {@namespace};");
+        WriteLine($"namespace {@namespace};");
     }
 
     public void OpenClass(Modifiers modifiers, string name)
     {
         var modifiersText = GetModifiers(modifiers);
-        builder.AppendLine(string.Join(" ", [modifiersText, "class", name]));
+        WriteLine(string.Join(" ", [modifiersText, "class", name]));
         OpenBlock();
     }
 
-    private void OpenBlock()
+    public void OpenStruct(Modifiers modifiers, string name)
     {
-        builder.AppendLine("{");
-        indent++;
+        var modifiersText = GetModifiers(modifiers);
+        WriteLine(string.Join(" ", [modifiersText, "struct", name]));
+        OpenBlock();
     }
 
-    private void CloseBlock()
+    public void WriteField(Modifiers modifiers, string type, string name, string? value = null)
     {
-        builder.AppendLine("}");
-        indent--;
+        var modifiersText = GetModifiers(modifiers);
+        Write($"{string.Join(" ", [modifiersText, type, name])}");
+        if (string.IsNullOrEmpty(value))
+        {
+            builder.AppendLine(";");
+        }
+        else
+        {
+            builder.AppendLine($" = {value};");
+        }
+    }
+
+    public void WriteFixedField(Modifiers modifiers, string type, string name, uint length)
+    {
+        var modifiersText = GetModifiers(modifiers | Modifiers.Fixed);
+        WriteLine($"{modifiersText} {type} {name}[{length}];");
+    }
+
+    public void WriteComment(string text)
+    {
+        WriteLine($"// {text}");
+    }
+
+    // [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public void WriteAttribute(string name, params string[] values)
+    {
+        WriteLine($"[{name}({string.Join(", ", values)})]");
+    }
+
+    public void OpenBlock()
+    {
+        WriteLine("{");
+        level++;
+    }
+
+    public void CloseBlock()
+    {
+        level--;
+        WriteLine("}");
     }
 
     public string Build()
     {
-        while (indent > 0)
+        while (level > 0)
         {
             CloseBlock();
         }
@@ -65,10 +105,33 @@ public sealed class SourceCodeBuilder
         return builder.ToString();
     }
 
+    public void WriteSummaryComment(string semantic)
+    {
+        WriteLine("/// <summary>");
+        foreach (var line in semantic.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            WriteLine($"/// {line}");
+        }
+        WriteLine("/// </summary>");
+    }
+
     public override string ToString()
     {
         return builder.ToString();
     }
+
+    private void WriteLine(string text)
+    {
+        builder.Append(' ', level * 4)
+               .AppendLine(text);
+    }
+
+    private void Write(string text)
+    {
+        builder.Append(' ', level * 4)
+               .Append(text);
+    }
+
     private string GetModifiers(Modifiers modifiers)
     {
         var type = typeof(Modifiers);

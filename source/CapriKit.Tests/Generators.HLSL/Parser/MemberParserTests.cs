@@ -32,6 +32,20 @@ internal class MemberParserTests
     }
 
     [Test]
+    public async Task ParseArrayMember()
+    {
+        var tokens = HLSLTokenizer.Parse("float4 mat[3][2];");
+        var state = new ParseState(tokens);
+
+        var member = MemberParser.Parse(state);
+
+        await Assert.That(member.Type).IsEqualTo("float4");
+        await Assert.That(member.Name).IsEqualTo("mat");
+        await Assert.That(member.Semantic).IsEqualTo(string.Empty);
+        await Assert.That(member.Dimensions).IsEquivalentTo(new uint[] { 3, 2 });
+    }
+
+    [Test]
     public async Task SkipInterpolationModifier()
     {
         var tokens = HLSLTokenizer.Parse("centroid float4 color : SV_TARGET0;");

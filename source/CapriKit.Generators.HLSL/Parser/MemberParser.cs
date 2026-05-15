@@ -32,9 +32,29 @@ public static class MemberParser
 
         var type = state.ExpectType();
         var name = state.ExpectIdentifier();
+        var dimensions = ParseArrayDimensions(state);
         var semantic = SemanticParser.ParseSemantic(state);
 
         state.ExpectOperator(";");
-        return new Member(type, name, semantic);
+        return new Member(type, name, semantic, dimensions);
+    }
+
+    /// <summary>
+    /// Parses zero or more <c>[size]</c> array dimensions that follow a member name, e.g. <c>[3][2]</c>.
+    /// </summary>
+    private static IReadOnlyList<uint> ParseArrayDimensions(ParseState state)
+    {
+        var dimensions = new List<uint>();
+        while (state.Match(TokenKind.Operator, "["))
+        {
+            var size = state.Advance();
+            if (size.Kind != TokenKind.IntegerLiteral)
+            {
+                throw new Exception($"Expected array size but got {size.Kind} '{size.Value}'.");
+            }
+            dimensions.Add(uint.Parse(size.Value));
+            state.ExpectOperator("]");
+        }
+        return dimensions;
     }
 }

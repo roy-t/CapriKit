@@ -17,9 +17,9 @@ internal class ShaderTypeGeneratorTests
         ];
 
         IEnumerable<(string fileName, SourceText content)> generatedFiles =
-       [
+        [
            new (@"LineShader.g.cs", SourceText.From(ExpectedGeneratedSource, Encoding.UTF8))
-       ];
+        ];
 
         await Assert.That(GeneratorSubject.OfType<ShaderTypeGenerator>())
             .WithAdditionalFiles(additionalFiles)
@@ -37,7 +37,7 @@ internal class ShaderTypeGeneratorTests
         }
         """;
 
-    private const string ShaderWithRelativeIncludes = """        
+    private const string ShaderWithRelativeIncludes = """
         #include "utils/defines.hlsl"
 
         sampler TextureSampler : register(s0);
@@ -45,6 +45,11 @@ internal class ShaderTypeGeneratorTests
         struct PS_INPUT
         {
             float4 position : SV_POSITION;
+        };
+
+        struct COMPLEX
+        {
+            float4 mat[3][2];
         };
 
         struct OUTPUT

@@ -13,7 +13,7 @@ internal class VariableParserTests
         var success = VariableParser.TryParse(state, out var variable);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(variable.Type).IsEqualTo("sampler");
+        await Assert.That(variable!.Type).IsEqualTo("sampler");
         await Assert.That(variable.Name).IsEqualTo("TextureSampler");
         await Assert.That(variable.Register).IsEqualTo(0);
         await Assert.That(state.IsAtEnd).IsTrue();
@@ -27,7 +27,7 @@ internal class VariableParserTests
         var success = VariableParser.TryParse(state, out var variable);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(variable.Type).IsEqualTo("Texture2D");
+        await Assert.That(variable!.Type).IsEqualTo("Texture2D");
         await Assert.That(variable.Name).IsEqualTo("Diffuse");
         await Assert.That(state.IsAtEnd).IsTrue();
     }
@@ -40,7 +40,7 @@ internal class VariableParserTests
         var success = VariableParser.TryParse(state, out var variable);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(variable.Type).IsEqualTo("float");
+        await Assert.That(variable!.Type).IsEqualTo("float");
         await Assert.That(variable.Name).IsEqualTo("Pi");
         await Assert.That(state.IsAtEnd).IsTrue();
     }
@@ -53,7 +53,7 @@ internal class VariableParserTests
         var success = VariableParser.TryParse(state, out var variable);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(variable.Type).IsEqualTo("float");
+        await Assert.That(variable!.Type).IsEqualTo("float");
         await Assert.That(variable.Name).IsEqualTo("Values");
         await Assert.That(state.IsAtEnd).IsTrue();
     }
@@ -66,7 +66,7 @@ internal class VariableParserTests
         var success = VariableParser.TryParse(state, out var variable);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(variable.Type).IsEqualTo("float4");
+        await Assert.That(variable!.Type).IsEqualTo("float4");
         await Assert.That(variable.Name).IsEqualTo("BlendColor");
         await Assert.That(state.IsAtEnd).IsTrue();
     }

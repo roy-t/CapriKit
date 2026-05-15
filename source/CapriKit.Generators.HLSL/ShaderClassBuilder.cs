@@ -3,6 +3,7 @@ using CapriKit.Generators.HLSL.Tokenizer;
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
+using static CapriKit.Generators.HLSL.SourceCodeUtils;
 
 namespace CapriKit.Generators.HLSL;
 
@@ -28,6 +29,18 @@ public static class ShaderClassBuilder
 
         builder.WriteNamespace(GetNamespace(path, config));
         builder.OpenClass(Modifiers.Public, GetClassName(path));
+        builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "Path", ToLiteral(GetRelativePath(config.ContentRoot, path)));
+
+        foreach (var variable in metadata.Variables)
+        {
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidIdentifier(variable.Name), ToLiteral(variable.Register));
+        }
+
+        foreach (var @struct in metadata.Structures)
+        {
+            StructBuilder.WriteStruct(builder, @struct);
+        }
+
         classText = SourceText.From(builder.Build(), Encoding.UTF8);
         return true;
     }
@@ -48,14 +61,14 @@ public static class ShaderClassBuilder
     private static string GetNamespace(string path, GeneratorConfiguration config)
     {
         var directory = Path.GetDirectoryName(path);
-        var directoryRelativeToContentRoot = SourceCodeUtils.GetRelativePath(config.ContentRoot, directory);
+        var directoryRelativeToContentRoot = GetRelativePath(config.ContentRoot, directory);
         var elements = directoryRelativeToContentRoot.Split(['\\', '/']);
-        return $"{config.TargetNamespace}.{SourceCodeUtils.CreateValidNamespace(string.Join(".", elements))}";
+        return $"{config.TargetNamespace}.{CreateValidNamespace(string.Join(".", elements))}";
     }
 
     private static string GetClassName(string path)
     {
-        return SourceCodeUtils.CreateValidIdentifier(Path.GetFileNameWithoutExtension(path));
+        return CreateValidIdentifier(Path.GetFileNameWithoutExtension(path));
     }
 }
 

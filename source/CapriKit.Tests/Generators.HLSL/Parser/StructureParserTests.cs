@@ -20,7 +20,7 @@ internal class StructureParserTests
         var success = StructureParser.TryParse(state, out var structure);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(structure.Name).IsEqualTo("VS_INPUT");
+        await Assert.That(structure!.Name).IsEqualTo("VS_INPUT");
         await Assert.That(structure.Members).Count().IsEqualTo(2);
         await Assert.That(structure.Members[0].Type).IsEqualTo("float3");
         await Assert.That(structure.Members[0].Name).IsEqualTo("position");

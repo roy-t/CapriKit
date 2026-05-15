@@ -13,7 +13,7 @@ internal class IncludeParserTests
         var success = IncludeParser.TryParse(state, out var include);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(include.Path).IsEqualTo("std.io");
+        await Assert.That(include!.Path).IsEqualTo("std.io");
         await Assert.That(include.Kind).IsEqualTo(IncludeKind.System);
         await Assert.That(state.IsAtEnd).IsTrue();
     }
@@ -26,7 +26,7 @@ internal class IncludeParserTests
         var success = IncludeParser.TryParse(state, out var include);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(include.Path).IsEqualTo("defines.hlsl");
+        await Assert.That(include!.Path).IsEqualTo("defines.hlsl");
         await Assert.That(include.Kind).IsEqualTo(IncludeKind.Local);
         await Assert.That(state.IsAtEnd).IsTrue();
     }

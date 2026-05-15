@@ -53,7 +53,7 @@ internal static class VariableParser
         // We are no pretty sure this is a variable
         SkipArraySuffix(state);
 
-        var register = 0;
+        var register = 0u;
         while (state.Peek(TokenKind.Operator, ":"))
         {
             state.Advance();
@@ -105,10 +105,9 @@ internal static class VariableParser
         state.ExpectOperator("]");
     }
 
-    // "s0" => 0, "t4" => 4
-    private static int ParseRegisterIndex(string identifier)
+    private static uint ParseRegisterIndex(string identifier)
     {
-        return int.Parse(identifier.Substring(1));
+        return uint.Parse(identifier.Substring(1));
     }
 
     private static void SkipUntilCloseParen(ParseState state)
