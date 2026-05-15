@@ -5,6 +5,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <LangVersion>Latest</LangVersion>
     <Platforms>x64</Platforms>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>

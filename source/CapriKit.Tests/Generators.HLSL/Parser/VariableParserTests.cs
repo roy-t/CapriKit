@@ -15,7 +15,7 @@ internal class VariableParserTests
         await Assert.That(success).IsTrue();
         await Assert.That(variable!.Type).IsEqualTo("sampler");
         await Assert.That(variable.Name).IsEqualTo("TextureSampler");
-        await Assert.That(variable.Register).IsEqualTo(0);
+        await Assert.That(variable.Register).IsEqualTo(0u);
         await Assert.That(state.IsAtEnd).IsTrue();
     }
 

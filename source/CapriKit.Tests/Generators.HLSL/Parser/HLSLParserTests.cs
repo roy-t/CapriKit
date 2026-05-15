@@ -14,11 +14,11 @@ internal class HLSLParserTests
         await Assert.That(result.Variables).Count().IsEqualTo(2);
         await Assert.That(result.Variables[0].Type).IsEqualTo("sampler");
         await Assert.That(result.Variables[0].Name).IsEqualTo("TextureSampler");
-        await Assert.That(result.Variables[0].Register).IsEqualTo(0);
+        await Assert.That(result.Variables[0].Register).IsEqualTo(0u);
 
         await Assert.That(result.Variables[1].Type).IsEqualTo("Matrix2x2");
         await Assert.That(result.Variables[1].Name).IsEqualTo("Mat");
-        await Assert.That(result.Variables[1].Register).IsEqualTo(4);
+        await Assert.That(result.Variables[1].Register).IsEqualTo(4u);
 
         await Assert.That(result.Structures).Count().IsEqualTo(3);
         await Assert.That(result.ConstantBuffers).Count().IsEqualTo(1);
