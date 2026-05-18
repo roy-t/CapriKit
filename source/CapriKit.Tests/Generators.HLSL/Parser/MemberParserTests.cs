@@ -55,6 +55,8 @@ internal class MemberParserTests
 
         await Assert.That(member.Type).IsEqualTo("float4");
         await Assert.That(member.Name).IsEqualTo("color");
+        await Assert.That(member.Modifiers).Count().IsEqualTo(1);
+        await Assert.That(member.Modifiers[0]).IsEqualTo("centroid");
         await Assert.That(member.Semantic).IsEqualTo("SV_TARGET0");
     }
 }

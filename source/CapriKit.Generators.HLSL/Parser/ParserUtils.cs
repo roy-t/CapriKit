@@ -4,6 +4,22 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 internal static class ParserUtils
 {
+    private static readonly HashSet<string> InterpolationModifiers =
+    [
+        "linear", "centroid", "nointerpolation", "noperspective", "sample",
+    ];
+
+    private static readonly HashSet<string> StorageClasses =
+    [
+    "extern", "nointerpolation", "precise", "shared", "groupshared",
+        "static", "uniform", "volatile",
+    ];
+
+    private static readonly HashSet<string> TypeModifiers =
+    [
+        "const", "row_major", "column_major"
+    ];
+
     public static void SkipArgumentList(ParseState state)
     {
         SkipSegment(state, "(", ")");
@@ -12,6 +28,31 @@ internal static class ParserUtils
     public static void SkipMethodBlock(ParseState state)
     {
         SkipSegment(state, "{", "}");
+    }
+
+    /// <summary>
+    /// Consumes optional storage class, type and interpolation modifiers for variables, members and parameters
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-variable-syntax#parameters"/>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct#interpolation-modifiers-introduced-in-shader-model-4"/>
+    public static List<string> ConsumeModifiers(ParseState state)
+    {
+        var modifiers = new List<string>();
+        var isModifier = true;
+        while (isModifier && !state.IsAtEnd)
+        {
+            var token = state.Peek();
+            isModifier = token.Kind == TokenKind.Keyword &&
+                (InterpolationModifiers.Contains(token.Value) || StorageClasses.Contains(token.Value) || TypeModifiers.Contains(token.Value));
+
+            if (isModifier)
+            {
+                modifiers.Add(token.Value);
+                state.Advance();
+            }
+        }
+
+        return modifiers;
     }
 
     private static void SkipSegment(ParseState state, string open, string close)

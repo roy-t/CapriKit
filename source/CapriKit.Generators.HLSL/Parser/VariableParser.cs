@@ -1,21 +1,11 @@
 using CapriKit.Generators.HLSL.Tokenizer;
 using System.Diagnostics.CodeAnalysis;
+using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
 internal static class VariableParser
 {
-    private static readonly HashSet<string> StorageClasses =
-    [
-        "extern", "nointerpolation", "precise", "shared", "groupshared",
-        "static", "uniform", "volatile",
-    ];
-
-    private static readonly HashSet<string> TypeModifiers =
-    [
-        "const", "row_major", "column_major"
-    ];
-
     /// <summary>
     /// Parses HLSL variable declarations.
     /// </summary>
@@ -26,7 +16,7 @@ internal static class VariableParser
         var mark = state.Mark();
 
         // Skip optional storage class and type modifiers
-        SkipModifiers(state);
+        var modifiers = ConsumeModifiers(state);
 
         // Expect a type, which could be a keyword (such as bool) or any identifier)
         if (!state.Peek(TokenKind.Keyword) && !state.Peek(TokenKind.Identifier))
@@ -82,17 +72,8 @@ internal static class VariableParser
 
         state.ExpectOperator(";");
 
-        variable = new Variable(type, name, register);
+        variable = new Variable(type, name, register, modifiers);
         return true;
-    }
-
-    private static void SkipModifiers(ParseState state)
-    {
-        var isRelevant = true;
-        while (isRelevant && !state.IsAtEnd)
-        {
-            isRelevant = state.Match(TokenKind.Keyword, StorageClasses) || state.Match(TokenKind.Keyword, TypeModifiers);
-        }
     }
 
     private static void SkipArraySuffix(ParseState state)

@@ -1,14 +1,10 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
 public static class MemberParser
 {
-    private static readonly HashSet<string> InterpolationModifiers =
-    [
-        "linear", "centroid", "nointerpolation", "noperspective", "sample",
-    ];
-
     /// <summary>
     /// Parses HLSL struct members
     /// </summary>
@@ -25,10 +21,7 @@ public static class MemberParser
 
     public static Member Parse(ParseState state)
     {
-        while (state.Peek(TokenKind.Keyword, InterpolationModifiers))
-        {
-            state.Advance();
-        }
+        var modifiers = ConsumeModifiers(state);
 
         var type = state.ExpectType();
         var name = state.ExpectIdentifier();
@@ -36,7 +29,7 @@ public static class MemberParser
         var semantic = SemanticParser.ParseSemantic(state);
 
         state.ExpectOperator(";");
-        return new Member(type, name, semantic, dimensions);
+        return new Member(type, name, semantic, modifiers, dimensions);
     }
 
     /// <summary>

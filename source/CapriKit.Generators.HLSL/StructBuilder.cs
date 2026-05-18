@@ -9,31 +9,31 @@ namespace CapriKit.Generators.HLSL;
 /// </summary>
 public static class StructBuilder
 {
+    private const string ExplicitLayoutKind = "System.Runtime.InteropServices.LayoutKind.Explicit";
+    private const string SequentialLayoutKind = "System.Runtime.InteropServices.LayoutKind.Sequential";
+
     /// <summary>
-    /// Creates a struct that follows the packing rules for constant variables.
-    /// The struct uses an explicit layout so every member lands on the same byte
-    /// offset the GPU expects. Array members get their own helper structs so each
-    /// element occupies its own 16-byte register, as HLSL requires.
+    /// Creates a struct that follows the explicyt layout rules for constant buffers with
+    /// C# types that map to the corresponding HLSL types.
+    /// Fixed size arrays are supported via helper structs that are padded to 16 bytes, placed
+    /// in an <c>[InlineArray]</c>.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules"/>
     public static void WriteStruct(SourceCodeBuilder builder, ConstantBuffer buffer)
     {
         var fields = LayOutConstantBuffer(buffer.Members, out var sizeInBytes);
-        EmitStruct(builder, CreateValidIdentifier(buffer.Name),
-            "System.Runtime.InteropServices.LayoutKind.Explicit", sizeInBytes, fields);
+        WriteStruct(builder, CreateValidIdentifier(buffer.Name), fields, ExplicitLayoutKind, $"Size = {sizeInBytes}");
     }
 
     /// <summary>
-    /// Creates a struct that mirrors a regular HLSL struct. Unlike a constant
-    /// buffer there are no padding rules: members and array elements are stored
-    /// back-to-back. Array members become <c>[InlineArray]</c> helper structs.
+    /// Creates sequentially laid out struct with C# types that map to the corresponding HLSL types.
+    /// Fixed size arrays are supported via <c>[InlineArray]</c>.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct"/>
     public static void WriteStruct(SourceCodeBuilder builder, Structure @struct)
     {
         var fields = LayOutStructure(@struct.Members);
-        EmitStruct(builder, CreateValidIdentifier(@struct.Name),
-            "System.Runtime.InteropServices.LayoutKind.Sequential", explicitSize: null, fields);
+        WriteStruct(builder, CreateValidIdentifier(@struct.Name), fields, SequentialLayoutKind);
     }
 
     /// <summary>
@@ -42,7 +42,7 @@ public static class StructBuilder
     /// <c>PaddedStride</c>, when set, wraps array elements in a struct padded to that
     /// many bytes (constant-buffer packing); when <c>null</c> elements are stored directly.
     /// </summary>
-    private sealed record FieldLayout(
+    private sealed record FieldLayout( // TODO: rename and comment to sensible things
         Member Member,
         string ElementType,
         bool IsArray,
@@ -54,14 +54,9 @@ public static class StructBuilder
     /// Writes a struct and the <c>[InlineArray]</c> helper structs its array
     /// members need. The helpers are emitted as siblings of the struct.
     /// </summary>
-    private static void EmitStruct(
-        SourceCodeBuilder builder, string name, string layoutKind, uint? explicitSize,
-        IReadOnlyList<FieldLayout> fields)
+    private static void WriteStruct(SourceCodeBuilder builder, string name, IReadOnlyList<FieldLayout> fields, params string[] layoutParameters)
     {
-        var layout = explicitSize is uint size
-            ? new[] { layoutKind, $"Size = {size}" }
-            : [layoutKind];
-        builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", layout);
+        builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", layoutParameters);
         builder.OpenStruct(Modifiers.Public, name);
 
         foreach (var field in fields)
@@ -77,7 +72,9 @@ public static class StructBuilder
         }
     }
 
-    /// <summary>Assigns every member a byte offset following the HLSL packing rules.</summary>
+    /// <summary>
+    /// Assigns byte offsets following the HLSL packing rules.
+    /// </summary>
     private static List<FieldLayout> LayOutConstantBuffer(IReadOnlyList<Member> members, out uint sizeInBytes)
     {
         var fields = new List<FieldLayout>(members.Count);
@@ -113,7 +110,9 @@ public static class StructBuilder
         return fields;
     }
 
-    /// <summary>Lays out members back-to-back, the way a regular HLSL struct is packed.</summary>
+    /// <summary>
+    /// Lays out members back-to-back, the way a regular HLSL struct is packed.
+    /// </summary>
     private static List<FieldLayout> LayOutStructure(IReadOnlyList<Member> members)
     {
         var fields = new List<FieldLayout>(members.Count);
@@ -178,11 +177,15 @@ public static class StructBuilder
         var summary = new StringBuilder();
         if (!string.IsNullOrEmpty(member.Semantic))
         {
-            summary.AppendLine($"Original semantic: {member.Semantic}");
+            summary.AppendLine($"Semantic: {member.Semantic}");
         }
         if (member.Dimensions.Count > 0)
         {
-            summary.AppendLine($"Original dimensions: [{string.Join("][", member.Dimensions)}]");
+            summary.AppendLine($"Dimensions: [{string.Join("][", member.Dimensions)}]");
+        }
+        if (member.Modifiers.Count > 0)
+        {
+            summary.AppendLine($"Modifiers: {string.Join(", ", member.Modifiers)}");
         }
         if (summary.Length > 0)
         {
@@ -197,6 +200,6 @@ public static class StructBuilder
     /// <summary>Multidimensional HLSL arrays are flattened to a single element count.</summary>
     private static uint Flatten(IReadOnlyList<uint> dimensions) => dimensions.Aggregate(1u, (a, b) => a * b);
 
-    /// <summary>Rounds <paramref name="value"/> up to the next multiple of 16.</summary>
+    /// <summary>Rounds up to the next multiple of 16.</summary>
     private static uint Align16(uint value) => (value + 15u) & ~15u;
 }

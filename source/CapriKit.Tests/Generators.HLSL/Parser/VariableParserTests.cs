@@ -42,7 +42,11 @@ internal class VariableParserTests
         await Assert.That(success).IsTrue();
         await Assert.That(variable!.Type).IsEqualTo("float");
         await Assert.That(variable.Name).IsEqualTo("Pi");
+        await Assert.That(variable.Modifiers).Count().IsEqualTo(2);
+        await Assert.That(variable.Modifiers[0]).IsEqualTo("static");
+        await Assert.That(variable.Modifiers[1]).IsEqualTo("const");
         await Assert.That(state.IsAtEnd).IsTrue();
+        
     }
 
     [Test]
