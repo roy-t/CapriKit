@@ -29,12 +29,16 @@ public static class TypeTranslator
         return new TranslatedType(dotNetType, total, dimensions);
     }
 
-    public static uint GetSizeInBytes(string hlslType, IReadOnlyList<uint> dimensions)
+    public static uint GetSizeInBytes(string hlslType) => hlslType switch
     {
-        var size = GetPrimitiveSizeInBytes(hlslType);
-        var length = dimensions.Aggregate(1u, (accumulator, dimension) => accumulator * dimension);
-        return size * length;
-    }
+        "bool" or "int" or "uint" or "dword" or "float" => 4,
+        "double" => 8,
+        "float2" => 8,
+        "float3" => 12,
+        "float4" => 16,
+        "float4x4" => 64,
+        _ => throw new NotSupportedException($"Cannot compute size of {hlslType}")
+    };
 
     private static string MapPrimitive(string primitiveType) => primitiveType switch
     {
@@ -46,20 +50,7 @@ public static class TypeTranslator
         "float2" => "System.Numerics.Vector2",
         "float3" => "System.Numerics.Vector3",
         "float4" => "System.Numerics.Vector4",
-        "float3x2" => "System.Numerics.Matrix3x2",
         "float4x4" => "System.Numerics.Matrix4x4",
         _ => SourceCodeUtils.CreateValidIdentifier(primitiveType)
-    };
-
-    private static uint GetPrimitiveSizeInBytes(string primitiveType) => primitiveType switch
-    {
-        "bool" or "int" or "uint" or "dword" or "float" => 4,
-        "double" => 8,
-        "float2" => 8,
-        "float3" => 12,
-        "float4" => 16,
-        "float3x2" => 24,
-        "float4x4" => 64,
-        _ => throw new NotSupportedException($"Cannot compute size of {primitiveType}")
     };
 }

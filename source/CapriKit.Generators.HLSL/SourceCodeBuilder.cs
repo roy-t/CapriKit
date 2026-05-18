@@ -77,7 +77,6 @@ public sealed class SourceCodeBuilder
         WriteLine($"// {text}");
     }
 
-    // [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential, Pack = 4)]
     public void WriteAttribute(string name, params string[] values)
     {
         WriteLine($"[{name}({string.Join(", ", values)})]");

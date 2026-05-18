@@ -41,6 +41,12 @@ public static class ShaderClassBuilder
             StructBuilder.WriteStruct(builder, @struct);
         }
 
+        foreach(var buffer in metadata.ConstantBuffers)
+        {
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
+            StructBuilder.WriteStruct(builder, buffer);
+        }
+
         classText = SourceText.From(builder.Build(), Encoding.UTF8);
         return true;
     }
