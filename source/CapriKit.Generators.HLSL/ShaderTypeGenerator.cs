@@ -13,12 +13,6 @@ public class ShaderTypeGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // TODO: how to handle include files
-        // every file leads to exactly one class. So /path/to/includes.hlsl leads to
-        // class Includes in namespace ...path.to
-        // A type defined in includes.hlsl will be defined inside the Include class
-        // For every include in a file we add `using static path.to.Includes;` so
-        // that references work.
         // We use a caprikit.generators.hlsl.json file in to tell us about the root namespace
         // and the folder paths
 

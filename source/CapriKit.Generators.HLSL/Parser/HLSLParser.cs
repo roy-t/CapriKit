@@ -17,9 +17,9 @@ public enum IncludeKind
 public record Include(string Path, IncludeKind Kind);
 public record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers);
 public record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
-public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
 public record Structure(string Name, IReadOnlyList<Member> Members);
 public record ConstantBuffer(string Name, string Register, IReadOnlyList<Member> Members);
+public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
 public record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
 
 public static class HLSLParser

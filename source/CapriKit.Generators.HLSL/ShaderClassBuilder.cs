@@ -23,6 +23,11 @@ public static class ShaderClassBuilder
         var builder = new SourceCodeBuilder();
         foreach (var include in metadata.Includes.Where(i => i.Kind == IncludeKind.Local))
         {
+            // Every file leads to exactly one class. So /path/to/includes.hlsl leads to
+            // the class Includes in namespace ...path.to.
+            // A type defined in includes.hlsl will be defined inside the Include class
+            // For every include in a file we add `using static path.to.Includes;` so
+            // that references work.
             var (@namespace, @class) = IncludeToClass(path, include, config);
             builder.WriteUsingStatic(@namespace, @class);
         }
@@ -45,6 +50,18 @@ public static class ShaderClassBuilder
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
             StructBuilder.WriteStruct(builder, buffer);
+        }
+
+        foreach (var entryPoint in metadata.EntryPoints)
+        {
+            var comment = new StringBuilder();
+            comment.AppendLine($"Kind: {entryPoint.Kind}");
+            if (!string.IsNullOrEmpty(entryPoint.Semantic))
+            {
+                comment.AppendLine($"Semantic: {entryPoint.Semantic}");
+            }
+            builder.WriteSummaryComment(comment.ToString());
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidIdentifier(entryPoint.Name), entryPoint.Name);
         }
 
         classText = SourceText.From(builder.Build(), Encoding.UTF8);
@@ -108,6 +125,7 @@ public sealed class SomeShader
 
     public SomeShader.Binding CreateBinding() => new SomeShader.Binding(Device);
 
+    // TODO: instead of a binding I bet we can do better
     public sealed class Binding : System.IDisposable
     {
         public Binding(CapriKit.DirectX11.Device device)

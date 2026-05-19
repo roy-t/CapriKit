@@ -23,11 +23,6 @@ public sealed class SourceCodeBuilder
     private readonly StringBuilder builder = new();
     private int level = 0;
 
-    public void WriteUsing(string @namespace)
-    {
-        WriteLine($"using {@namespace};");
-    }
-
     public void WriteUsingStatic(string @namespace, string @class)
     {
         WriteLine($"using static {@namespace}.{@class};");
@@ -66,17 +61,6 @@ public sealed class SourceCodeBuilder
         }
     }
 
-    public void WriteFixedField(Modifiers modifiers, string type, string name, uint length)
-    {
-        var modifiersText = GetModifiers(modifiers | Modifiers.Fixed);
-        WriteLine($"{modifiersText} {type} {name}[{length}];");
-    }
-
-    public void WriteComment(string text)
-    {
-        WriteLine($"// {text}");
-    }
-
     public void WriteAttribute(string name, params string[] values)
     {
         WriteLine($"[{name}({string.Join(", ", values)})]");
@@ -104,10 +88,10 @@ public sealed class SourceCodeBuilder
         return builder.ToString();
     }
 
-    public void WriteSummaryComment(string semantic)
+    public void WriteSummaryComment(string lines)
     {
         WriteLine("/// <summary>");
-        foreach (var line in semantic.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
+        foreach (var line in lines.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries))
         {
             WriteLine($"/// {line}");
         }
