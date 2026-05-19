@@ -165,13 +165,13 @@ public static class KeywordTokenizer
     {
         foreach (var kv in Keywords)
         {
-            trie.AddString(kv.Key, kv.Value);
+            trie.AddString(kv.Key, kv.Value, false);
         }
 
         var expansionTrie = new Trie();
         foreach (var expansion in Expansions)
         {
-            expansionTrie.AddString(expansion, TokenKind.Keyword);
+            expansionTrie.AddString(expansion, TokenKind.Keyword, false);
         }
 
         foreach (var expandable in SupportsExpansion)

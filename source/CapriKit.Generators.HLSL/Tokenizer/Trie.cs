@@ -7,6 +7,11 @@ public sealed class Trie
     private class Node
     {
         public Dictionary<char, Node> Leafs { get; } = [];
+
+        // Use to prevent identifiers like fortune being parsed as keyword 'for'
+        // which we should not do for keywords an reserved tokens
+        // but is allowed for operators like a+=b.
+        public bool MatchInsideIdentifier = false;
         public TokenKind Result { get; set; } = TokenKind.Unknown;
     }
 
@@ -29,6 +34,12 @@ public sealed class Trie
 
         if (node.Result != TokenKind.Unknown)
         {
+            if (!node.MatchInsideIdentifier && cursor < source.Length && IsIdentifierContinuation(source[cursor]))
+            {
+
+                return 0;
+            }
+
             var length = cursor - offset;
             tokens.Add(new Token(source, offset, length, node.Result));
             return length;
@@ -37,13 +48,16 @@ public sealed class Trie
         return 0;
     }
 
-    // TODO: if you have the keyword 'in' and the string "interesting" it will be parsed as a keyword!!
-    public void AddString(string value, TokenKind result)
+    private static bool IsIdentifierContinuation(char c)
+        => char.IsLetterOrDigit(c) || c == '_';
+
+    public void AddString(string value, TokenKind result, bool matchInsideIdentifier)
     {
         var leaf = AddString(value);
         Debug.Assert(leaf.Result != result, "You should not add a path to the Trie twice");
         Debug.Assert(leaf.Result == TokenKind.Unknown, "You should not change the result of an existing path in the Trie");
         leaf.Result = result;
+        leaf.MatchInsideIdentifier = matchInsideIdentifier;
     }
 
     public void AddSubTrie(string value, Trie subTrie)

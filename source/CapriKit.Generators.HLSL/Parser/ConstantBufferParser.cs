@@ -22,13 +22,13 @@ public static class ConstantBufferParser
 
         var name = state.ExpectIdentifier();
 
-        var register = string.Empty;
+        var register = 0u;
         if (state.Peek(TokenKind.Operator, ":"))
         {
             state.Advance();
             state.ExpectKeyword("register");
             state.ExpectOperator("(");
-            register = state.ExpectIdentifier();
+            register = ParseRegisterIndex(state.ExpectIdentifier());
             state.ExpectOperator(")");
         }
 
@@ -37,7 +37,7 @@ public static class ConstantBufferParser
         state.ExpectOperator("}");
         state.ExpectOperator(";");
 
-        buffer = new ConstantBuffer(name, ParseRegisterIndex(register), fields);
+        buffer = new ConstantBuffer(name, register, fields);
         return true;
     }
 }

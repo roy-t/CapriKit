@@ -48,7 +48,7 @@ public static class ReservedTokenizer
     {
         foreach (var kv in Reserved)
         {
-            trie.AddString(kv.Key, kv.Value);
+            trie.AddString(kv.Key, kv.Value, false);
         }
     }
 }

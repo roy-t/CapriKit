@@ -41,7 +41,7 @@ public static class OperatorTokenizer
     {
         foreach (var kv in Operators)
         {
-            trie.AddString(kv.Key, kv.Value);
+            trie.AddString(kv.Key, kv.Value, true);
         }
     }
 
