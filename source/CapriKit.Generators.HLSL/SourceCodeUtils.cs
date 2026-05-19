@@ -9,7 +9,17 @@ public static class SourceCodeUtils
     public static string ToLiteral(uint value) => SymbolDisplay.FormatPrimitive(value, true, false) ?? throw new Exception($"Failed to format literal, type: {value.GetType().FullName}, value: {value}.");
     public static string ToLiteral(int value) => SymbolDisplay.FormatPrimitive(value, true, false) ?? throw new Exception($"Failed to format literal, type: {value.GetType().FullName}, value: {value}.");
 
-    public static string CreateValidIdentifier(string name)
+    public static string CreateValidVariableIdentifier(string name)
+    {
+        return ToLowerCamelCase(CreateValidIdentifier(name));
+    }
+
+    public static string CreateValidTypeIdentifier(string name)
+    {
+        return ToUpperCamelCase(CreateValidIdentifier(name));
+    }
+
+    private static string CreateValidIdentifier(string name)
     {
         if (string.IsNullOrEmpty(name))
         {
@@ -28,14 +38,13 @@ public static class SourceCodeUtils
         {
             sb.Insert(0, '_');
         }
-
-        return ToUpperCamelCase(sb.ToString());
+        return sb.ToString();
     }
 
     public static string CreateValidNamespace(string path)
      => string.Join(".", path
          .Split(['.', '/', '\\'], StringSplitOptions.RemoveEmptyEntries)
-         .Select(CreateValidIdentifier));
+         .Select(CreateValidTypeIdentifier));
 
     // Path.GetRelativePath would be better if you can access a higher .net version
     public static string GetRelativePath(string basePath, string fullPath)

@@ -21,7 +21,7 @@ internal class ConstantBufferParserTests
 
         await Assert.That(success).IsTrue();
         await Assert.That(buffer!.Name).IsEqualTo("Constants");
-        await Assert.That(buffer.Register).IsEqualTo("b0");
+        await Assert.That(buffer.Register).IsEqualTo("0");
         await Assert.That(buffer.Members).Count().IsEqualTo(2);
         await Assert.That(buffer.Members[0].Type).IsEqualTo("float4x4");
         await Assert.That(buffer.Members[0].Name).IsEqualTo("WorldViewProjection");

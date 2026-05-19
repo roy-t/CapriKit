@@ -51,6 +51,6 @@ public static class TypeTranslator
         "float3" => "System.Numerics.Vector3",
         "float4" => "System.Numerics.Vector4",
         "float4x4" => "System.Numerics.Matrix4x4",
-        _ => SourceCodeUtils.CreateValidIdentifier(primitiveType)
+        _ => SourceCodeUtils.CreateValidTypeIdentifier(primitiveType)
     };
 }

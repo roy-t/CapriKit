@@ -37,6 +37,7 @@ public sealed class Trie
         return 0;
     }
 
+    // TODO: if you have the keyword 'in' and the string "interesting" it will be parsed as a keyword!!
     public void AddString(string value, TokenKind result)
     {
         var leaf = AddString(value);

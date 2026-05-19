@@ -1,5 +1,6 @@
 using CapriKit.Generators.HLSL.Tokenizer;
 using System.Diagnostics.CodeAnalysis;
+using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -36,7 +37,7 @@ public static class ConstantBufferParser
         state.ExpectOperator("}");
         state.ExpectOperator(";");
 
-        buffer = new ConstantBuffer(name, register, fields);
+        buffer = new ConstantBuffer(name, ParseRegisterIndex(register), fields);
         return true;
     }
 }

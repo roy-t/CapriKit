@@ -38,7 +38,7 @@ public static class ShaderClassBuilder
 
         foreach (var variable in metadata.Variables)
         {
-            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidIdentifier(variable.Name), ToLiteral(variable.Register));
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier(variable.Name), ToLiteral(variable.Register));
         }
 
         foreach (var @struct in metadata.Structures)
@@ -48,7 +48,7 @@ public static class ShaderClassBuilder
 
         foreach (var buffer in metadata.ConstantBuffers)
         {
-            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
             StructBuilder.WriteStruct(builder, buffer);
         }
 
@@ -61,7 +61,7 @@ public static class ShaderClassBuilder
                 comment.AppendLine($"Semantic: {entryPoint.Semantic}");
             }
             builder.WriteSummaryComment(comment.ToString());
-            builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidIdentifier(entryPoint.Name), entryPoint.Name);
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidTypeIdentifier(entryPoint.Name), ToLiteral(entryPoint.Name));
         }
 
         classText = SourceText.From(builder.Build(), Encoding.UTF8);
@@ -72,8 +72,7 @@ public static class ShaderClassBuilder
     private static (string @namespace, string @class) IncludeToClass(string currentFilePath, Include include, GeneratorConfiguration config)
     {
         var currentDirectory = Path.GetDirectoryName(currentFilePath);
-        var relativeIncludeDirectory = Path.GetDirectoryName(include.Path);
-        var absoluteIncludeDirectory = Path.Combine(currentDirectory, relativeIncludeDirectory);
+        var absoluteIncludeDirectory = Path.Combine(currentDirectory, include.Path);
 
         var @namespace = GetNamespace(absoluteIncludeDirectory, config);
         var @class = GetClassName(include.Path);
@@ -91,7 +90,7 @@ public static class ShaderClassBuilder
 
     private static string GetClassName(string path)
     {
-        return CreateValidIdentifier(Path.GetFileNameWithoutExtension(path));
+        return CreateValidTypeIdentifier(Path.GetFileNameWithoutExtension(path));
     }
 }
 

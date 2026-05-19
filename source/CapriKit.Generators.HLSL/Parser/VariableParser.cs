@@ -86,11 +86,6 @@ internal static class VariableParser
         state.ExpectOperator("]");
     }
 
-    private static uint ParseRegisterIndex(string identifier)
-    {
-        return uint.Parse(identifier.Substring(1));
-    }
-
     private static void SkipUntilCloseParen(ParseState state)
     {
         var depth = 1;

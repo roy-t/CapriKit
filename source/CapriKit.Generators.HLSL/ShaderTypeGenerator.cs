@@ -49,7 +49,9 @@ public class ShaderTypeGenerator : IIncrementalGenerator
 
             if (ShaderClassBuilder.TryGenerateShader(shaderPath, shaderText, config, out var result))
             {
-                context.AddSource(shaderPath, result);
+                var relativePath = SourceCodeUtils.GetRelativePath(config.ContentRoot, shaderPath);
+                var hintName = $"{SourceCodeUtils.CreateValidNamespace(relativePath)}.g.cs";
+                context.AddSource(hintName, result);
             }
         });
 
@@ -121,31 +123,5 @@ public class ShaderTypeGenerator : IIncrementalGenerator
                             );
         var diagnostic = Diagnostic.Create(description, null);
         context.ReportDiagnostic(diagnostic);
-    }
-}
-
-[Generator]
-public class SharedTypesGenerator : IIncrementalGenerator
-{
-    public void Initialize(IncrementalGeneratorInitializationContext context)
-    {
-        context.RegisterPostInitializationOutput(static context =>
-        {
-            context.AddEmbeddedAttributeDefinition();
-            var definitions = """
-            using System;
-            using Microsoft.CodeAnalysis;
-
-            namespace CapriKit.Generators.HLSL;            
-            public interface IShaderMetadata
-            {
-                
-            }
-            """;
-
-
-            var source = SourceText.From(definitions, Encoding.UTF8);
-            context.AddSource("Definitions.g.cs", source);
-        });
     }
 }

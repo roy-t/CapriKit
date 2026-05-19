@@ -31,6 +31,14 @@ internal static class ParserUtils
     }
 
     /// <summary>
+    /// Registers are 1 letter followed by an uint, like t0 for texture register 0
+    /// </summary>
+    public static uint ParseRegisterIndex(string identifier)
+    {
+        return uint.Parse(identifier.Substring(1));
+    }
+
+    /// <summary>
     /// Consumes optional storage class, type and interpolation modifiers for variables, members and parameters
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-variable-syntax#parameters"/>

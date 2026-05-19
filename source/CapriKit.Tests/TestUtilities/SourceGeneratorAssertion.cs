@@ -1,5 +1,4 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Testing;
 using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
@@ -87,7 +86,10 @@ internal sealed class SourceGeneratorAssertion<T> : Assertion<GeneratorSubject<T
 
     private static async Task Run(SourceGeneratorInput input, SourceGeneratorOutput output)
     {
-        var harness = new CSharpSourceGeneratorTest<T, DefaultVerifier>();
+        var harness = new CSharpSourceGeneratorTest<T, DefaultVerifier>()
+        {
+            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+        };
         harness.TestState.Sources.AddRange(input.Sources);
         harness.TestState.AdditionalFiles.AddRange(input.AdditionalFiles);
         harness.TestState.ExpectedDiagnostics.AddRange(output.ExpectedDiagnostics);

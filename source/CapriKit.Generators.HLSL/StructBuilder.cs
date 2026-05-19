@@ -22,7 +22,7 @@ public static class StructBuilder
     public static void WriteStruct(SourceCodeBuilder builder, ConstantBuffer buffer)
     {
         var fields = LayOutConstantBuffer(buffer.Members, out var sizeInBytes);
-        WriteStruct(builder, CreateValidIdentifier(buffer.Name), fields, ExplicitLayoutKind, $"Size = {sizeInBytes}");
+        WriteStruct(builder, CreateValidTypeIdentifier(buffer.Name), fields, ExplicitLayoutKind, $"Size = {sizeInBytes}");
     }
 
     /// <summary>
@@ -33,7 +33,7 @@ public static class StructBuilder
     public static void WriteStruct(SourceCodeBuilder builder, Structure @struct)
     {
         var fields = LayOutStructure(@struct.Members);
-        WriteStruct(builder, CreateValidIdentifier(@struct.Name), fields, SequentialLayoutKind);
+        WriteStruct(builder, CreateValidTypeIdentifier(@struct.Name), fields, SequentialLayoutKind);
     }
 
     /// <summary>
@@ -122,7 +122,7 @@ public static class StructBuilder
             builder.WriteAttribute("System.Runtime.InteropServices.FieldOffset", offset.ToString());
         }
 
-        var name = CreateValidIdentifier(field.Member.Name);
+        var name = CreateValidTypeIdentifier(field.Member.Name);
         var type = field.IsArray ? ArrayStructName(ownerName, name) : field.DotNetType;
         builder.WriteField(Modifiers.Public, type, name);
     }
@@ -135,7 +135,7 @@ public static class StructBuilder
     /// </summary>
     private static void WriteArrayType(SourceCodeBuilder builder, string ownerName, Layout field)
     {
-        var name = CreateValidIdentifier(field.Member.Name);
+        var name = CreateValidTypeIdentifier(field.Member.Name);
         var inlineElement = field.DotNetType;
 
         if (field.Stride is uint stride)
