@@ -5,7 +5,7 @@ using static CapriKit.Generators.HLSL.SourceCodeUtils;
 namespace CapriKit.Generators.HLSL;
 
 /// <summary>
-/// Writes an HLSL struct as an equivalent .NET struct.
+/// Creates a C# struct that has the same memory layout as the given HLSL struct.
 /// </summary>
 public static class StructBuilder
 {
@@ -37,24 +37,10 @@ public static class StructBuilder
     }
 
     /// <summary>
-    /// A member placed in a struct, with the information needed to declare it.
-    /// <c>Offset</c> is the explicit byte offset, or <c>null</c> for sequential layout.
-    /// <c>PaddedStride</c>, when set, wraps array elements in a struct padded to that
-    /// many bytes (constant-buffer packing); when <c>null</c> elements are stored directly.
-    /// </summary>
-    private sealed record FieldLayout( // TODO: rename and comment to sensible things
-        Member Member,
-        string ElementType,
-        bool IsArray,
-        uint ElementCount,
-        uint? Offset,
-        uint? PaddedStride);
-
-    /// <summary>
     /// Writes a struct and the <c>[InlineArray]</c> helper structs its array
     /// members need. The helpers are emitted as siblings of the struct.
     /// </summary>
-    private static void WriteStruct(SourceCodeBuilder builder, string name, IReadOnlyList<FieldLayout> fields, params string[] layoutParameters)
+    private static void WriteStruct(SourceCodeBuilder builder, string name, IReadOnlyList<Layout> fields, params string[] layoutParameters)
     {
         builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", layoutParameters);
         builder.OpenStruct(Modifiers.Public, name);
@@ -75,9 +61,9 @@ public static class StructBuilder
     /// <summary>
     /// Assigns byte offsets following the HLSL packing rules.
     /// </summary>
-    private static List<FieldLayout> LayOutConstantBuffer(IReadOnlyList<Member> members, out uint sizeInBytes)
+    private static List<Layout> LayOutConstantBuffer(IReadOnlyList<Member> members, out uint sizeInBytes)
     {
-        var fields = new List<FieldLayout>(members.Count);
+        var fields = new List<Layout>(members.Count);
         var offset = 0u;
 
         foreach (var member in members)
@@ -85,13 +71,13 @@ public static class StructBuilder
             var size = TypeTranslator.GetSizeInBytes(member.Type);
             var elementType = TypeTranslator.Translate(member.Type, []).DotNetType;
 
-            if (member.Dimensions.Count > 0)
+            var count = Flatten(member.Dimensions);
+            if (count > 1)
             {
-                // Arrays start a new register and each element is padded to 16 bytes.
-                var count = Flatten(member.Dimensions);
+                // Arrays start a new register and each element is padded to 16 bytes.                
                 var stride = Align16(size);
                 offset = Align16(offset);
-                fields.Add(new FieldLayout(member, elementType, true, count, offset, stride));
+                fields.Add(new Layout(member, elementType, count, offset, stride));
                 offset += stride * count;
             }
             else
@@ -101,7 +87,7 @@ public static class StructBuilder
                 {
                     offset = Align16(offset);
                 }
-                fields.Add(new FieldLayout(member, elementType, false, 1, offset, null));
+                fields.Add(new Layout(member, elementType, 1, offset, null));
                 offset += size;
             }
         }
@@ -113,22 +99,21 @@ public static class StructBuilder
     /// <summary>
     /// Lays out members back-to-back, the way a regular HLSL struct is packed.
     /// </summary>
-    private static List<FieldLayout> LayOutStructure(IReadOnlyList<Member> members)
+    private static List<Layout> LayOutStructure(IReadOnlyList<Member> members)
     {
-        var fields = new List<FieldLayout>(members.Count);
+        var fields = new List<Layout>(members.Count);
 
         foreach (var member in members)
         {
             var elementType = TypeTranslator.Translate(member.Type, []).DotNetType;
-            var isArray = member.Dimensions.Count > 0;
-            var count = isArray ? Flatten(member.Dimensions) : 1u;
-            fields.Add(new FieldLayout(member, elementType, isArray, count, Offset: null, PaddedStride: null));
+            var count = Flatten(member.Dimensions);
+            fields.Add(new Layout(member, elementType, count));
         }
 
         return fields;
     }
 
-    private static void WriteMemberField(SourceCodeBuilder builder, string ownerName, FieldLayout field)
+    private static void WriteMemberField(SourceCodeBuilder builder, string ownerName, Layout field)
     {
         WriteFieldSummary(builder, field.Member);
 
@@ -138,22 +123,22 @@ public static class StructBuilder
         }
 
         var name = CreateValidIdentifier(field.Member.Name);
-        var type = field.IsArray ? ArrayStructName(ownerName, name) : field.ElementType;
+        var type = field.IsArray ? ArrayStructName(ownerName, name) : field.DotNetType;
         builder.WriteField(Modifiers.Public, type, name);
     }
 
     /// <summary>
     /// Emits the helper structs that back an array member: an <c>[InlineArray]</c>
-    /// of the element type. When <see cref="FieldLayout.PaddedStride"/> is set the
+    /// of the element type. When <see cref="Layout.Stride"/> is set the
     /// element is first wrapped in a struct padded to that size, giving the array
     /// the 16-byte stride that constant buffers require.
     /// </summary>
-    private static void WriteArrayType(SourceCodeBuilder builder, string ownerName, FieldLayout field)
+    private static void WriteArrayType(SourceCodeBuilder builder, string ownerName, Layout field)
     {
         var name = CreateValidIdentifier(field.Member.Name);
-        var inlineElement = field.ElementType;
+        var inlineElement = field.DotNetType;
 
-        if (field.PaddedStride is uint stride)
+        if (field.Stride is uint stride)
         {
             var elementName = ElementStructName(ownerName, name);
             builder.WriteAttribute(
@@ -161,7 +146,7 @@ public static class StructBuilder
                 "System.Runtime.InteropServices.LayoutKind.Sequential",
                 $"Size = {stride}");
             builder.OpenStruct(Modifiers.Public, elementName);
-            builder.WriteField(Modifiers.Public, field.ElementType, "Value");
+            builder.WriteField(Modifiers.Public, field.DotNetType, "Value");
             builder.CloseBlock();
             inlineElement = elementName;
         }
@@ -197,9 +182,29 @@ public static class StructBuilder
 
     private static string ArrayStructName(string ownerName, string memberName) => $"{ownerName}{memberName}Array";
 
-    /// <summary>Multidimensional HLSL arrays are flattened to a single element count.</summary>
-    private static uint Flatten(IReadOnlyList<uint> dimensions) => dimensions.Aggregate(1u, (a, b) => a * b);
+    /// <summary>Multidimensional HLSL arrays are flattened to a single element count. While regular fields are count 1</summary>
+    private static uint Flatten(IReadOnlyList<uint> dimensions)
+    {
+        if (dimensions.Any())
+        {
+            return dimensions.Aggregate(1u, (a, b) => a * b);
+        }
+        return 1;
+    }
 
     /// <summary>Rounds up to the next multiple of 16.</summary>
     private static uint Align16(uint value) => (value + 15u) & ~15u;
+
+    private sealed record Layout(
+        Member Member,
+        string DotNetType,
+        uint ElementCount,
+        // Offset from the start of the struct
+        uint? Offset = null,
+        // Size to allocate for this member in the struct, potentially larger than the size this member actually requires
+        // to accomplish alignment on certain byte-multiples in arrays.
+        uint? Stride = null)
+    {
+        public bool IsArray => ElementCount > 1;
+    }
 }

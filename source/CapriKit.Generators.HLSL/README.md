@@ -1,6 +1,7 @@
 # CapriKit.Generators.HLSL
 
-A source generator that analyzes HLSL shader files and generates strongly typed bindings for interacting with them. See the official HLSL documentation on [MSDN](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix) for information on the grammar.
+A source generator that analyzes HLSL shader files and generates strongly typed bindings for interacting with them. See the official HLSL documentation on [MSDN](https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix) for information on the grammar and the [HLSL Specification Working Draft](https://microsoft.github.io/hlsl-specs/specs/1-Intro.html)
+
 
 ## Implementation Details & Quirks
 

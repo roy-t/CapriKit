@@ -7,78 +7,122 @@ namespace CapriKit.Tests.Generators.HLSL;
 internal class StructBuilderTests
 {
     [Test]
-    public async Task WritesConstantBufferFollowingPackingRules()
+    public async Task WriteStruct_ConstantBuffer()
     {
-        // float3 leaves 4 bytes in its register, but the array must start a new
-        // one; each array element then takes a full 16-byte register.
         var source = """
-            cbuffer Constants
+            cbuffer Constants // takes up 96 bytes although there is only 48 bytes of data
             {
-                float3 Tint;
-                float Weights[2];
-                float4 Color;
+                float3 A : SV_SEMANTIC; // bytes 0-3, 4-7, 8-11
+                nointerpolation float B;// bytes 12-15, fits in the last 4 bytes of this block
+                float3 C;               // bytes 16-27
+                float2 D;               // bytes 32-39, does not fit in the previous block, so starts at new boundary
+                float E[3][1];          // bytes 48-95, arrays always starts at a new block, flattened to [3]
             };
             """;
-        ConstantBufferParser.TryParse(new ParseState(HLSLTokenizer.Parse(source)), out var buffer);
+
+        var expected = """
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 96)]
+            public struct Constants
+            {
+                /// <summary>
+                /// Semantic: SV_SEMANTIC
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
+                public System.Numerics.Vector3 A;
+                /// <summary>
+                /// Modifiers: nointerpolation
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(12)]
+                public float B;
+                [System.Runtime.InteropServices.FieldOffset(16)]
+                public System.Numerics.Vector3 C;
+                [System.Runtime.InteropServices.FieldOffset(32)]
+                public System.Numerics.Vector2 D;
+                /// <summary>
+                /// Dimensions: [3][1]
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(48)]
+                public ConstantsEArray E;
+            }
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential, Size = 16)]
+            public struct ConstantsEElement
+            {
+                public float Value;
+            }
+            [System.Runtime.CompilerServices.InlineArray(3)]
+            public struct ConstantsEArray
+            {
+                private ConstantsEElement element0;
+            }
+            
+            """;
+
+        var tokens = HLSLTokenizer.Parse(source);
+        var parser = new ParseState(tokens);
+        if (!ConstantBufferParser.TryParse(parser, out var buffer))
+        {
+            Assert.Fail("Failed to parse constant buffer");
+            return;
+        }
 
         var builder = new SourceCodeBuilder();
-        StructBuilder.WriteStruct(builder, buffer!);
-        var code = builder.ToString();
-
-        // TODO: these tests make no sense, just verify the full code looks like we thought it would
-
-        // The buffer is 16-byte aligned: Tint(0) + Weights(16..48) + Color(48..64).
-        await Assert.That(code).Contains("System.Runtime.InteropServices.LayoutKind.Explicit, Size = 64");
-        await Assert.That(code).Contains("[System.Runtime.InteropServices.FieldOffset(0)]");
-        await Assert.That(code).Contains("public System.Numerics.Vector3 Tint;");
-        await Assert.That(code).Contains("[System.Runtime.InteropServices.FieldOffset(16)]");
-        await Assert.That(code).Contains("public ConstantsWeightsArray Weights;");
-        await Assert.That(code).Contains("[System.Runtime.InteropServices.FieldOffset(48)]");
-        await Assert.That(code).Contains("public System.Numerics.Vector4 Color;");
+        StructBuilder.WriteStruct(builder, buffer);
+        var code = builder.Build();
+        await Assert.That(code).IsEqualTo(expected);
     }
 
     [Test]
-    public async Task WritesPaddedHelperStructsForArrays()
-    {
-        var source = "cbuffer Constants { float Weights[2]; };";
-        ConstantBufferParser.TryParse(new ParseState(HLSLTokenizer.Parse(source)), out var buffer);
-
-        var builder = new SourceCodeBuilder();
-        StructBuilder.WriteStruct(builder, buffer!);
-        var code = builder.ToString();
-
-        // Each element is padded to a full 16-byte register and exposed as an InlineArray.
-        await Assert.That(code).Contains("System.Runtime.InteropServices.LayoutKind.Sequential, Size = 16");
-        await Assert.That(code).Contains("public struct ConstantsWeightsElement");
-        await Assert.That(code).Contains("public float Value;");
-        await Assert.That(code).Contains("[System.Runtime.CompilerServices.InlineArray(2)]");
-        await Assert.That(code).Contains("public struct ConstantsWeightsArray");
-    }
-
-    [Test]
-    public async Task WritesRegularStructArraysAsInlineArrays()
+    public async Task WriteStruct_Struct()
     {
         var source = """
-            struct Light
+            struct Data // sequential layout
             {
-                float3 Position;
-                float Intensities[4];
+                float3 A : SV_SEMANTIC; 
+                nointerpolation float B;
+                float3 C;               
+                float2 D;               
+                float E[3][1]; // flattened to [3]
             };
             """;
-        StructureParser.TryParse(new ParseState(HLSLTokenizer.Parse(source)), out var structure);
+
+        var expected = """
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            public struct Data
+            {
+                /// <summary>
+                /// Semantic: SV_SEMANTIC
+                /// </summary>
+                public System.Numerics.Vector3 A;
+                /// <summary>
+                /// Modifiers: nointerpolation
+                /// </summary>
+                public float B;
+                public System.Numerics.Vector3 C;
+                public System.Numerics.Vector2 D;
+                /// <summary>
+                /// Dimensions: [3][1]
+                /// </summary>
+                public DataEArray E;
+            }
+            [System.Runtime.CompilerServices.InlineArray(3)]
+            public struct DataEArray
+            {
+                private float element0;
+            }
+            
+            """;
+
+        var tokens = HLSLTokenizer.Parse(source);
+        var parser = new ParseState(tokens);
+        if (!StructureParser.TryParse(parser, out var structure))
+        {
+            Assert.Fail("Failed to parse struct");
+            return;
+        }
 
         var builder = new SourceCodeBuilder();
-        StructBuilder.WriteStruct(builder, structure!);
-        var code = builder.ToString();
-
-        // Regular structs have no padding rules: elements are stored back-to-back.
-        await Assert.That(code).Contains("public struct Light");
-        await Assert.That(code).Contains("public System.Numerics.Vector3 Position;");
-        await Assert.That(code).Contains("public LightIntensitiesArray Intensities;");
-        await Assert.That(code).Contains("[System.Runtime.CompilerServices.InlineArray(4)]");
-        await Assert.That(code).Contains("private float element0;");
-        // No more unsafe fixed-size buffers.
-        await Assert.That(code).DoesNotContain("fixed");
-        await Assert.That(code).DoesNotContain("unsafe");
+        StructBuilder.WriteStruct(builder, structure);
+        var code = builder.Build();
+        await Assert.That(code).IsEqualTo(expected);
     }
 }

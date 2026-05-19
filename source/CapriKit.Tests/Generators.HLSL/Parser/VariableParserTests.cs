@@ -46,7 +46,7 @@ internal class VariableParserTests
         await Assert.That(variable.Modifiers[0]).IsEqualTo("static");
         await Assert.That(variable.Modifiers[1]).IsEqualTo("const");
         await Assert.That(state.IsAtEnd).IsTrue();
-        
+
     }
 
     [Test]

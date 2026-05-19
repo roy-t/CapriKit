@@ -37,3 +37,6 @@ dotnet run --project <the project>
 > This project uses non-standard output directories. See the `.build` directory in the root of this repository. This keeps all source code in the `source` folder clean.
 
 There is a command line utility called `CapriKit.Meta` that assist in publishing in a consistent way. It also contains utilities to run benchmarks and to compare if those results significantly differ from previous versions. Build the project in DEBUG mode and run it from `.build\bin\CapriKit.Meta-Debug\CapriKit.Meta.exe`.
+
+## TODO
+Investigate making all libraries AOT Compatible `<IsAotCompatible>true</IsAotCompatible>` but if something, like a LightInject cannot be made AOT compatible it will not work. Otherwise suggest compiling with ReadyToRun on the consumer side which is mixed tier-0 compiled code with JIT. (The tier-0 code will slowly be Jitted to more optimized code, thought that can be disabled to avoid hitches).
