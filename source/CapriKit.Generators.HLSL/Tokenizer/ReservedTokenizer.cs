@@ -40,15 +40,23 @@ public static class ReservedTokenizer
         ["virtual"] = TokenKind.Reserved,
     };
 
-    /// <summary>
-    /// Adds rules for reserved words to the trie.
-    /// </summary>
-    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-reserved-words"/>
-    public static void AddRulesToTrie(Trie trie)
+    private static readonly Trie ReservedTrie;
+
+    static ReservedTokenizer()
     {
+        ReservedTrie = new Trie();
         foreach (var kv in Reserved)
         {
-            trie.AddString(kv.Key, kv.Value, false);
+            ReservedTrie.AddString(kv.Key, kv.Value);
         }
+    }
+
+    /// <summary>
+    /// Tries to parse the given substring as a reserved word
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-reserved-words"/>
+    public static bool TryParse(string source, int offset, int length, out Token token)
+    {
+        return ReservedTrie.TryParse(source, offset, length, out token);
     }
 }

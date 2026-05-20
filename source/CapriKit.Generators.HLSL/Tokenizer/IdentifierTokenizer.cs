@@ -5,7 +5,7 @@ namespace CapriKit.Generators.HLSL.Tokenizer;
 public static class IdentifierTokenizer
 {
     /// <summary>
-    /// Reads identifiers.
+    /// Reads identifiers and tokenizes them as identifiers, reserved words or keywords
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-grammar#identifiers"/>
     public static int ReadIdentifier(string source, int offset, List<Token> tokens)
@@ -13,7 +13,19 @@ public static class IdentifierTokenizer
         var length = MatchIdentifier(source, offset);
         if (length > 0)
         {
-            tokens.Add(new Token(source, offset, length, TokenKind.Identifier));
+            // An identifier might be a keyword or reserved word.
+            if (KeywordTokenizer.TryParse(source, offset, length, out var keyword))
+            {
+                tokens.Add(keyword);
+            }
+            else if (ReservedTokenizer.TryParse(source, offset, length, out var reserved))
+            {
+                tokens.Add(reserved);
+            }
+            else
+            {
+                tokens.Add(new Token(source, offset, length, TokenKind.Identifier));
+            }
         }
 
         return length;

@@ -157,26 +157,34 @@ public static class KeywordTokenizer
         "4x1", "4x2", "4x3", "4x4",
     ];
 
-    /// <summary>
-    /// Adds rules for keywords to the trie.
-    /// </summary>
-    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-keywords"/>
-    public static void AddRulesToTrie(Trie trie)
+    private static readonly Trie KeywordTrie;
+
+    static KeywordTokenizer()
     {
+        KeywordTrie = new Trie();
         foreach (var kv in Keywords)
         {
-            trie.AddString(kv.Key, kv.Value, false);
+            KeywordTrie.AddString(kv.Key, kv.Value);
         }
 
         var expansionTrie = new Trie();
         foreach (var expansion in Expansions)
         {
-            expansionTrie.AddString(expansion, TokenKind.Keyword, false);
+            expansionTrie.AddString(expansion, TokenKind.Keyword);
         }
 
         foreach (var expandable in SupportsExpansion)
         {
-            trie.AddSubTrie(expandable, expansionTrie);
+            KeywordTrie.AddSubTrie(expandable, expansionTrie);
         }
+    }
+
+    /// <summary>
+    /// Tries to parse the given substring as a keyword
+    /// </summary>
+    /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-keywords"/>
+    public static bool TryParse(string source, int offset, int length, out Token token)
+    {
+        return KeywordTrie.TryParse(source, offset, length, out token);
     }
 }

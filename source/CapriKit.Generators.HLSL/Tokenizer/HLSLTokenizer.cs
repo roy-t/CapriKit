@@ -40,17 +40,8 @@ public static class HLSLTokenizer
     {
         var tokens = new List<Token>();
 
-        var trie = new Trie();
-        KeywordTokenizer.AddRulesToTrie(trie);
-        ReservedTokenizer.AddRulesToTrie(trie);
-        OperatorTokenizer.AddRulesToTrie(trie);
-
         var rules = new Rule[]
         {
-            // Keywords, reserved words and directives
-            // (and multi-character operators, though technically
-            // they are of lower precedence, they do not cause ambiguity)
-            trie.ReadToken,
             DirectiveTokenizer.ReadDirective,
 
             // Grammar tokenizers
@@ -61,8 +52,9 @@ public static class HLSLTokenizer
             IntegerTokenizer.ReadInteger,
             CharacterTokenizer.ReadCharacter,
             StringTokenizer.ReadString,
+            // Includes keywords and reserved words, that are just 'special' identifiers
             IdentifierTokenizer.ReadIdentifier,
-            OperatorTokenizer.ReadSingleCharacterOperator,
+            OperatorTokenizer.ReadOperator
         };
 
         var cursor = 0;
