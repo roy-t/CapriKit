@@ -2,27 +2,27 @@ using CapriKit.Generators.HLSL.Tokenizer;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public enum EntryPointKind
+internal enum EntryPointKind
 {
     VertexShader,
     PixelShader,
     ComputeShader,
 }
-public enum IncludeKind
+internal enum IncludeKind
 {
     Local,
     System
 }
 
-public record Include(string Path, IncludeKind Kind);
-public record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers);
-public record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
-public record Structure(string Name, IReadOnlyList<Member> Members);
-public record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);
-public record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
-public record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
+internal sealed record Include(string Path, IncludeKind Kind);
+internal sealed record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers);
+internal sealed record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
+internal sealed record Structure(string Name, IReadOnlyList<Member> Members);
+internal sealed record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);
+internal sealed record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
+internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
 
-public static class HLSLParser
+internal static class HLSLParser
 {
     public static ShaderMetadata Parse(IReadOnlyList<Token> tokens)
     {

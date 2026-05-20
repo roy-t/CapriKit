@@ -3,7 +3,7 @@ using System.Text;
 
 namespace CapriKit.Generators.HLSL;
 
-public static class SourceCodeUtils
+internal static class SourceCodeUtils
 {
     public static string ToLiteral(string value) => SymbolDisplay.FormatLiteral(value, true);
     public static string ToLiteral(uint value) => SymbolDisplay.FormatPrimitive(value, true, false) ?? throw new Exception($"Failed to format literal, type: {value.GetType().FullName}, value: {value}.");

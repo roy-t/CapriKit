@@ -1,6 +1,6 @@
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public enum TokenKind : byte
+internal enum TokenKind : byte
 {
     Unknown,
     Keyword,
@@ -16,7 +16,7 @@ public enum TokenKind : byte
     Operator,
 }
 
-public readonly record struct Token(string Source, int Offset, int Length, TokenKind Kind)
+internal readonly record struct Token(string Source, int Offset, int Length, TokenKind Kind)
 {
     public string Value => Source.Substring(Offset, Length);
 
@@ -27,9 +27,9 @@ public readonly record struct Token(string Source, int Offset, int Length, Token
 }
 
 // Every rule returns how many characters it read from the source
-public delegate int Rule(string source, int cursor, List<Token> tokens);
+internal delegate int Rule(string source, int cursor, List<Token> tokens);
 
-public static class HLSLTokenizer
+internal static class HLSLTokenizer
 {
     public static bool IsTrivia(Token token)
     {

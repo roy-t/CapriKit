@@ -3,7 +3,7 @@ using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class MemberParser
+internal static class MemberParser
 {
     /// <summary>
     /// Parses HLSL struct members

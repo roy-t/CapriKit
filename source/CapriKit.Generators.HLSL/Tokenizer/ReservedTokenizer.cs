@@ -1,6 +1,6 @@
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class ReservedTokenizer
+internal static class ReservedTokenizer
 {
     private static readonly Dictionary<string, TokenKind> Reserved = new()
     {

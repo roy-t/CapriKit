@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class IntegerTokenizer
+internal static class IntegerTokenizer
 {
     /// <summary>
     /// Parse integers. Emits an extra token if the number ends with a suffix.

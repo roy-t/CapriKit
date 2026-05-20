@@ -7,7 +7,7 @@ namespace CapriKit.Generators.HLSL;
 /// <summary>
 /// Creates a C# struct that has the same memory layout as the given HLSL struct.
 /// </summary>
-public static class StructBuilder
+internal static class StructBuilder
 {
     private const string ExplicitLayoutKind = "System.Runtime.InteropServices.LayoutKind.Explicit";
     private const string SequentialLayoutKind = "System.Runtime.InteropServices.LayoutKind.Sequential";

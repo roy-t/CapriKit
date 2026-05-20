@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class WhitespaceTokenizer
+internal static class WhitespaceTokenizer
 {
     /// <summary>
     /// Reads whitespace tokens

@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class CommentTokenizer
+internal static class CommentTokenizer
 {
     /// <summary>
     /// Reads HLSL line (//) and block (/* */)comments

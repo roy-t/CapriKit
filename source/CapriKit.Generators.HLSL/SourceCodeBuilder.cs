@@ -3,7 +3,7 @@ using System.Text;
 namespace CapriKit.Generators.HLSL;
 
 [Flags]
-public enum Modifiers
+internal enum Modifiers
 {
     None,
     Private = 1,
@@ -18,7 +18,7 @@ public enum Modifiers
     Fixed = 512
 }
 
-public sealed class SourceCodeBuilder
+internal sealed class SourceCodeBuilder
 {
     private readonly StringBuilder builder = new();
     private int level = 0;

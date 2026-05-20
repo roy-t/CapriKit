@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class IncludeParser
+internal static class IncludeParser
 {
     private const string IncludeDirective = "#include";
 

@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class IdentifierTokenizer
+internal static class IdentifierTokenizer
 {
     /// <summary>
     /// Reads identifiers and tokenizes them as identifiers, reserved words or keywords

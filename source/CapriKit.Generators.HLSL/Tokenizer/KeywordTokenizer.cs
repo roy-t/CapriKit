@@ -1,6 +1,6 @@
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class KeywordTokenizer
+internal static class KeywordTokenizer
 {
     private static readonly Dictionary<string, TokenKind> Keywords = new()
     {

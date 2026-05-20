@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class StringTokenizer
+internal static class StringTokenizer
 {
     private const char Delimiter = '\"';
 

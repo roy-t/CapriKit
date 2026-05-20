@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public sealed class Trie
+internal sealed class Trie
 {
     private class Node
     {

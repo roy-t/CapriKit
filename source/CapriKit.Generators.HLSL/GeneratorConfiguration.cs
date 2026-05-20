@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 namespace CapriKit.Generators.HLSL;
 
 [DataContract]
-public sealed class GeneratorConfiguration
+internal sealed class GeneratorConfiguration
 {
     internal GeneratorConfiguration()
     {

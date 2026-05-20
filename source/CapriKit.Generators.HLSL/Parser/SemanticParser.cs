@@ -2,7 +2,7 @@ using CapriKit.Generators.HLSL.Tokenizer;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class SemanticParser
+internal static class SemanticParser
 {
     public static string ParseSemantic(ParseState state)
     {

@@ -8,12 +8,12 @@ namespace CapriKit.Generators.HLSL;
 /// When set, the field is a fixed-size buffer with this many (flattened) elements.
 /// </param>
 /// <param name="OriginalDimensions">The array dimensions as declared in HLSL.</param>
-public readonly record struct TranslatedType(string DotNetType, uint FixedSize, IReadOnlyList<uint> OriginalDimensions)
+internal readonly record struct TranslatedType(string DotNetType, uint FixedSize, IReadOnlyList<uint> OriginalDimensions)
 {
     public bool IsFixed => FixedSize > 0u;
 }
 
-public static class TypeTranslator
+internal static class TypeTranslator
 {
     public static TranslatedType Translate(string hlslType, IReadOnlyList<uint> dimensions)
     {

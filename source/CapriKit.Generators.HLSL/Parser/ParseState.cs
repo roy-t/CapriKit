@@ -2,7 +2,7 @@ using CapriKit.Generators.HLSL.Tokenizer;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public sealed class ParseState
+internal sealed class ParseState
 {
     private readonly IReadOnlyList<Token> tokens;
     private int cursor;

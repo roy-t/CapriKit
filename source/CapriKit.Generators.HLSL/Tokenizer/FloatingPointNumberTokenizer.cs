@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class FloatingPointNumberTokenizer
+internal static class FloatingPointNumberTokenizer
 {
     /// <summary>
     /// Parse floating point numbers.

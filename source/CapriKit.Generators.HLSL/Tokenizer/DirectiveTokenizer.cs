@@ -2,7 +2,7 @@ using static CapriKit.Generators.HLSL.Tokenizer.TokenizerUtils;
 
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class DirectiveTokenizer
+internal static class DirectiveTokenizer
 {
     /// <summary>
     /// Reads HLSL preprocessor directives. For example #pragma

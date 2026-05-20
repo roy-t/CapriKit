@@ -4,7 +4,7 @@ using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class ConstantBufferParser
+internal static class ConstantBufferParser
 {
     /// <summary>
     /// Parses a cbuffer.

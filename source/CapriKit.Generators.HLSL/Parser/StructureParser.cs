@@ -3,7 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class StructureParser
+internal static class StructureParser
 {
     /// <summary>
     /// Parses a struct declaration.

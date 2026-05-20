@@ -7,7 +7,7 @@ using static CapriKit.Generators.HLSL.SourceCodeUtils;
 
 namespace CapriKit.Generators.HLSL;
 
-public static class ShaderClassBuilder
+internal static class ShaderClassBuilder
 {
     public static bool TryGenerateShader(string path, SourceText? shaderText, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
     {

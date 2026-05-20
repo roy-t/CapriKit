@@ -7,7 +7,7 @@ using System.Text;
 namespace CapriKit.Generators.HLSL;
 
 [Generator]
-public class ShaderTypeGenerator : IIncrementalGenerator
+internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 {
     private const string ConfigurationFile = "CapriKit.Generators.HLSL.json";
 

@@ -5,7 +5,7 @@ using System.Text;
 namespace CapriKit.Generators.HLSL;
 
 [Generator]
-public class SharedTypesGenerator : IIncrementalGenerator
+internal sealed class SharedTypesGenerator : IIncrementalGenerator
 {
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {

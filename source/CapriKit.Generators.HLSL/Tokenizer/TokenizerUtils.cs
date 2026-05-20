@@ -1,6 +1,6 @@
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class TokenizerUtils
+internal static class TokenizerUtils
 {
     /// <summary>
     /// Returns next character, if available.

@@ -1,6 +1,6 @@
 namespace CapriKit.Generators.HLSL.Tokenizer;
 
-public static class OperatorTokenizer
+internal static class OperatorTokenizer
 {
     private const int LongestOperator = 3;
     private static readonly Dictionary<string, TokenKind> Operators = new()

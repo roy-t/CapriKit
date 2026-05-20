@@ -4,7 +4,7 @@ using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-public static class EntryPointParser
+internal static class EntryPointParser
 {
     private static readonly Dictionary<string, EntryPointKind> EntryPointPragmas = new()
     {
