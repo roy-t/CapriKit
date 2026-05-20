@@ -18,6 +18,9 @@ public sealed class Trie
         Root = new Node();
     }
 
+    /// <summary>
+    /// Tries to find the result for the given substring in the trie
+    /// </summary>
     public bool TryParse(string source, int offset, int length, out Token token)
     {
         var node = Root;
@@ -41,7 +44,6 @@ public sealed class Trie
     public void AddString(string value, TokenKind result)
     {
         var leaf = AddString(value);
-        Debug.Assert(leaf.Result != result, "You should not add a path to the Trie twice");
         Debug.Assert(leaf.Result == TokenKind.Unknown, "You should not change the result of an existing path in the Trie");
         leaf.Result = result;
     }
