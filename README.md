@@ -1,6 +1,8 @@
 # CapriKit
 _Roy Triesscheijn's collection of code libraries_
 
+![Unit tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Froy-t%2FCapriKit%2Fmain%2F.github%2Fbadges%2Funit-tests.json)
+
 - GitHub: https://github.com/roy-t/
 - Blog: https://roy-t.nl
 - Mastodon: https://mastodon.social/@roytries (rarely used)

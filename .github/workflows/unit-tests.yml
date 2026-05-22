@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - .github/badges/unit-tests.json
   pull_request:
     branches:
       - main
@@ -14,6 +16,8 @@ permissions:
 jobs:
   test:
     name: Run unit tests
+    permissions:
+      contents: write
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: windows-latest
 
@@ -28,4 +32,44 @@ jobs:
 
       - name: Run unit tests
         shell: pwsh
-        run: dotnet test
+        run: dotnet test --results-directory .build/tst --report-trx --report-trx-filename unit-tests.trx
+
+      - name: Update test badge
+        if: ${{ always() && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $badgePath = '.github/badges/unit-tests.json'
+          New-Item -ItemType Directory -Force -Path (Split-Path $badgePath) | Out-Null
+
+          $trxPath = '.build/tst/unit-tests.trx'
+          if (Test-Path $trxPath) {
+            [xml]$trx = Get-Content $trxPath
+            $counters = $trx.TestRun.ResultSummary.Counters
+            $total = [int]$counters.total
+            $passed = [int]$counters.passed
+            $failed = [int]$counters.failed
+            $notExecuted = [int]$counters.notExecuted
+
+            $message = if ($failed -eq 0) { "$passed/$total passed" } else { "$passed/$total passed, $failed failed" }
+            $color = if ($failed -eq 0 -and $notExecuted -eq 0) { 'brightgreen' } else { 'red' }
+          } else {
+            $message = 'no results'
+            $color = 'lightgrey'
+          }
+
+          @{
+            schemaVersion = 1
+            label = 'tests'
+            message = $message
+            color = $color
+          } | ConvertTo-Json | Set-Content $badgePath
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add $badgePath
+          if (-not (git diff --cached --quiet)) {
+            git commit -m 'Update unit test badge'
+            git push
+          }
