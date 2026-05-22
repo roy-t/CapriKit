@@ -69,7 +69,13 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add $badgePath
-          if (-not (git diff --cached --quiet)) {
+          git diff --cached --quiet
+          $hasBadgeChanges = $LASTEXITCODE -eq 1
+          if ($LASTEXITCODE -gt 1) {
+            exit $LASTEXITCODE
+          }
+
+          if ($hasBadgeChanges) {
             git commit -m 'Update unit test badge'
             git push
           }
