@@ -1,6 +1,8 @@
 # CapriKit
 _Roy Triesscheijn's collection of code libraries_
 
+![Unit tests](https://github.com/roy-t/CapriKit/actions/workflows/unit-tests.yml/badge.svg)
+
 - GitHub: https://github.com/roy-t/
 - Blog: https://roy-t.nl
 - Mastodon: https://mastodon.social/@roytries (rarely used)
