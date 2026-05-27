@@ -1,11 +1,10 @@
 using Microsoft.CodeAnalysis;
-using System.Runtime.Serialization;
 using static CapriKit.Generators.HLSL.ConfigUtils;
 
 namespace CapriKit.Generators.HLSL;
 
 /// <summary>
-/// Generates metdata that describe the shader, its entrypoints and slots and generates struct for types used.
+/// Generates metadata that describe the shader, its entrypoints and slots and generates struct for types used.
 /// </summary>
 [Generator]
 internal sealed class ShaderTypeGenerator : IIncrementalGenerator
@@ -22,21 +21,8 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
         context.RegisterSourceOutput(provider, static (context, input) =>
         {
             var (shaderPath, shaderText) = input.Left;
-            if (input.Right == null || input.Right.Length != 1)
+            if (input.Right.Configuration is not { } config)
             {
-                ReportMissingConfigurationFile(context);
-                return;
-            }
-
-            var (configPath, configText) = input.Right[0];
-            GeneratorConfiguration config;
-            try
-            {
-                config = ReadConfiguration(configPath, configText);
-            }
-            catch (SerializationException ex)
-            {
-                ReportMalformedConfigurationFile(context, ex);
                 return;
             }
 
@@ -48,13 +34,19 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
             }
         });
 
-        var shaderCountProvider = shadersProvider.Collect();
-        context.RegisterSourceOutput(shaderCountProvider, static (context, shaders) =>
+        // Project-wide diagnostics, warn when there are no shaders at all,
+        // otherwise require a valid configuration to generate against.
+        var hasShadersProvider = shadersProvider.Collect().Select(static (shaders, _) => !shaders.IsDefaultOrEmpty);
+        context.RegisterSourceOutput(hasShadersProvider.Combine(configurationProvider), static (context, input) =>
         {
-            if (shaders.IsDefaultOrEmpty)
+            var (hasShaders, result) = input;
+            if (!hasShaders)
             {
                 ReportNoOp(context);
+                return;
             }
+
+            ReportConfigDiagnostic(context, result);
         });
     }
 

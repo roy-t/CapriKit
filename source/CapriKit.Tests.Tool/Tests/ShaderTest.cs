@@ -16,7 +16,7 @@ internal sealed class ShaderTest : ITestScreen
 {
     private readonly VertexBuffer<VsInput> VertexBuffer;
     private readonly IndexBufferU16 IndexBuffer;
-    private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;    
+    private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
 
     public ShaderTest(Device device)
     {

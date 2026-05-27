@@ -1,6 +1,5 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
-using System.Runtime.Serialization;
 using System.Text;
 using static CapriKit.Generators.HLSL.ConfigUtils;
 using static CapriKit.Generators.HLSL.SourceCodeUtils;
@@ -17,27 +16,16 @@ internal sealed class ConfigTypeGenerator : IIncrementalGenerator
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var configurationProvider = CreateConfigurationProvider(context);
-        context.RegisterSourceOutput(configurationProvider, static (context, input) =>
+        context.RegisterSourceOutput(configurationProvider, static (context, result) =>
         {
-            if (input == null || input.Length != 1)
+            if (result.Configuration is { } config)
             {
-                ReportMissingConfigurationFile(context);
-                return;
-            }
-
-            var (configPath, configText) = input[0];
-            GeneratorConfiguration config;
-            try
-            {
-                config = ReadConfiguration(configPath, configText);
                 var type = GenerateConfigType(config);
                 context.AddSource($"{ConfigurationFile}.cs", type);
-
             }
-            catch (SerializationException ex)
+            else
             {
-                ReportMalformedConfigurationFile(context, ex);
-                return;
+                ReportConfigDiagnostic(context, result);
             }
         });
     }

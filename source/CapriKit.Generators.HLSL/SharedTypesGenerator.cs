@@ -19,13 +19,12 @@ internal sealed class SharedTypesGenerator : IIncrementalGenerator
             using System;
             using Microsoft.CodeAnalysis;
 
-            namespace CapriKit.Generators.HLSL;            
+            namespace CapriKit.Generators.HLSL;
             public interface IShaderMetadata
             {
                 
             }
             """;
-
 
             var source = SourceText.From(definitions, Encoding.UTF8);
             context.AddSource("Definitions.g.cs", source);
