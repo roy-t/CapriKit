@@ -14,7 +14,7 @@ internal class ShaderTypeGeneratorTests
         [
             new (@"C:/project/CapriKit.Generators.HLSL.json", SourceText.From(ConfigJson, Encoding.UTF8)),
             new (@"C:/project/Assets/Shaders/utils/Defines.hlsl", SourceText.From(ShaderFileToInclude, Encoding.UTF8)),
-            new (@"C:/project/Assets/Shaders/Lines/LineShader.hlsl", SourceText.From(ShaderWithRelativeIncludes, Encoding.UTF8))
+            new (@"C:/project/Assets/Shaders/Lines/LineShader.hlsl", SourceText.From(ShaderWithRelativeIncludes, Encoding.UTF8)),
         ];
 
         IEnumerable<(string fileName, SourceText content)> generatedFiles =
@@ -27,6 +27,46 @@ internal class ShaderTypeGeneratorTests
             .WithAdditionalFiles(additionalFiles)
             .Generates(generatedFiles);
     }
+
+    [Test]
+    public async Task ShaderInContentRootUsesTargetNamespace()
+    {
+        IEnumerable<(string fileName, SourceText content)> additionalFiles =
+        [
+            new (@"C:/project/CapriKit.Generators.HLSL.json", SourceText.From(ContentRootConfigJson, Encoding.UTF8)),
+            new (@"C:/project/Assets/Basic.hlsl", SourceText.From(ShaderInContentRoot, Encoding.UTF8))
+        ];
+
+        IEnumerable<(string fileName, SourceText content)> generatedFiles =
+        [
+           new (@"Basic.Hlsl.g.cs", SourceText.From(ExpectedContentRootSource, Encoding.UTF8))
+        ];
+
+        await Assert.That(GeneratorSubject.OfType<ShaderTypeGenerator>())
+            .WithAdditionalFiles(additionalFiles)
+            .Generates(generatedFiles);
+    }
+
+    private const string ContentRootConfigJson = """
+        {
+          "targetNamespace": "MyGame.Shaders",
+          "contentRoot": "Assets"
+        }
+        """;
+
+    private const string ShaderInContentRoot = """
+        sampler TextureSampler : register(s0);
+        """;
+
+    private const string ExpectedContentRootSource = """
+        namespace MyGame.Shaders;
+        public class Basic
+        {
+            public const string Path = "Basic.hlsl";
+            public const uint TextureSampler = 0;
+        }
+
+        """;
 
     private const string ConfigJson = """
         {

@@ -5,10 +5,10 @@ using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.IO;
 
 // TODO: the generated namespace should not include "Assets"
-using CapriKit.Tests.Tool.Shaders.Assets;
+using CapriKit.Tests.Tool.Shaders;
 using CapriKit.Tests.Tool.Tests.Framework;
 using System.Numerics;
-using static CapriKit.Tests.Tool.Shaders.Assets.BasicShader;
+using static CapriKit.Tests.Tool.Shaders.BasicShader;
 
 namespace CapriKit.Tests.Tool.Tests;
 
