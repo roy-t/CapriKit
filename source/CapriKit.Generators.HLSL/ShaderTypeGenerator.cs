@@ -1,25 +1,18 @@
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.Text;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Json;
-using System.Text;
+using static CapriKit.Generators.HLSL.ConfigUtils;
 
 namespace CapriKit.Generators.HLSL;
 
+/// <summary>
+/// Generates metdata that describe the shader, its entrypoints and slots and generates struct for types used.
+/// </summary>
 [Generator]
 internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 {
-    private const string ConfigurationFile = "CapriKit.Generators.HLSL.json";
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        // We use a caprikit.generators.hlsl.json file in to tell us about the root namespace
-        // and the folder paths
-
-        var configurationProvider = context.AdditionalTextsProvider
-            .Where(static f => Path.GetFileName(f.Path).Equals(ConfigurationFile, StringComparison.OrdinalIgnoreCase))
-            .Select(static (text, cancellationToken) => (text.Path, text.GetText(cancellationToken)))
-            .Collect();
+        var configurationProvider = CreateConfigurationProvider(context);
 
         var shadersProvider = context.AdditionalTextsProvider
             .Where(static file => file.Path.EndsWith(".hlsl", StringComparison.OrdinalIgnoreCase))
@@ -49,7 +42,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 
             if (ShaderClassBuilder.TryGenerateShader(shaderPath, shaderText, config, out var result))
             {
-                var relativePath = SourceCodeUtils.GetRelativePath(config.ContentRoot, shaderPath);
+                var relativePath = SourceCodeUtils.GetRelativePath(config.AbsoluteContentRoot, shaderPath);
                 var hintName = $"{SourceCodeUtils.CreateValidNamespace(relativePath)}.g.cs";
                 context.AddSource(hintName, result);
             }
@@ -65,50 +58,9 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
         });
     }
 
-    private static GeneratorConfiguration ReadConfiguration(string configPath, SourceText? configText)
-    {
-        if (configText == null)
-        {
-            throw new SerializationException($"Cannot deserialize `null`, check {configPath} is a valid configuration file");
-        }
 
-        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(configText.ToString()));
-        var serializer = new DataContractJsonSerializer(typeof(GeneratorConfiguration));
-        var dto = (GeneratorConfiguration)serializer.ReadObject(stream);
-        var configDirectory = Path.GetDirectoryName(configPath);
-        return new GeneratorConfiguration(dto.TargetNamespace, Path.Combine(configDirectory, dto.ContentRoot));
-    }
 
-    private static void ReportMissingConfigurationFile(SourceProductionContext context)
-    {
-        var description = new DiagnosticDescriptor
-                            (
-                                "STG001",
-                                $"Missing configuration file '{ConfigurationFile}'",
-                                $"To be able to use this generator you need to add exactly one configuration file to your project: `<ItemGroup><AdditionalFiles Include=\"{ConfigurationFile}\"/></ItemGroup> " +
-                                "to describe the namespace to generate files in and which folder to use as your asset root folder",
-                                "SourceGeneration",
-                                DiagnosticSeverity.Error,
-                                true
-                            );
-        var diagnostic = Diagnostic.Create(description, null);
-        context.ReportDiagnostic(diagnostic);
-    }
 
-    private static void ReportMalformedConfigurationFile(SourceProductionContext context, SerializationException ex)
-    {
-        var description = new DiagnosticDescriptor
-                            (
-                                "STG002",
-                                $"Configuration file '{ConfigurationFile}' is malformed",
-                                $"Exception: {ex}",
-                                "SourceGeneration",
-                                DiagnosticSeverity.Error,
-                                true
-                            );
-        var diagnostic = Diagnostic.Create(description, null);
-        context.ReportDiagnostic(diagnostic);
-    }
 
     private static void ReportNoOp(SourceProductionContext context)
     {

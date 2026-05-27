@@ -9,12 +9,14 @@ internal sealed class GeneratorConfiguration
     {
         TargetNamespace = string.Empty;
         ContentRoot = string.Empty;
+        AbsoluteContentRoot = string.Empty;
     }
 
-    public GeneratorConfiguration(string targetNamespace, string contentRoot)
+    public GeneratorConfiguration(string targetNamespace, string contentRoot, string absoluteContentRoot)
     {
         TargetNamespace = targetNamespace;
         ContentRoot = contentRoot;
+        AbsoluteContentRoot = absoluteContentRoot;
     }
 
     [DataMember(Name = "targetNamespace", IsRequired = true)]
@@ -22,4 +24,6 @@ internal sealed class GeneratorConfiguration
 
     [DataMember(Name = "contentRoot", IsRequired = true)]
     public string ContentRoot { get; set; }
+
+    public string AbsoluteContentRoot { get; set; }
 }

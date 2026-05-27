@@ -16,11 +16,11 @@ internal sealed class ShaderTest : ITestScreen
 {
     private readonly VertexBuffer<VsInput> VertexBuffer;
     private readonly IndexBufferU16 IndexBuffer;
-    private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
-    private readonly BasicShader Shader;
+    private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;    
 
     public ShaderTest(Device device)
     {
+        var config = CapriKit.Generators.HLSL.Configuration.ContentRoot;
         // TODO: get asset directory
         var fileSystem = new ScopedFileSystem(BasicShader.Path);
         var source = fileSystem.ReadAllText(BasicShader.Path).Result;

@@ -34,7 +34,7 @@ internal static class ShaderClassBuilder
 
         builder.WriteNamespace(GetNamespace(path, config));
         builder.OpenClass(Modifiers.Public, GetClassName(path));
-        builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "Path", ToLiteral(GetRelativePath(config.ContentRoot, path)));
+        builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "Path", ToLiteral(GetRelativePath(config.AbsoluteContentRoot, path)));
 
         foreach (var variable in metadata.Variables)
         {
@@ -83,7 +83,7 @@ internal static class ShaderClassBuilder
     private static string GetNamespace(string path, GeneratorConfiguration config)
     {
         var directory = Path.GetDirectoryName(path);
-        var directoryRelativeToContentRoot = GetRelativePath(config.ContentRoot, directory);
+        var directoryRelativeToContentRoot = GetRelativePath(config.AbsoluteContentRoot, directory);
         var elements = directoryRelativeToContentRoot.Split(['\\', '/']);
         return $"{config.TargetNamespace}.{CreateValidNamespace(string.Join(".", elements))}";
     }
