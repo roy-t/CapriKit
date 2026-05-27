@@ -43,6 +43,12 @@ internal class HLSLParserTests
         sampler TextureSampler : register(s0);
         precise row_major Matrix2x2 Mat : register(t4);
 
+        static float4 ToLinear(float4 v)
+        {
+            float3 rgb = pow(abs(v.rgb), float3(2.2f, 2.2f, 2.2f));
+            return float4(rgb.rgb, v.a);
+        }
+
         struct VS_INPUT
         {
             float3 position : POSITION;

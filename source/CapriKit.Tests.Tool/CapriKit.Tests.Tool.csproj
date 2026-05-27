@@ -6,10 +6,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Assets\ImGuiShader.hlsl" />
+    <None Remove="CapriKit.Generators.HLSL.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="Assets\ImGuiShader.hlsl" />
+    <AdditionalFiles Include="CapriKit.Generators.HLSL.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ImGui.NET" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>

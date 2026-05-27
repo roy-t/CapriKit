@@ -20,7 +20,8 @@ internal sealed record Member(string Type, string Name, string Semantic, IReadOn
 internal sealed record Structure(string Name, IReadOnlyList<Member> Members);
 internal sealed record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);
 internal sealed record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
-internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints);
+internal sealed record Function(string Name, string Semantic);
+internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints, IReadOnlyList<Function> Functions);
 
 internal static class HLSLParser
 {
@@ -31,6 +32,7 @@ internal static class HLSLParser
         var structures = new List<Structure>();
         var constantBuffers = new List<ConstantBuffer>();
         var entryPoints = new List<EntryPoint>();
+        var functions = new List<Function>();
         var includes = new List<Include>();
 
         while (!state.IsAtEnd)
@@ -51,6 +53,10 @@ internal static class HLSLParser
             {
                 entryPoints.Add(entry);
             }
+            else if (FunctionParser.TryParse(state, out var function))
+            {
+                functions.Add(function);
+            }
             else if (VariableParser.TryParse(state, out var variable))
             {
                 variables.Add(variable);
@@ -63,6 +69,6 @@ internal static class HLSLParser
             }
         }
 
-        return new ShaderMetadata(includes, variables, structures, constantBuffers, entryPoints);
+        return new ShaderMetadata(includes, variables, structures, constantBuffers, entryPoints, functions);
     }
 }

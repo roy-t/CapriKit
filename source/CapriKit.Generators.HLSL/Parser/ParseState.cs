@@ -84,6 +84,17 @@ internal sealed class ParseState
         return t.Value;
     }
 
+    public bool PeekType()
+    {
+        var t = Peek();
+        if (t.Kind == TokenKind.Keyword || t.Kind == TokenKind.Identifier)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     public void ExpectOperator(string value)
     {
         var t = Advance();

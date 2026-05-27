@@ -1,6 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
 using System.Diagnostics.CodeAnalysis;
-using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -14,7 +13,7 @@ internal static class EntryPointParser
     };
 
     /// <summary>
-    /// Parses a HLSL entry-point, a function tagged by a #pragma directive.    
+    /// Parses a HLSL entry-point, a function tagged by a #pragma directive.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-function-syntax"/>
     public static bool TryParse(ParseState state, [NotNullWhen(true)] out EntryPoint? entry)
@@ -35,17 +34,12 @@ internal static class EntryPointParser
 
         state.Advance();
 
-        state.Match(TokenKind.Keyword, "inline");
-        state.Match(TokenKind.Keyword, "precise");
+        if (FunctionParser.TryParse(state, out var function))
+        {
+            entry = new EntryPoint(kind, function.Name, function.Semantic);
+            return true;
+        }
 
-        state.ExpectType();
-        var name = state.ExpectIdentifier();
-
-        SkipArgumentList(state);
-        var semantic = SemanticParser.ParseSemantic(state);
-        SkipMethodBlock(state);
-
-        entry = new EntryPoint(kind, name, semantic);
-        return true;
+        return false;
     }
 }
