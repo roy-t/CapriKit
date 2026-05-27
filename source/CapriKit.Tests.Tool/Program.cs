@@ -35,8 +35,8 @@ public partial class Program
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
-        private readonly StateMachine StateMachine;
-        private readonly IImmediateTest[] Tests;
+        private readonly ITestScreen[] Tests;
+        private ITestScreen CurrentTest;
 
         private bool running;
 
@@ -56,8 +56,8 @@ public partial class Program
             SwapChain = new SwapChain(Device, Window);
             ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
 
-            StateMachine = new StateMachine();
-            Tests = [new ScreenStateTest(StateMachine, Window)];
+            Tests = [new WindowStatesTest(Window)];
+            CurrentTest = Tests[0];
         }
 
         public void Run()
@@ -72,12 +72,11 @@ public partial class Program
                 HandleInput();
                 HandleResize();
 
-                UpdateMenu(StateMachine, Tests);
-                StateMachine.Update();
-
                 SwapChain.Clear(Device.ImmediateDeviceContext);
                 Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer(SwapChain);
 
+                UpdateMenu();
+                CurrentTest.Render(Device.ImmediateDeviceContext);
                 ImGuiController.Render();
 
                 Device.ImmediateDeviceContext.OM.UnsetRenderTargets();
@@ -92,19 +91,18 @@ public partial class Program
             AnalyzeRenderDocCaptures();
         }
 
-        internal static void UpdateMenu(StateMachine stateMachine, IImmediateTest[] tests)
+        private void UpdateMenu()
         {
             ImGui.DockSpaceOverViewport(0, ImGui.GetMainViewport(), ImGuiDockNodeFlags.PassthruCentralNode);
             if (ImGui.BeginMainMenuBar())
             {
                 if (ImGui.BeginMenu("Tests"))
                 {
-                    foreach (var test in tests)
+                    foreach (var test in Tests)
                     {
-                        if (ImGui.MenuItem($"Test #1 ({test.Result})"))
+                        if (ImGui.MenuItem($"{test.Title}", string.Empty, CurrentTest == test))
                         {
-                            var state = test.Create(stateMachine);
-                            stateMachine.PushState(state);
+                            CurrentTest = test;
                         }
                     }
 

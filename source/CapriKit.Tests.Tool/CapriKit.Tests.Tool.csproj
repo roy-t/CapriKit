@@ -6,12 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Assets\ImGuiShader.hlsl" />
     <None Remove="CapriKit.Generators.HLSL.json" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Assets\ImGuiShader.hlsl" />
+    <AdditionalFiles Include="Assets\BasicShader.hlsl" />
     <AdditionalFiles Include="CapriKit.Generators.HLSL.json" />
   </ItemGroup>
 

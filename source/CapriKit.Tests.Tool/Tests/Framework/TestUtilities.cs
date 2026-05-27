@@ -3,16 +3,23 @@ using System.Numerics;
 
 namespace CapriKit.Tests.Tool.Tests.Framework;
 
+public enum ModalResult
+{
+    Unknown,
+    Yes,
+    No
+}
+
 internal static class TestUtilities
 {
-    public static ImmediateResult ShowModal(string message, bool open)
+    public static ModalResult ShowModal(string message, bool open)
     {
         if (open)
         {
             ImGui.OpenPopup(nameof(ShowModal));
         }
 
-        var result = ImmediateResult.Unknown;
+        var result = ModalResult.Unknown;
 
         if (ImGui.BeginPopupModal(nameof(ShowModal), ImGuiWindowFlags.AlwaysAutoResize))
         {
@@ -21,7 +28,7 @@ internal static class TestUtilities
 
             if (ImGui.Button("Yes", new Vector2(120, 0)))
             {
-                result = ImmediateResult.Success;
+                result = ModalResult.Yes;
                 ImGui.CloseCurrentPopup();
             }
             ImGui.SetItemDefaultFocus();
@@ -29,7 +36,7 @@ internal static class TestUtilities
             ImGui.SameLine();
             if (ImGui.Button("No", new Vector2(120, 0)))
             {
-                result = ImmediateResult.Failure;
+                result = ModalResult.No;
                 ImGui.CloseCurrentPopup();
             }
 
