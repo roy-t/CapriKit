@@ -12,11 +12,11 @@ internal sealed class ShaderIncludeResolver : CallbackBase, Include
         public FilePath Source { get; } = source;
     }
 
-    private readonly IReadOnlyVirtualFileSystem FileSystem;
+    private readonly ReadOnlyScopedFileSystem FileSystem;
 
-    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem)
+    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem, string basePath)
     {
-        FileSystem = fileSystem;
+        FileSystem = new ReadOnlyScopedFileSystem(fileSystem, basePath);
     }
 
     public Stream Open(IncludeType type, string fileName, Stream? parentStream)

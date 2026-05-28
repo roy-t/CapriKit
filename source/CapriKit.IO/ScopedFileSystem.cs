@@ -1,8 +1,11 @@
+using System.Diagnostics;
+
 namespace CapriKit.IO;
 
 
 public class ForbiddenPathException(string Path, string RequiredBasePath)
     : Exception($"Attempt to access {Path} that does not have the required base path {RequiredBasePath}");
+
 
 /// <summary>
 /// Limits access to the base path and all its sub-directories. Relative paths
@@ -10,49 +13,89 @@ public class ForbiddenPathException(string Path, string RequiredBasePath)
 /// that resolve to directories outside of the scope of this file system results
 /// in a ForbiddenPathException.
 /// </summary>
-public sealed class ScopedFileSystem(DirectoryPath basePath) : FileSystem
+public sealed class ScopedFileSystem(IVirtualFileSystem source, DirectoryPath basePath)
+    : ReadOnlyScopedFileSystem(source, basePath), IVirtualFileSystem
 {
-    public string BasePath { get; } = basePath;
-
-    internal override FilePath GetFilePath(string path)
+    public Stream AppendWrite(FilePath file)
     {
-        var originalPath = base.GetFilePath(path);
-        return originalPath.GetPathRelativeTo(BasePath);
+        return source.AppendWrite(GetFilePath(file));
     }
 
-    internal override FileInfo GetFileInfo(FilePath file)
+    public Stream CreateReadWrite(FilePath file)
     {
-        var absolutePath = file.IsAbsolute ? file : file.ToAbsolute(BasePath);
-        ThrowIfPathIsOutsideBasePath(absolutePath);
-        return new FileInfo(absolutePath.ToString());
+        return source.CreateReadWrite(GetFilePath(file));
     }
 
-    internal override DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    public void Delete(FilePath file)
     {
-        var absolutePath = path.IsAbsolute ? path : path.ToAbsolute(BasePath);
-        ThrowIfPathIsOutsideBasePath(absolutePath);
-        return new DirectoryInfo(absolutePath.ToString());
+        source.Delete(GetFilePath(file));
+    }
+}
+
+/// <summary>
+/// Limits access to the base path and all its sub-directories. Relative paths
+/// are assumed to be relative to the base path. Using relative or absolute paths
+/// that resolve to directories outside of the scope of this file system results
+/// in a ForbiddenPathException.
+/// </summary>
+public class ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, DirectoryPath basePath) : IReadOnlyVirtualFileSystem
+{
+    public bool Exists(FilePath file)
+    {
+        return source.Exists(GetFilePath(file));
     }
 
-    private void ThrowIfPathIsOutsideBasePath(FilePath file)
+    public DateTime LastWriteTime(FilePath file)
     {
-        if (file.IsAbsolute)
+        return source.LastWriteTime(GetFilePath(file));
+    }
+
+    public IReadOnlyList<FilePath> List(DirectoryPath directory)
+    {
+        return source.List(GetDirectoryPath(directory));
+    }
+
+    public Stream OpenRead(FilePath file)
+    {
+        return source.OpenRead(GetFilePath(file));
+    }
+
+    public long SizeInBytes(FilePath file)
+    {
+        return source.SizeInBytes(GetFilePath(file));
+    }
+
+    protected DirectoryPath GetDirectoryPath(DirectoryPath path)
+    {
+        var fullPath = path.GetPathRelativeTo(basePath);
+        ThrowIfPathIsOutsideBasePath(fullPath);
+
+        return fullPath;
+    }
+
+    protected FilePath GetFilePath(FilePath path)
+    {
+        var fullPath = path.GetPathRelativeTo(basePath);
+        ThrowIfPathIsOutsideBasePath(fullPath);
+
+        return fullPath;
+    }
+
+    protected void ThrowIfPathIsOutsideBasePath(FilePath file)
+    {
+        Debug.Assert(file.IsAbsolute);
+        if (!file.StartsWith(basePath))
         {
-            if (!file.StartsWith(BasePath))
-            {
-                throw new ForbiddenPathException(file, BasePath);
-            }
+            throw new ForbiddenPathException(file, basePath);
         }
     }
 
-    private void ThrowIfPathIsOutsideBasePath(DirectoryPath path)
+    protected void ThrowIfPathIsOutsideBasePath(DirectoryPath path)
     {
-        if (path.IsAbsolute)
+        Debug.Assert(path.IsAbsolute);
+        if (!path.StartsWith(basePath))
         {
-            if (!path.StartsWith(BasePath))
-            {
-                throw new ForbiddenPathException(path, BasePath);
-            }
+            throw new ForbiddenPathException(path, basePath);
         }
     }
 }

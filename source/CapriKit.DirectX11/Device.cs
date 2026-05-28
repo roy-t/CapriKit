@@ -58,8 +58,17 @@ public class Device : IDisposable
     public DepthStencilStates DepthStencilStates { get; }
     public RasterizerStates RasterizerStates { get; }
 
+    /// <summary>
+    /// Gets the immediate device context, of which there is only one and which is NOT thread safe.
+    /// Prefer creating a deferred context and only use the immediate device context for final rendering.
+    /// </summary>
     public ImmediateDeviceContext ImmediateDeviceContext { get; }
 
+    /// <summary>
+    /// Creates a deferred rendering context to be used by a single system. Note that the deferred rendering
+    /// context is not thread safe, instead each thread can create and own their own context, which still
+    /// allows you to do multi-threaded rendering
+    /// </summary>
     public DeferredDeviceContext CreateDeferredContext(string? nameHint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
     {
         var context = ID3D11Device.CreateDeferredContext();

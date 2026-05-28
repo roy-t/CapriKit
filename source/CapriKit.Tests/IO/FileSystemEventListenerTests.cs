@@ -30,8 +30,10 @@ internal class FileSystemEventListenerTests
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var deleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var fileSystem = new ScopedFileSystem(TempDirectory);
-        using var watcher = fileSystem.Watch(new DirectoryPath("."));
+
+        var fileSystem = new FileSystem();
+        var scopedFileSystem = new ScopedFileSystem(fileSystem, TempDirectory);
+        using var watcher = fileSystem.Watch(TempDirectory);
         watcher.OnFileChanged += (s, e) =>
         {
             if (e.reason == FileSystemChangeKind.Created && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
@@ -50,9 +52,9 @@ internal class FileSystemEventListenerTests
             }
         };
 
-        using (var create = fileSystem.CreateReadWrite(fileName)) { }
-        using (var append = fileSystem.AppendWrite(fileName)) { append.WriteByte(123); }
-        fileSystem.Delete(fileName);
+        using (var create = scopedFileSystem.CreateReadWrite(fileName)) { }
+        using (var append = scopedFileSystem.AppendWrite(fileName)) { append.WriteByte(123); }
+        scopedFileSystem.Delete(fileName);
 
         // Instead of a regular assert we have wait for the three events or timeout.
         try
@@ -62,7 +64,7 @@ internal class FileSystemEventListenerTests
         }
         catch (TimeoutException)
         {
-            Assert.Fail("Test timed out befor receiving all file system events: " +
+            Assert.Fail("Test timed out before receiving all file system events: " +
                 $"created:{created.Task.IsCompleted}, " +
                 $"changed:{changed.Task.IsCompleted}, " +
                 $"deleted:{deleted.Task.IsCompleted}.");

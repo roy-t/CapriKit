@@ -57,7 +57,12 @@ public sealed class FilePath : IEquatable<FilePath>
             return new FilePath(relativePath);
         }
 
-        throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
+        if (IsAbsolute)
+        {
+            throw new Exception($"File {Path} is not in the given base path {basePath} or a sub directory of it.");
+        }
+
+        return basePath.Append(this);
     }
 
     public bool StartsWith(string beginning)

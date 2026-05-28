@@ -46,7 +46,7 @@ public sealed class ImGuiRenderer : IDisposable
         io.Fonts.TexID = FONT_TEXTURE_ID;
     }
 
-    internal void Render(ImDrawDataPtr data)
+    internal void Render(ImDrawDataPtr data, DeviceContext context)
     {
         if (data.DisplaySize.X <= 0.0f || data.DisplaySize.Y <= 0.0f || data.TotalVtxCount <= 0)
         {
@@ -58,8 +58,8 @@ public sealed class ImGuiRenderer : IDisposable
 
         var vertexOffset = 0;
         var indexOffset = 0;
-        using (var vertexWriter = VertexBuffer.OpenWriter(Device.ImmediateDeviceContext))
-        using (var indexWriter = IndexBuffer.OpenWriter(Device.ImmediateDeviceContext))
+        using (var vertexWriter = VertexBuffer.OpenWriter(context))
+        using (var indexWriter = IndexBuffer.OpenWriter(context))
         {
             for (var n = 0; n < data.CmdListsCount; n++)
             {
@@ -77,9 +77,9 @@ public sealed class ImGuiRenderer : IDisposable
 
         // Setup orthographic projection matrix into our constant buffer
         var projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0, data.DisplaySize.X, data.DisplaySize.Y, 0, -1.0f, 1.0f);
-        ConstantBuffer.Write(Device.ImmediateDeviceContext, [projectionMatrix]);
+        ConstantBuffer.Write(context, [projectionMatrix]);
 
-        SetupRenderState(data, Device.ImmediateDeviceContext);
+        SetupRenderState(data, context);
 
         // Render command lists
         // (Because we merged all buffers into a single one, we maintain our own offset into them)
@@ -96,20 +96,20 @@ public sealed class ImGuiRenderer : IDisposable
                 var right = (int)(cmd.ClipRect.Z - data.DisplayPos.X);
                 var bottom = (int)(cmd.ClipRect.W - data.DisplayPos.Y);
 
-                Device.ImmediateDeviceContext.RS.SetScissorRect(left, top, right - left, bottom - top);
+                context.RS.SetScissorRect(left, top, right - left, bottom - top);
                 if (cmd.TextureId != FONT_TEXTURE_ID)
                 {
                     throw new NotSupportedException("Unexpected texture id");
                 }
                 Device.ID3D11Device.ImmediateContext.PSSetShaderResource(0, FontTextureView);
-                Device.ImmediateDeviceContext.DrawIndexed(cmd.ElemCount, cmd.IdxOffset + globalIndexOffset, (int)(cmd.VtxOffset + localVertexOffset));
+                context.DrawIndexed(cmd.ElemCount, cmd.IdxOffset + globalIndexOffset, (int)(cmd.VtxOffset + localVertexOffset));
             }
             globalIndexOffset += (uint)cmdList.IdxBuffer.Size;
             localVertexOffset += (uint)cmdList.VtxBuffer.Size;
         }
     }
 
-    private void SetupRenderState(ImDrawDataPtr drawData, ImmediateDeviceContext context)
+    private void SetupRenderState(ImDrawDataPtr drawData, DeviceContext context)
     {
         var output = new System.Drawing.Rectangle(0, 0, (int)drawData.DisplaySize.X, (int)drawData.DisplaySize.Y);
         context.Setup(Effect.InputLayout, PrimitiveTopology.TriangleList, Effect.VertexShader, Device.RasterizerStates.CullNone, in output, Effect.PixelShader, Device.BlendStates.NonPreMultiplied, Device.DepthStencilStates.None);

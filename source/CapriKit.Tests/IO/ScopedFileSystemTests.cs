@@ -9,9 +9,10 @@ internal class ScopedFileSystemTests
     public async Task Accessing_File_Outside_Base_Path_Throws()
     {
         var basePath = new DirectoryPath(Path.Join(Path.GetTempPath(), "ScopedPath"));
-        var sut = new ScopedFileSystem(basePath);
+        var fileSystem = new InMemoryFileSystem();
+        var sut = new ScopedFileSystem(fileSystem, basePath);
 
-        var forbiddenPath = basePath.Append([".."]).Append(new FilePath("forbidden.txt"));
+        var forbiddenPath = new FilePath("../forbidden.txt");
 
         await Assert.That(() =>
         {

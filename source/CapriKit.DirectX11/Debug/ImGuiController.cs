@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Contexts;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using ImGuiNET;
@@ -36,10 +37,10 @@ public sealed class ImGuiController : IDisposable
         ImGui.NewFrame();
     }
 
-    public void Render()
+    public void Render(DeviceContext context)
     {
         ImGui.Render();
-        Renderer.Render(ImGui.GetDrawData());
+        Renderer.Render(ImGui.GetDrawData(), context);
     }
 
     public void Dispose()

@@ -44,6 +44,7 @@ internal class FilePathTests
     {
         var parentPath = new DirectoryPath("C:/");
         await Assert.That(AbsolutePath.GetPathRelativeTo(parentPath)).IsEqualTo(RelativePath);
+        await Assert.That(RelativePath.GetPathRelativeTo(parentPath)).IsEqualTo(AbsolutePath);
 
         var badParentPath = new DirectoryPath("D:/");
         await Assert.That(() => AbsolutePath.GetPathRelativeTo(badParentPath)).Throws<Exception>();

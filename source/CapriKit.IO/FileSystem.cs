@@ -81,18 +81,18 @@ public class FileSystem : IVirtualFileSystem
         throw new FileNotFoundException(null, file.ToString());
     }
 
-    internal virtual FilePath GetFilePath(string path)
+    internal FilePath GetFilePath(string path)
     {
         return new FilePath(path);
     }
 
-    internal virtual FileInfo GetFileInfo(FilePath file)
+    internal FileInfo GetFileInfo(FilePath file)
     {
         var absolutePath = file.IsAbsolute ? file : file.ToAbsolute();
         return new FileInfo(absolutePath.ToString());
     }
 
-    internal virtual DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    internal DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
         var absolutePath = path.IsAbsolute ? path : path.ToAbsolute();
         return new DirectoryInfo(absolutePath.ToString());

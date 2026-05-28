@@ -1,5 +1,6 @@
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
+using CapriKit.IO;
 using CapriKit.Tests.Tool.Tests;
 using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32;
@@ -35,6 +36,8 @@ public partial class Program
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
+        private readonly IVirtualFileSystem FileSystem;
+
         private readonly ITestScreen[] Tests;
         private ITestScreen CurrentTest;
 
@@ -46,7 +49,7 @@ public partial class Program
             Mouse = Win32Application.Mouse;
             Keyboard = Win32Application.Keyboard;
 
-            RenderDoc = EnableRenderDoc()
+            RenderDoc = CommandLineArguments.IsPresent("--renderdoc")
                 ? RenderDoc.TryLoad()
                 : null;
 
@@ -55,8 +58,13 @@ public partial class Program
             Device = new Device();
             SwapChain = new SwapChain(Device, Window);
             ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
+            FileSystem = new ScopedFileSystem(CommandLineArguments.GetArgumentValue("--content"));
 
-            Tests = [new WindowStatesTest(Window)];
+            Tests =
+            [
+                new WindowStatesTest(Window),
+                new ShaderTest(Device, FileSystem)
+            ];
             CurrentTest = Tests[0];
         }
 
@@ -68,18 +76,20 @@ public partial class Program
 
             while (running)
             {
+                var context = Device.ImmediateDeviceContext;
+
                 ImGuiController.NewFrame((float)elapsed);
                 HandleInput();
                 HandleResize();
 
-                SwapChain.Clear(Device.ImmediateDeviceContext);
-                Device.ImmediateDeviceContext.OM.SetRenderTargetToBackBuffer(SwapChain);
+                SwapChain.Clear(context);
+                context.OM.SetRenderTargetToBackBuffer(SwapChain);
 
                 UpdateMenu();
-                CurrentTest.Render(Device.ImmediateDeviceContext);
-                ImGuiController.Render();
+                CurrentTest.Render(context);
+                ImGuiController.Render(context);
 
-                Device.ImmediateDeviceContext.OM.UnsetRenderTargets();
+                context.OM.UnsetRenderTargets();
                 SwapChain.Present();
 
                 running &= Win32Application.PumpMessages();
@@ -146,12 +156,6 @@ public partial class Program
                     RenderDoc.LaunchReplayUI(capture);
                 }
             }
-        }
-
-        private static bool EnableRenderDoc()
-        {
-            var args = Environment.GetCommandLineArgs();
-            return args.Any(s => s.Equals("--renderdoc", StringComparison.InvariantCultureIgnoreCase));
         }
 
         public void Dispose()

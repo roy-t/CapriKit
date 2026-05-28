@@ -19,6 +19,7 @@
     <File Path="Generators.Build.props" />
     <File Path="global.json" />
     <File Path="README.md" />
+    <File Path="RESPONSIBLE_USE_OF_AI.md" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="source/CapriKit.Benchmarks/CapriKit.Benchmarks.csproj">

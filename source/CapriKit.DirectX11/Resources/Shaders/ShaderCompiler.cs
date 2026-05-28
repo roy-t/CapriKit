@@ -78,6 +78,7 @@ public static class ShaderCompiler
 
     private static ReadOnlySpan<byte> Compile(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name, string profile)
     {
+        // TODO: define how to pass the right base path for includes
         using var includeResolver = new ShaderIncludeResolver(includes);
 
         var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);
@@ -86,7 +87,7 @@ public static class ShaderCompiler
             ShaderCompilationAnalyzer.ThrowOnWarningOrError(errorBlob.AsSpan());
         }
 
-        // Check the general return value for problems, AFTER having analyzed the errors        
+        // Check the general return value for problems, AFTER having analyzed the errors
         result.CheckError();
 
         return blob.AsSpan();
@@ -96,7 +97,7 @@ public static class ShaderCompiler
     /// Uses shader reflection to get the number of threads in the x, y and z dimension
     /// as defined via [numthreads] on the compute shader's entry point. These values
     /// can be used to calculate the dispatch size.
-    /// </summary>    
+    /// </summary>
     private static (uint x, uint y, uint z) QueryNumThreads(ReadOnlySpan<byte> blob, string name)
     {
         var result = Compiler.Reflect<ID3D11ShaderReflection>(blob, out var reflection);

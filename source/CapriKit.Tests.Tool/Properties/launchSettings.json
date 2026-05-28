@@ -2,11 +2,12 @@
   "profiles": {
     "CapriKit.Tests.Tool": {
       "commandName": "Project",
+      "commandLineArgs": "--content \"$(ProjectDir)Assets\"",
       "nativeDebugging": true
     },
     "CapriKit.Tests.Tool --RenderDoc": {
       "commandName": "Project",
-      "commandLineArgs": "--renderdoc",
+      "commandLineArgs": "--renderdoc --content \"$(ProjectDir)Assets\"",
       "nativeDebugging": true
     }
   }

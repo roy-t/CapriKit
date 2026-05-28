@@ -27,7 +27,7 @@ internal class IVirtualFileSystemTests
         {
             yield return () => new InMemoryFileSystem();
             yield return () => new FileSystem();
-            yield return () => new ScopedFileSystem(new DirectoryPath(Path.GetTempPath()));
+            yield return () => new ScopedFileSystem(new FileSystem(), Path.GetTempPath());
         }
     }
 
