@@ -11,24 +11,16 @@ internal static class MemberParser
         public string Name { get; set; } = string.Empty;
         public List<uint> Dimensions { get; } = [];
         public string Semantic { get; set; } = string.Empty;
-
-        public Member ToMember() => new(Type, Name, Semantic, Modifiers, Dimensions);
     }
 
     /// <summary>
-    /// Parses zero or more HLSL struct members
+    /// A parser that accumulates zero or more members, for embedding in a struct or cbuffer parser.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct"/>
-    public static List<Member> ParseList(ParseState state)
-    {
-        var members = new List<Member>();
-        var parser = new ParserBuilder<List<Member>>()
+    public static ParserBuilder<List<Member>> CreateListParser() =>
+        new ParserBuilder<List<Member>>()
             .Repeat(new ParserBuilder<List<Member>>()
-                .SubTree(CreateMemberParser(), () => new MemberAccumulator(), (list, m) => { list.Add(m.ToMember()); return list; }));
-
-        parser.TryParse(state, ref members);
-        return members;
-    }
+                .SubTree(CreateMemberParser(), () => new MemberAccumulator(), (list, m) => { list.Add(ToMember(m)); return list; }));
 
     public static Member Parse(ParseState state)
     {
@@ -38,7 +30,7 @@ internal static class MemberParser
             throw new Exception("Expected a struct member.");
         }
 
-        return accumulator.ToMember();
+        return ToMember(accumulator);
     }
 
     private static ParserBuilder<MemberAccumulator> CreateMemberParser()
@@ -57,5 +49,10 @@ internal static class MemberParser
             .Repeat(dimension) // repeat for 0..n dimensions
             .OptionalSemantic((a, t) => { a.Semantic = t.Value; return a; })
             .Required(Operator(";"));
+    }
+
+    private static Member ToMember(MemberAccumulator accumulator)
+    {
+        return new(accumulator.Type, accumulator.Name, accumulator.Semantic, accumulator.Modifiers, accumulator.Dimensions);
     }
 }

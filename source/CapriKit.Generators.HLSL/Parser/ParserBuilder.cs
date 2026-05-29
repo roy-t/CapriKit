@@ -78,7 +78,7 @@ internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close)
     }
 }
 
-internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser)
+internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -88,14 +88,15 @@ internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parse
             return true;
         }
 
-        return false;
+        return IsOptional;
     }
 }
 
 internal record SubTreeParseStep<TAccumulator, TChild>(
     ParserBuilder<TChild> Parser,
     Func<TChild> Seed,
-    Func<TAccumulator, TChild, TAccumulator> Merge)
+    Func<TAccumulator, TChild, TAccumulator> Merge,
+    bool IsOptional)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -103,7 +104,7 @@ internal record SubTreeParseStep<TAccumulator, TChild>(
         var child = Seed();
         if (!Parser.TryParse(state, ref child))
         {
-            return false;
+            return IsOptional;
         }
 
         accumulator = Merge(accumulator, child);
@@ -156,21 +157,21 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
-    public ParserBuilder<TAccumulator> SubTree(ParserBuilder<TAccumulator> parser)
+    public ParserBuilder<TAccumulator> SubTree(ParserBuilder<TAccumulator> parser, bool isOptional = false)
     {
-        Steps.Add(new SubTreeParseStep<TAccumulator>(parser));
+        Steps.Add(new SubTreeParseStep<TAccumulator>(parser, isOptional));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> SubTree<TChild>(ParserBuilder<TChild> parser, Func<TChild> seed, Func<TAccumulator, TChild, TAccumulator> merge)
+    public ParserBuilder<TAccumulator> SubTree<TChild>(ParserBuilder<TChild> parser, Func<TChild> seed, Func<TAccumulator, TChild, TAccumulator> merge, bool isOptional = false)
     {
-        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge));
+        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge, isOptional));
         return this;
     }
 
     public ParserBuilder<TAccumulator> Repeat(ParserBuilder<TAccumulator> parser)
     {
-        Steps.Add(new RepeatParseStep<TAccumulator>(new SubTreeParseStep<TAccumulator>(parser)));
+        Steps.Add(new RepeatParseStep<TAccumulator>(new SubTreeParseStep<TAccumulator>(parser, false)));
         return this;
     }
 

@@ -66,8 +66,12 @@ internal class MemberParserTests
         var tokens = HLSLTokenizer.Parse("float a; float4 b : COLOR; }");
         var state = new ParseState(tokens);
 
-        var members = MemberParser.ParseList(state);
+        var parser = MemberParser.CreateListParser();
 
+        var members = new List<Member>();
+        var result = parser.TryParse(state, ref members);
+
+        await Assert.That(result).IsTrue();
         await Assert.That(members).Count().IsEqualTo(2);
         await Assert.That(members[0].Name).IsEqualTo("a");
         await Assert.That(members[1].Name).IsEqualTo("b");
