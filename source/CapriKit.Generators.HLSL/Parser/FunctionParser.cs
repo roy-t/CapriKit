@@ -5,7 +5,7 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 internal static class FunctionParser
 {
-    private record FunctionAccumulator
+    internal record FunctionAccumulator
     {
         public string Name { get; set; } = string.Empty;
         public string Semantic { get; set; } = string.Empty;
@@ -13,14 +13,7 @@ internal static class FunctionParser
 
     public static bool TryParse(ParseState state, [NotNullWhen(true)] out Function? function)
     {
-        var parser = new ParserBuilder<FunctionAccumulator>()
-            .Optional(Keyword("inline"))
-            .Optional(Keyword("precise"))
-            .Required(AnyType)
-            .Required(AnyIdentifier, (a, t) => a with { Name = t.Value })
-            .RequiredBlock(Operator("("), Operator(")"))
-            .OptionalSemantic((a, t) => a with { Semantic = t.Value })
-            .RequiredBlock(Operator("{"), Operator("}"));
+        var parser = Create();
 
         var accumulator = new FunctionAccumulator();
         if (parser.TryParse(state, ref accumulator))
@@ -31,5 +24,17 @@ internal static class FunctionParser
 
         function = default;
         return false;
+    }
+
+    public static ParserBuilder<FunctionAccumulator> Create()
+    {
+        return new ParserBuilder<FunctionAccumulator>()
+            .Optional(Keyword("inline"))
+            .Optional(Keyword("precise"))
+            .Required(AnyType)
+            .Required(AnyIdentifier, (a, t) => a with { Name = t.Value })
+            .RequiredBlock(Operator("("), Operator(")"))
+            .OptionalSemantic((a, t) => a with { Semantic = t.Value })
+            .RequiredBlock(Operator("{"), Operator("}"));
     }
 }

@@ -4,6 +4,7 @@ using static CapriKit.Generators.HLSL.Parser.ParserUtils;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
+// TODO: Move over to new style, see MemberParser, when done, see if ParserUtils can be deleted
 internal static class VariableParser
 {
     /// <summary>
