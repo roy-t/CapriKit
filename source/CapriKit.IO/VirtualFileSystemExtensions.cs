@@ -5,6 +5,16 @@ namespace CapriKit.IO;
 
 public static class VirtualFileSystemExtensions
 {
+    public static ScopedFileSystem ScopedTo(this IVirtualFileSystem system, DirectoryPath basePath)
+    {
+        return new ScopedFileSystem(system, basePath);
+    }
+
+    public static ReadOnlyScopedFileSystem ScopedToReadOnly(this IReadOnlyVirtualFileSystem system, DirectoryPath basePath)
+    {
+        return new ReadOnlyScopedFileSystem(system, basePath);
+    }
+
     public static async Task<string> ReadAllText(this IReadOnlyVirtualFileSystem system, FilePath file, Encoding? encoding = default, CancellationToken cancellationToken = default)
     {
         using var stream = system.OpenRead(file);

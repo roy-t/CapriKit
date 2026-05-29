@@ -19,15 +19,15 @@ public static class ShaderCompiler
     private const string PIXEL_SHADER_PROFILE = "ps_5_0";
     private const string COMPUTE_SHADER_PROFILE = "cs_5_0";
 
-    public static IVertexShader CompileVertexShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
+    public static IVertexShader CompileVertexShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
     {
-        var byteCode = CompileVertexShader(includes, source, entryPoint, name);
+        var byteCode = CompileVertexShader(fileSystem, includePath, source, entryPoint, name);
         return CreateVertexShader(byteCode, device);
     }
 
-    public static VertexShaderByteCode CompileVertexShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    public static VertexShaderByteCode CompileVertexShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(includes, source, entryPoint, name, VERTEX_SHADER_PROFILE);
+        var blob = Compile(fileSystem, includePath, source, entryPoint, name, VERTEX_SHADER_PROFILE);
         return new VertexShaderByteCode(blob.ToArray(), entryPoint, name);
     }
 
@@ -38,15 +38,15 @@ public static class ShaderCompiler
         return new VertexShader(byteCode.Bytes, shader);
     }
 
-    public static IPixelShader CompilePixelShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
+    public static IPixelShader CompilePixelShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
     {
-        var byteCode = CompilePixelShader(includes, source, entryPoint, name);
+        var byteCode = CompilePixelShader(fileSystem, includePath, source, entryPoint, name);
         return CreatePixelShader(byteCode, device);
     }
 
-    public static PixelShaderByteCode CompilePixelShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    public static PixelShaderByteCode CompilePixelShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(includes, source, entryPoint, name, PIXEL_SHADER_PROFILE);
+        var blob = Compile(fileSystem, includePath, source, entryPoint, name, PIXEL_SHADER_PROFILE);
         return new PixelShaderByteCode(blob.ToArray(), entryPoint, name);
     }
     public static IPixelShader CreatePixelShader(PixelShaderByteCode byteCode, Device device)
@@ -56,15 +56,15 @@ public static class ShaderCompiler
         return new PixelShader(shader);
     }
 
-    public static IComputeShader CompileComputeShader(IReadOnlyVirtualFileSystem includes, Device device, string source, string entryPoint, string name)
-    {
-        var byteCode = CompileComputeShader(includes, source, entryPoint, name);
+    public static IComputeShader CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
+    {        
+        var byteCode = CompileComputeShader(fileSystem, includePath, source, entryPoint, name);
         return CreateComputeShader(byteCode, device);
     }
 
-    public static ComputeShaderByteCode CompileComputeShader(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name)
+    public static ComputeShaderByteCode CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(includes, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
+        var blob = Compile(fileSystem, includePath, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
         var (x, y, z) = QueryNumThreads(blob, name);
         return new ComputeShaderByteCode(blob.ToArray(), x, y, z, entryPoint, name);
     }
@@ -76,10 +76,9 @@ public static class ShaderCompiler
         return new ComputeShader(shader, byteCode.NumThreadsX, byteCode.NumThreadsY, byteCode.NumThreadsZ);
     }
 
-    private static ReadOnlySpan<byte> Compile(IReadOnlyVirtualFileSystem includes, string source, string entryPoint, string name, string profile)
+    private static ReadOnlySpan<byte> Compile(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name, string profile)
     {
-        // TODO: define how to pass the right base path for includes
-        using var includeResolver = new ShaderIncludeResolver(includes);
+        using var includeResolver = new ShaderIncludeResolver(fileSystem, includePath);
 
         var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);
         if (errorBlob != null)

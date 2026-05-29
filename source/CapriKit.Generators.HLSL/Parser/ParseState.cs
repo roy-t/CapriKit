@@ -4,26 +4,26 @@ namespace CapriKit.Generators.HLSL.Parser;
 
 internal sealed class ParseState
 {
-    private readonly IReadOnlyList<Token> tokens;
+    private readonly IReadOnlyList<Token> Tokens;
     private int cursor;
 
     public ParseState(IReadOnlyList<Token> tokens)
     {
-        this.tokens = [.. tokens.Where(t => !HLSLTokenizer.IsTrivia(t))];
+        Tokens = [.. tokens.Where(t => !HLSLTokenizer.IsTrivia(t))];
         cursor = 0;
     }
 
-    public bool IsAtEnd => cursor >= tokens.Count;
+    public bool IsAtEnd => cursor >= Tokens.Count;
 
-    public Token Peek() => tokens[cursor];
+    public Token Peek() => Tokens[cursor];
 
-    public bool Peek(TokenKind kind) => !IsAtEnd && tokens[cursor].Kind == kind;
+    public bool Peek(TokenKind kind) => !IsAtEnd && Tokens[cursor].Kind == kind;
 
-    public bool Peek(TokenKind kind, string value) => !IsAtEnd && tokens[cursor].Kind == kind && tokens[cursor].Value.Equals(value);
+    public bool Peek(TokenKind kind, string value) => !IsAtEnd && Tokens[cursor].Kind == kind && Tokens[cursor].Value.Equals(value);
 
-    public bool Peek(TokenKind kind, HashSet<string> values) => !IsAtEnd && tokens[cursor].Kind == kind && values.Contains(tokens[cursor].Value);
+    public bool Peek(TokenKind kind, HashSet<string> values) => !IsAtEnd && Tokens[cursor].Kind == kind && values.Contains(Tokens[cursor].Value);
 
-    public Token Advance() => tokens[cursor++];
+    public Token Advance() => Tokens[cursor++];
 
     /// <summary>
     /// Captures the current cursor so a speculative parse can be rewound with <see cref="Restore"/>.

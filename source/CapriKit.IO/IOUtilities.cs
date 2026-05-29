@@ -75,7 +75,7 @@ public static class IOUtilities
     }
 
     /// <summary>
-    /// Determines if a file name contains any invalid character.
+    /// Determines if a file name is not just whitespace or contains any invalid character.
     /// </summary>
     public static bool IsValidFileName(ReadOnlySpan<char> name)
     {
@@ -90,7 +90,7 @@ public static class IOUtilities
     /// <summary>
     /// Determines if a path to a file has any invalid characters. An empty
     /// path is invalid as it does not identify a single file.
-    /// </summary>    
+    /// </summary>
     public static bool IsValidFilePath(ReadOnlySpan<char> path)
     {
         if (path.IsWhiteSpace())

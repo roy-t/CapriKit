@@ -9,6 +9,7 @@ namespace CapriKit.IO;
 /// </summary>
 public sealed class DirectoryPath : IEquatable<DirectoryPath>
 {
+    public static DirectoryPath Empty { get; } = new(null);
     private readonly string Path;
 
     public DirectoryPath(ReadOnlySpan<char> path)
@@ -142,11 +143,6 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
 
     public static implicit operator DirectoryPath(string? path)
     {
-        if (string.IsNullOrEmpty(path))
-        {
-            throw new Exception($"Cannot convert null or empty string to {nameof(DirectoryPath)}.");
-        }
-
         return new DirectoryPath(path);
     }
 

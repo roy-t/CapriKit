@@ -12,8 +12,8 @@ internal sealed class ImGuiEffect : IDisposable
     public ImGuiEffect(Device device)
     {
         var fileSystem = new InMemoryFileSystem();
-        VertexShader = ShaderCompiler.CompileVertexShader(fileSystem, device, ShaderSource, "VS", "ImGui.vs");
-        PixelShader = ShaderCompiler.CompilePixelShader(fileSystem, device, ShaderSource, "PS", "ImGui.ps");
+        VertexShader = ShaderCompiler.CompileVertexShader(fileSystem, string.Empty, device, ShaderSource, "VS", "ImGui.vs");
+        PixelShader = ShaderCompiler.CompilePixelShader(fileSystem, string.Empty, device, ShaderSource, "PS", "ImGui.ps");
 
         var elements = new InputElementDescription[]
         {

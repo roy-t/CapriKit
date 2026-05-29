@@ -32,8 +32,10 @@ internal sealed class ShaderTest : ITestScreen
     public static async Task<ShaderTest> Create(Device device, IVirtualFileSystem fileSystem)
     {
         var source = await fileSystem.ReadAllText(BasicShader.Path);
-        var vs = ShaderCompiler.CompileVertexShader(fileSystem, device, source, Vs, nameof(Vs));
-        var ps = ShaderCompiler.CompilePixelShader(fileSystem, device, source, Ps, nameof(Ps));
+        var directory = new FilePath(BasicShader.Path).Directory;
+
+        var vs = ShaderCompiler.CompileVertexShader(fileSystem, directory, device, source, Vs, nameof(Vs));
+        var ps = ShaderCompiler.CompilePixelShader(fileSystem, directory, device, source, Ps, nameof(Ps));
 
         var vertexBuffer = new VertexBuffer<VsInput>(device, nameof(ShaderTest));
         var indexBuffer = new IndexBufferU16(device, nameof(ShaderTest));

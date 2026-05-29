@@ -33,6 +33,14 @@ internal class FilePathTests
     }
 
     [Test]
+    public async Task DirectoryFromFilePathWithoutDirectory()
+    {
+        var sut = new FilePath("README.md");
+        var directory = sut.Directory;
+        await Assert.That(directory).IsEqualTo(DirectoryPath.Empty);
+    }
+
+    [Test]
     public async Task IsAbsolute()
     {
         await Assert.That(AbsolutePath.IsAbsolute).IsTrue();

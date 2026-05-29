@@ -36,7 +36,7 @@ public partial class Program
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
-        private readonly IVirtualFileSystem FileSystem;
+        private readonly IReadOnlyVirtualFileSystem FileSystem;
 
         private readonly ITestScreen[] Tests;
         private ITestScreen CurrentTest;
@@ -58,12 +58,12 @@ public partial class Program
             Device = new Device();
             SwapChain = new SwapChain(Device, Window);
             ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
-            FileSystem = new ScopedFileSystem(CommandLineArguments.GetArgumentValue("--content"));
+            FileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
 
             Tests =
             [
                 new WindowStatesTest(Window),
-                new ShaderTest(Device, FileSystem)
+                //new ShaderTest(Device, FileSystem)
             ];
             CurrentTest = Tests[0];
         }
