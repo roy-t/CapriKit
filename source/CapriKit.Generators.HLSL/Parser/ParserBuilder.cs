@@ -92,6 +92,43 @@ internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parse
     }
 }
 
+internal record SubTreeParseStep<TAccumulator, TChild>(
+    ParserBuilder<TChild> Parser,
+    Func<TChild> Seed,
+    Func<TAccumulator, TChild, TAccumulator> Merge)
+    : IParseStep<TAccumulator>
+{
+    public bool TryParse(ParseState state, ref TAccumulator accumulator)
+    {
+        var child = Seed();
+        if (!Parser.TryParse(state, ref child))
+        {
+            return false;
+        }
+
+        accumulator = Merge(accumulator, child);
+        return true;
+    }
+}
+
+internal record RepeatParseStep<TAccumulator>(IParseStep<TAccumulator> Step)
+    : IParseStep<TAccumulator>
+{
+    public bool TryParse(ParseState state, ref TAccumulator accumulator)
+    {
+        while (!state.IsAtEnd)
+        {
+            var mark = state.Mark();
+            if (!Step.TryParse(state, ref accumulator) || state.Mark() == mark)
+            {
+                break;
+            }
+        }
+
+        return true;
+    }
+}
+
 internal sealed class ParserBuilder<TAccumulator>
 {
     private readonly List<IParseStep<TAccumulator>> Steps;
@@ -125,6 +162,24 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
+    public ParserBuilder<TAccumulator> SubTree<TChild>(ParserBuilder<TChild> parser, Func<TChild> seed, Func<TAccumulator, TChild, TAccumulator> merge)
+    {
+        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge));
+        return this;
+    }
+
+    public ParserBuilder<TAccumulator> Repeat(ParserBuilder<TAccumulator> parser)
+    {
+        Steps.Add(new RepeatParseStep<TAccumulator>(new SubTreeParseStep<TAccumulator>(parser)));
+        return this;
+    }
+
+    public ParserBuilder<TAccumulator> Repeat(Matcher matcher, Accumulator<TAccumulator>? accumulator = null)
+    {
+        Steps.Add(new RepeatParseStep<TAccumulator>(new RequiredParseStep<TAccumulator>(matcher, accumulator)));
+        return this;
+    }
+
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
     {
         var mark = state.Mark();
@@ -145,6 +200,8 @@ internal static class ParserBuilderUtilities
 {
     public static readonly Matcher AnyType = t => t.Kind == TokenKind.Keyword || t.Kind == TokenKind.Identifier;
     public static readonly Matcher AnyIdentifier = t => t.Kind == TokenKind.Identifier;
+    public static readonly Matcher AnyIntegerLiteral = t => t.Kind == TokenKind.IntegerLiteral;
+    public static readonly Matcher AnyModifier = t => ParserUtils.IsModifier(t);
 
     public static Matcher Keyword(string value) => t => t.Kind == TokenKind.Keyword && value.Equals(t.Value, StringComparison.Ordinal);
     public static Matcher Operator(string value) => t => t.Kind == TokenKind.Operator && value.Equals(t.Value, StringComparison.Ordinal);

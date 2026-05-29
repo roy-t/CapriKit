@@ -46,22 +46,21 @@ internal static class ParserUtils
     public static List<string> ConsumeModifiers(ParseState state)
     {
         var modifiers = new List<string>();
-        var isModifier = true;
-        while (isModifier && !state.IsAtEnd)
+        while (!state.IsAtEnd && IsModifier(state.Peek()))
         {
-            var token = state.Peek();
-            isModifier = token.Kind == TokenKind.Keyword &&
-                (InterpolationModifiers.Contains(token.Value) || StorageClasses.Contains(token.Value) || TypeModifiers.Contains(token.Value));
-
-            if (isModifier)
-            {
-                modifiers.Add(token.Value);
-                state.Advance();
-            }
+            modifiers.Add(state.Peek().Value);
+            state.Advance();
         }
 
         return modifiers;
     }
+
+    /// <summary>
+    /// Returns true when the token is a storage class, type or interpolation modifier.
+    /// </summary>
+    public static bool IsModifier(Token token) =>
+        token.Kind == TokenKind.Keyword &&
+        (InterpolationModifiers.Contains(token.Value) || StorageClasses.Contains(token.Value) || TypeModifiers.Contains(token.Value));
 
     private static void SkipSegment(ParseState state, string open, string close)
     {

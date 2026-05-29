@@ -59,4 +59,19 @@ internal class MemberParserTests
         await Assert.That(member.Modifiers[0]).IsEqualTo("centroid");
         await Assert.That(member.Semantic).IsEqualTo("SV_TARGET0");
     }
+
+    [Test]
+    public async Task ParseListStopsAtClosingBrace()
+    {
+        var tokens = HLSLTokenizer.Parse("float a; float4 b : COLOR; }");
+        var state = new ParseState(tokens);
+
+        var members = MemberParser.ParseList(state);
+
+        await Assert.That(members).Count().IsEqualTo(2);
+        await Assert.That(members[0].Name).IsEqualTo("a");
+        await Assert.That(members[1].Name).IsEqualTo("b");
+        await Assert.That(members[1].Semantic).IsEqualTo("COLOR");
+        await Assert.That(state.Peek(TokenKind.Operator, "}")).IsTrue();
+    }
 }
