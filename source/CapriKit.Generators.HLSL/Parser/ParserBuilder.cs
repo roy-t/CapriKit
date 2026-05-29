@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using System.Runtime.CompilerServices;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -10,7 +11,7 @@ internal interface IParseStep<TAccumulator>
     bool TryParse(ParseState state, ref TAccumulator accumulator);
 }
 
-internal record RequiredParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator)
+internal record RequiredParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -28,9 +29,11 @@ internal record RequiredParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAc
         state.Advance();
         return true;
     }
+
+    public override string ToString() => $"Required {Description}";
 }
 
-internal record OptionalParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator)
+internal record OptionalParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -46,9 +49,11 @@ internal record OptionalParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAc
         }
         return true;
     }
+
+    public override string ToString() => $"Optional {Description}";
 }
 
-internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close)
+internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -76,9 +81,11 @@ internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close)
 
         return depth == 0;
     }
+
+    public override string ToString() => $"Block {Description}";
 }
 
-internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional)
+internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -90,13 +97,16 @@ internal record SubTreeParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parse
 
         return IsOptional;
     }
+
+    public override string ToString() => $"{(IsOptional ? "OptionalSubTree" : "SubTree")} {Description}";
 }
 
 internal record SubTreeParseStep<TAccumulator, TChild>(
     ParserBuilder<TChild> Parser,
     Func<TChild> Seed,
     Func<TAccumulator, TChild, TAccumulator> Merge,
-    bool IsOptional)
+    bool IsOptional,
+    string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -110,6 +120,8 @@ internal record SubTreeParseStep<TAccumulator, TChild>(
         accumulator = Merge(accumulator, child);
         return true;
     }
+
+    public override string ToString() => $"{(IsOptional ? "OptionalSubTree" : "SubTree")} {Description}";
 }
 
 internal record RepeatParseStep<TAccumulator>(IParseStep<TAccumulator> Step)
@@ -128,6 +140,8 @@ internal record RepeatParseStep<TAccumulator>(IParseStep<TAccumulator> Step)
 
         return true;
     }
+
+    public override string ToString() => $"Repeat({Step})";
 }
 
 internal sealed class ParserBuilder<TAccumulator>
@@ -139,45 +153,72 @@ internal sealed class ParserBuilder<TAccumulator>
         Steps = [];
     }
 
-    public ParserBuilder<TAccumulator> Optional(Matcher matcher, Accumulator<TAccumulator>? accumulator = null)
+    public ParserBuilder<TAccumulator> Optional(
+        Matcher matcher,
+        Accumulator<TAccumulator>? accumulator = null,
+        [CallerArgumentExpression(nameof(matcher))] string matcherText = "",
+        [CallerArgumentExpression(nameof(accumulator))] string accumulatorText = "")
     {
-        Steps.Add(new OptionalParseStep<TAccumulator>(matcher, accumulator));
+        Steps.Add(new OptionalParseStep<TAccumulator>(matcher, accumulator, Describe(matcherText, accumulatorText)));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> Required(Matcher matcher, Accumulator<TAccumulator>? accumulator = null)
+    public ParserBuilder<TAccumulator> Required(
+        Matcher matcher,
+        Accumulator<TAccumulator>? accumulator = null,
+        [CallerArgumentExpression(nameof(matcher))] string matcherText = "",
+        [CallerArgumentExpression(nameof(accumulator))] string accumulatorText = "")
     {
-        Steps.Add(new RequiredParseStep<TAccumulator>(matcher, accumulator));
+        Steps.Add(new RequiredParseStep<TAccumulator>(matcher, accumulator, Describe(matcherText, accumulatorText)));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> RequiredBlock(Matcher open, Matcher close)
+    public ParserBuilder<TAccumulator> RequiredBlock(
+        Matcher open,
+        Matcher close,
+        [CallerArgumentExpression(nameof(open))] string openText = "",
+        [CallerArgumentExpression(nameof(close))] string closeText = "")
     {
-        Steps.Add(new BlockParseStep<TAccumulator>(open, close));
+        Steps.Add(new BlockParseStep<TAccumulator>(open, close, $"{openText}..{closeText}"));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> SubTree(ParserBuilder<TAccumulator> parser, bool isOptional = false)
+    public ParserBuilder<TAccumulator> SubTree(
+        ParserBuilder<TAccumulator> parser,
+        bool isOptional = false,
+        [CallerArgumentExpression(nameof(parser))] string parserText = "")
     {
-        Steps.Add(new SubTreeParseStep<TAccumulator>(parser, isOptional));
+        Steps.Add(new SubTreeParseStep<TAccumulator>(parser, isOptional, parserText));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> SubTree<TChild>(ParserBuilder<TChild> parser, Func<TChild> seed, Func<TAccumulator, TChild, TAccumulator> merge, bool isOptional = false)
+    public ParserBuilder<TAccumulator> SubTree<TChild>(
+        ParserBuilder<TChild> parser,
+        Func<TChild> seed,
+        Func<TAccumulator, TChild, TAccumulator> merge,
+        bool isOptional = false,
+        [CallerArgumentExpression(nameof(parser))] string parserText = "",
+        [CallerArgumentExpression(nameof(merge))] string mergeText = "")
     {
-        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge, isOptional));
+        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge, isOptional, Describe(parserText, mergeText)));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> Repeat(ParserBuilder<TAccumulator> parser)
+    public ParserBuilder<TAccumulator> Repeat(
+        ParserBuilder<TAccumulator> parser,
+        [CallerArgumentExpression(nameof(parser))] string parserText = "")
     {
-        Steps.Add(new RepeatParseStep<TAccumulator>(new SubTreeParseStep<TAccumulator>(parser, false)));
+        Steps.Add(new RepeatParseStep<TAccumulator>(new SubTreeParseStep<TAccumulator>(parser, false, parserText)));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> Repeat(Matcher matcher, Accumulator<TAccumulator>? accumulator = null)
+    public ParserBuilder<TAccumulator> Repeat(
+        Matcher matcher,
+        Accumulator<TAccumulator>? accumulator = null,
+        [CallerArgumentExpression(nameof(matcher))] string matcherText = "",
+        [CallerArgumentExpression(nameof(accumulator))] string accumulatorText = "")
     {
-        Steps.Add(new RepeatParseStep<TAccumulator>(new RequiredParseStep<TAccumulator>(matcher, accumulator)));
+        Steps.Add(new RepeatParseStep<TAccumulator>(new RequiredParseStep<TAccumulator>(matcher, accumulator, Describe(matcherText, accumulatorText))));
         return this;
     }
 
@@ -186,6 +227,7 @@ internal sealed class ParserBuilder<TAccumulator>
         var mark = state.Mark();
         foreach (var step in Steps)
         {
+            var current = state.IsAtEnd ? (Token?)null : state.Peek();
             if (!step.TryParse(state, ref accumulator))
             {
                 state.Restore(mark);
@@ -195,6 +237,10 @@ internal sealed class ParserBuilder<TAccumulator>
 
         return true;
     }
+
+    // Combines the captured matcher/parser text with an optional accumulator lambda for tracing.
+    private static string Describe(string matcherText, string accumulatorText) =>
+        string.IsNullOrEmpty(accumulatorText) ? matcherText : $"{matcherText} => {accumulatorText}";
 }
 
 internal static class ParserBuilderUtilities
