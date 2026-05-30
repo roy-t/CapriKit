@@ -43,7 +43,10 @@ internal static class EntryPointParser
     private static bool PragmaDirective(Token directive)
     {
         var parts = directive.Value.Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
-        return parts.Length > 1 && parts[0] == "#pragma" && EntryPointPragmas.ContainsKey(parts[1]);
+        return directive.Kind == TokenKind.Directive
+            && parts.Length > 1
+            && parts[0] == "#pragma"
+            && EntryPointPragmas.ContainsKey(parts[1]);
     }
 
     private static EntryPointKind GetKindFromPragma(Token directive)

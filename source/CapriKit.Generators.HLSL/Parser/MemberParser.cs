@@ -44,10 +44,10 @@ internal static class MemberParser
         // A full member such as `precise float4 Color[4][2] : SV_COLOR;`
         return new ParserBuilder<MemberAccumulator>()
             .Repeat(AnyModifier, (a, t) => { a.Modifiers.Add(t.Value); return a; })
-            .Required(AnyType, (a, t) => { a.Type = t.Value; return a; })
-            .Required(AnyIdentifier, (a, t) => { a.Name = t.Value; return a; })
+            .Required(AnyType, (a, t) => a with { Type = t.Value })
+            .Required(AnyIdentifier, (a, t) => a with { Name = t.Value })
             .Repeat(dimension) // repeat for 0..n dimensions
-            .OptionalSemantic((a, t) => { a.Semantic = t.Value; return a; })
+            .OptionalSemantic((a, t) => a with { Semantic = t.Value })
             .Required(Operator(";"));
     }
 

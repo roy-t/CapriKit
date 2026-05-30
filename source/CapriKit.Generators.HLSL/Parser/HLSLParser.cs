@@ -15,7 +15,7 @@ internal enum IncludeKind
 }
 
 internal sealed record Include(string Path, IncludeKind Kind);
-internal sealed record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers);
+internal sealed record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Structure(string Name, IReadOnlyList<Member> Members);
 internal sealed record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);

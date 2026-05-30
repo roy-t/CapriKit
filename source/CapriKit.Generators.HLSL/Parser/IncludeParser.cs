@@ -3,10 +3,13 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-// TODO: Move over to new style, see MemberParser, when done, see if ParserUtils can be deleted
 internal static class IncludeParser
 {
-    private const string IncludeDirective = "#include";
+    private record IncludeAccumulator
+    {
+        public IncludeKind Kind { get; set; } = IncludeKind.Local;
+        public string Path { get; set; } = string.Empty;
+    }
 
     /// <summary>
     /// Parses an include directive
@@ -14,34 +17,52 @@ internal static class IncludeParser
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-reference"/>
     public static bool TryParse(ParseState state, [NotNullWhen(true)] out Include? include)
     {
+        // A full include such as `#include "types.hlsl"`
+        var parser = new ParserBuilder<IncludeAccumulator>()
+            .Required(IncludeDirective, (a, t) => a with { Kind = GetIncludeKind(t), Path = GetIncludePath(t) });
+
+        var accumulator = new IncludeAccumulator();
+        if (parser.TryParse(state, ref accumulator))
+        {
+            include = new Include(accumulator.Path, accumulator.Kind);
+            return true;
+        }
+
         include = default;
+        return false;
+    }
 
-        var token = state.Peek();
-        if (token.Kind != TokenKind.Directive || !token.Value.StartsWith(IncludeDirective))
+    private static bool IncludeDirective(Token directive)
+    {
+        var parts = SplitDirective(directive);
+        return directive.Kind == TokenKind.Directive
+            && parts.Length > 1
+            && parts[0] == "#include";
+    }
+
+    private static IncludeKind GetIncludeKind(Token directive)
+    {
+        var parts = SplitDirective(directive);
+        if (parts[1].StartsWith("<") && parts[1].EndsWith(">"))
         {
-            return false;
+            return IncludeKind.System;
         }
-        state.Advance();
-
-        if (token.Value.Length <= IncludeDirective.Length)
+        else if (parts[1].StartsWith("\"") && parts[1].EndsWith("\""))
         {
-            throw new Exception("Include directive is missing an argument");
-        }
-
-        var argument = token.Value.Substring(IncludeDirective.Length).Trim();
-
-        if (argument.StartsWith("<") && argument.EndsWith(">"))
-        {
-            include = new Include(argument.Substring(1, argument.Length - 2), IncludeKind.System);
-            return true;
-        }
-
-        if (argument.StartsWith("\"") && argument.EndsWith("\""))
-        {
-            include = new Include(argument.Substring(1, argument.Length - 2), IncludeKind.Local);
-            return true;
+            return IncludeKind.Local;
         }
 
-        throw new Exception($"Could not parse #include argument: {argument}");
+        throw new Exception($"Malformed #include directive: {directive.Value}");
+    }
+
+    private static string GetIncludePath(Token directive)
+    {
+        var parts = SplitDirective(directive);
+        return parts[1].Substring(1, parts[1].Length - 2);
+    }
+
+    private static string[] SplitDirective(Token directive)
+    {
+        return directive.Value.Trim().Split([' ', '\t'], StringSplitOptions.RemoveEmptyEntries);
     }
 }

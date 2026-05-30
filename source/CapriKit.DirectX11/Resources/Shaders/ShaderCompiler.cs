@@ -57,7 +57,7 @@ public static class ShaderCompiler
     }
 
     public static IComputeShader CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
-    {        
+    {
         var byteCode = CompileComputeShader(fileSystem, includePath, source, entryPoint, name);
         return CreateComputeShader(byteCode, device);
     }
