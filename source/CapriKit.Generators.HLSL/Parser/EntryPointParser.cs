@@ -27,7 +27,7 @@ internal static class EntryPointParser
     {
         var parser = new ParserBuilder<EntryPointAccumulator>()
             .Required(PragmaDirective, (a, t) => a with { Kind = GetKindFromPragma(t) })
-            .SubTree(FunctionParser.Create(), () => new FunctionParser.FunctionAccumulator(), (e, f) => e with { Name = f.Name, Semantic = f.Semantic });
+            .RequiredPattern(FunctionParser.Create(), () => new FunctionParser.FunctionAccumulator(), (e, f) => e with { Name = f.Name, Semantic = f.Semantic });
 
         var accumulator = new EntryPointAccumulator();
         if (parser.TryParse(state, ref accumulator))

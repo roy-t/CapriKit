@@ -22,7 +22,7 @@ internal static class StructureParser
             .Required(Keyword("struct"))
             .Required(AnyIdentifier, (a, t) => { a.Name = t.Value; return a; })
             .Required(Operator("{"))
-            .SubTree(MemberParser.CreateListParser(), () => [], (a, members) => { a.Members.AddRange(members); return a; })
+            .RequiredPattern(MemberParser.CreateListParser(), () => [], (a, members) => { a.Members.AddRange(members); return a; })
             .Required(Operator("}"))
             .Required(Operator(";"));
 

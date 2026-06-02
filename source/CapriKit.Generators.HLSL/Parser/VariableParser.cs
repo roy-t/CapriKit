@@ -29,7 +29,7 @@ internal static class VariableParser
 
         var assignment = new ParserBuilder<VariableAccumulator>()
             .Required(Operator("="))
-            .IgnoreUntil(Operator(";"));
+            .SkipTo(Operator(";"));
 
         // A full variable such as `static const float Pi = 3.14;`
         var parser = new ParserBuilder<VariableAccumulator>()
@@ -37,7 +37,7 @@ internal static class VariableParser
             .Required(AnyType, (a, t) => a with { Type = t.Value })
             .Required(AnyIdentifier, (a, t) => a with { Name = t.Value })
             .Repeat(dimension) // repeat for 0..n dimensions
-            .OptionalRegister((a, t) => a with { Register = uint.Parse(t.Value) })
+            .OptionalRegister((a, t) => a with { Register = ParseRegister(t.Value) })
             .OptionalPattern(assignment)
             .Required(Operator(";")); // TODO: if there is an assignment this fails
 
@@ -50,5 +50,12 @@ internal static class VariableParser
 
         variable = default;
         return false;
+    }
+
+    private static uint ParseRegister(string value)
+    {
+        // skip the letter in front of the register number
+        var digits = value.Substring(1);
+        return uint.Parse(digits);
     }
 }

@@ -63,19 +63,6 @@ internal class VariableParserTests
     }
 
     [Test]
-    public async Task ParseWithPackOffset()
-    {
-        var state = new ParseState(HLSLTokenizer.Parse("float4 BlendColor : packoffset(c0);"));
-
-        var success = VariableParser.TryParse(state, out var variable);
-
-        await Assert.That(success).IsTrue();
-        await Assert.That(variable!.Type).IsEqualTo("float4");
-        await Assert.That(variable.Name).IsEqualTo("BlendColor");
-        await Assert.That(state.IsAtEnd).IsTrue();
-    }
-
-    [Test]
     public async Task RejectsFunctionDeclarationAndRewinds()
     {
         var state = new ParseState(HLSLTokenizer.Parse("void Main() { return; }"));

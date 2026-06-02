@@ -53,18 +53,19 @@ internal record OptionalParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAc
     public override string ToString() => $"Optional {Description}";
 }
 
-internal record IgnoreUntilParseStep<TAccumulator>(Matcher Matcher, string Description)
+internal record SkipToParseStep<TAccumulator>(Matcher Matcher, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
     {
         while (!state.IsAtEnd)
         {
-            var token = state.Advance();
+            var token = state.Peek();
             if (Matcher(token))
             {
                 return true;
             }
+            state.Advance();
         }
 
         return false;
@@ -105,7 +106,7 @@ internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close, string
     public override string ToString() => $"Block {Description}";
 }
 
-internal record PatternParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional, string Description)
+internal record OptionalPatternParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional, string Description)
     : IParseStep<TAccumulator>
 {
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
@@ -121,11 +122,10 @@ internal record PatternParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parse
     public override string ToString() => $"{(IsOptional ? "Optional pattern" : "Pattern")} {Description}";
 }
 
-internal record SubTreeParseStep<TAccumulator, TChild>(
+internal record RequiredPatternParseStep<TAccumulator, TChild>(
     ParserBuilder<TChild> Parser,
     Func<TChild> Seed,
     Func<TAccumulator, TChild, TAccumulator> Merge,
-    bool IsOptional,
     string Description)
     : IParseStep<TAccumulator>
 {
@@ -134,14 +134,14 @@ internal record SubTreeParseStep<TAccumulator, TChild>(
         var child = Seed();
         if (!Parser.TryParse(state, ref child))
         {
-            return IsOptional;
+            return false;
         }
 
         accumulator = Merge(accumulator, child);
         return true;
     }
 
-    public override string ToString() => $"{(IsOptional ? "OptionalSubTree" : "SubTree")} {Description}";
+    public override string ToString() => $"Required pattern: {Description}";
 }
 
 internal record RepeatParseStep<TAccumulator>(IParseStep<TAccumulator> Step)
@@ -173,6 +173,9 @@ internal sealed class ParserBuilder<TAccumulator>
         Steps = [];
     }
 
+    /// <summary>
+    /// Parse token, parsing does not fail if there is no match
+    /// </summary>
     public ParserBuilder<TAccumulator> Optional(
         Matcher matcher,
         Accumulator<TAccumulator>? accumulator = null,
@@ -183,6 +186,9 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
+    /// <summary>
+    /// Expect and parse token
+    /// </summary>
     public ParserBuilder<TAccumulator> Required(
         Matcher matcher,
         Accumulator<TAccumulator>? accumulator = null,
@@ -193,14 +199,20 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
-    public ParserBuilder<TAccumulator> IgnoreUntil(
+    /// <summary>
+    /// Consumes everything, up-to-EXCLUDING the requested token
+    /// </summary>
+    public ParserBuilder<TAccumulator> SkipTo(
     Matcher matcher,
     [CallerArgumentExpression(nameof(matcher))] string matcherText = "")
     {
-        Steps.Add(new IgnoreUntilParseStep<TAccumulator>(matcher, $"Until: {matcherText}"));
+        Steps.Add(new SkipToParseStep<TAccumulator>(matcher, $"Until: {matcherText}"));
         return this;
     }
 
+    /// <summary>
+    /// Consumes everything (including the delimiters) delimited by the two requested tokens
+    /// </summary>
     public ParserBuilder<TAccumulator> RequiredBlock(
         Matcher open,
         Matcher close,
@@ -211,23 +223,21 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
-    public ParserBuilder<TAccumulator> RequiredPattern(
-        ParserBuilder<TAccumulator> parser,
-        [CallerArgumentExpression(nameof(parser))] string parserText = "")
-    {
-        Steps.Add(new PatternParseStep<TAccumulator>(parser, false, parserText));
-        return this;
-    }
-
+    /// <summary>
+    /// Tries to consumes the given sub pattern, but does not fail if it doesn't match
+    /// </summary>
     public ParserBuilder<TAccumulator> OptionalPattern(
        ParserBuilder<TAccumulator> parser,
        [CallerArgumentExpression(nameof(parser))] string parserText = "")
     {
-        Steps.Add(new PatternParseStep<TAccumulator>(parser, true, parserText));
+        Steps.Add(new OptionalPatternParseStep<TAccumulator>(parser, true, parserText));
         return this;
     }
 
-    public ParserBuilder<TAccumulator> SubTree<TChild>(
+    /// <summary>
+    /// Consumes the given sub pattern and merges the results of those matches back into the main pattern
+    /// </summary>
+    public ParserBuilder<TAccumulator> RequiredPattern<TChild>(
         ParserBuilder<TChild> parser,
         Func<TChild> seed,
         Func<TAccumulator, TChild, TAccumulator> merge,
@@ -235,18 +245,24 @@ internal sealed class ParserBuilder<TAccumulator>
         [CallerArgumentExpression(nameof(parser))] string parserText = "",
         [CallerArgumentExpression(nameof(merge))] string mergeText = "")
     {
-        Steps.Add(new SubTreeParseStep<TAccumulator, TChild>(parser, seed, merge, isOptional, Describe(parserText, mergeText)));
+        Steps.Add(new RequiredPatternParseStep<TAccumulator, TChild>(parser, seed, merge, Describe(parserText, mergeText)));
         return this;
     }
 
+    /// <summary>
+    /// Consumes the given pattern 0 or more times
+    /// </summary>
     public ParserBuilder<TAccumulator> Repeat(
         ParserBuilder<TAccumulator> parser,
         [CallerArgumentExpression(nameof(parser))] string parserText = "")
     {
-        Steps.Add(new RepeatParseStep<TAccumulator>(new PatternParseStep<TAccumulator>(parser, false, parserText)));
+        Steps.Add(new RepeatParseStep<TAccumulator>(new OptionalPatternParseStep<TAccumulator>(parser, false, parserText)));
         return this;
     }
 
+    /// <summary>
+    /// Consumes the given pattern 0 or more times
+    /// </summary>
     public ParserBuilder<TAccumulator> Repeat(
         Matcher matcher,
         Accumulator<TAccumulator>? accumulator = null,
@@ -257,6 +273,10 @@ internal sealed class ParserBuilder<TAccumulator>
         return this;
     }
 
+    /// <summary>
+    /// Tries to parse the whole pattern constructed in this parser builder, returns false and resets
+    /// parse state if unable.
+    /// </summary>
     public bool TryParse(ParseState state, ref TAccumulator accumulator)
     {
         var mark = state.Mark();
@@ -287,26 +307,4 @@ internal static class ParserBuilderUtilities
 
     public static Matcher Keyword(string value) => t => t.Kind == TokenKind.Keyword && value.Equals(t.Value, StringComparison.Ordinal);
     public static Matcher Operator(string value) => t => t.Kind == TokenKind.Operator && value.Equals(t.Value, StringComparison.Ordinal);
-}
-
-internal static class ParserBuilderExtensions
-{
-    public static ParserBuilder<TAccumulator> OptionalSemantic<TAccumulator>(this ParserBuilder<TAccumulator> parser, Accumulator<TAccumulator>? accumulator = null)
-    {
-        var semanticParser = new ParserBuilder<TAccumulator>()
-            .Required(t => t.Kind == TokenKind.Operator && t.Value == ":")
-            .Required(t => t.Kind == TokenKind.Identifier, accumulator);
-
-        return parser.OptionalPattern(semanticParser);
-    }
-
-    public static ParserBuilder<TAccumulator> OptionalRegister<TAccumulator>(this ParserBuilder<TAccumulator> parser, Accumulator<TAccumulator>? accumulator = null)
-    {
-        throw new Exception("TODO");
-        var semanticParser = new ParserBuilder<TAccumulator>()
-            .Required(t => t.Kind == TokenKind.Operator && t.Value == ":")
-            .Required(t => t.Kind == TokenKind.Identifier, accumulator);
-
-        return parser.OptionalPattern(semanticParser);
-    }
 }

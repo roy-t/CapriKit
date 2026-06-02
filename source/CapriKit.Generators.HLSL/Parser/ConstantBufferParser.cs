@@ -34,7 +34,7 @@ internal static class ConstantBufferParser
             .Required(AnyIdentifier, (a, t) => { a.Name = t.Value; return a; })
             .OptionalPattern(bindingClause)
             .Required(Operator("{"))
-            .SubTree(MemberParser.CreateListParser(), () => [], (a, members) => { a.Members.AddRange(members); return a; })
+            .RequiredPattern(MemberParser.CreateListParser(), () => [], (a, members) => { a.Members.AddRange(members); return a; })
             .Required(Operator("}"))
             .Required(Operator(";"));
 

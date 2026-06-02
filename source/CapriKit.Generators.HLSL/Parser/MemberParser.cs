@@ -20,7 +20,7 @@ internal static class MemberParser
     public static ParserBuilder<List<Member>> CreateListParser() =>
         new ParserBuilder<List<Member>>()
             .Repeat(new ParserBuilder<List<Member>>()
-                .SubTree(CreateMemberParser(), () => new MemberAccumulator(), (list, m) => { list.Add(ToMember(m)); return list; }));
+                .RequiredPattern(CreateMemberParser(), () => new MemberAccumulator(), (list, m) => { list.Add(ToMember(m)); return list; }));
 
     public static Member Parse(ParseState state)
     {
