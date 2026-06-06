@@ -1,5 +1,6 @@
+using CapriKit.Generators.HLSL.Parser.Infrastructure;
 using System.Diagnostics.CodeAnalysis;
-using static CapriKit.Generators.HLSL.Parser.ParserBuilderUtilities;
+using static CapriKit.Generators.HLSL.Parser.Infrastructure.ParserBuilderUtilities;
 
 namespace CapriKit.Generators.HLSL.Parser;
 

@@ -1,5 +1,6 @@
+using CapriKit.Generators.HLSL.Parser.Infrastructure;
 using System.Diagnostics.CodeAnalysis;
-using static CapriKit.Generators.HLSL.Parser.ParserBuilderUtilities;
+using static CapriKit.Generators.HLSL.Parser.Infrastructure.ParserBuilderUtilities;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
@@ -50,12 +51,5 @@ internal static class VariableParser
 
         variable = default;
         return false;
-    }
-
-    private static uint ParseRegister(string value)
-    {
-        // skip the letter in front of the register number
-        var digits = value.Substring(1);
-        return uint.Parse(digits);
     }
 }

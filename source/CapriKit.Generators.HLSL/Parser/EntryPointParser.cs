@@ -1,3 +1,4 @@
+using CapriKit.Generators.HLSL.Parser.Infrastructure;
 using CapriKit.Generators.HLSL.Tokenizer;
 using System.Diagnostics.CodeAnalysis;
 

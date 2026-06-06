@@ -1,168 +1,10 @@
 using CapriKit.Generators.HLSL.Tokenizer;
 using System.Runtime.CompilerServices;
 
-namespace CapriKit.Generators.HLSL.Parser;
+namespace CapriKit.Generators.HLSL.Parser.Infrastructure;
 
 internal delegate bool Matcher(Token token);
 internal delegate T Accumulator<T>(T accumulator, Token token);
-
-internal interface IParseStep<TAccumulator>
-{
-    bool TryParse(ParseState state, ref TAccumulator accumulator);
-}
-
-internal record RequiredParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator, string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        var token = state.Peek();
-        if (!Matcher(token))
-        {
-            return false;
-        }
-
-        if (Accumulator != null)
-        {
-            accumulator = Accumulator(accumulator, token);
-        }
-        state.Advance();
-        return true;
-    }
-
-    public override string ToString() => $"Required {Description}";
-}
-
-internal record OptionalParseStep<TAccumulator>(Matcher Matcher, Accumulator<TAccumulator>? Accumulator, string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        var token = state.Peek();
-        if (Matcher(token))
-        {
-            state.Advance();
-            if (Accumulator != null)
-            {
-                accumulator = Accumulator(accumulator, token);
-            }
-        }
-        return true;
-    }
-
-    public override string ToString() => $"Optional {Description}";
-}
-
-internal record SkipToParseStep<TAccumulator>(Matcher Matcher, string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        while (!state.IsAtEnd)
-        {
-            var token = state.Peek();
-            if (Matcher(token))
-            {
-                return true;
-            }
-            state.Advance();
-        }
-
-        return false;
-    }
-
-    public override string ToString() => $"Optional {Description}";
-}
-
-internal record BlockParseStep<TAccumulator>(Matcher Open, Matcher Close, string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        var token = state.Peek();
-        if (!Open(token))
-        {
-            return false;
-        }
-        state.Advance();
-
-        var depth = 1;
-        while (!state.IsAtEnd && depth > 0)
-        {
-            token = state.Advance();
-            if (Close(token))
-            {
-                depth--;
-            }
-            else if (Open(token))
-            {
-                depth++;
-            }
-        }
-
-        return depth == 0;
-    }
-
-    public override string ToString() => $"Block {Description}";
-}
-
-internal record OptionalPatternParseStep<TAccumulator>(ParserBuilder<TAccumulator> Parser, bool IsOptional, string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        if (Parser.TryParse(state, ref accumulator))
-        {
-            return true;
-        }
-
-        return IsOptional;
-    }
-
-    public override string ToString() => $"{(IsOptional ? "Optional pattern" : "Pattern")} {Description}";
-}
-
-internal record RequiredPatternParseStep<TAccumulator, TChild>(
-    ParserBuilder<TChild> Parser,
-    Func<TChild> Seed,
-    Func<TAccumulator, TChild, TAccumulator> Merge,
-    string Description)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        var child = Seed();
-        if (!Parser.TryParse(state, ref child))
-        {
-            return false;
-        }
-
-        accumulator = Merge(accumulator, child);
-        return true;
-    }
-
-    public override string ToString() => $"Required pattern: {Description}";
-}
-
-internal record RepeatParseStep<TAccumulator>(IParseStep<TAccumulator> Step)
-    : IParseStep<TAccumulator>
-{
-    public bool TryParse(ParseState state, ref TAccumulator accumulator)
-    {
-        while (!state.IsAtEnd)
-        {
-            var mark = state.Mark();
-            if (!Step.TryParse(state, ref accumulator) || state.Mark() == mark)
-            {
-                break;
-            }
-        }
-
-        return true;
-    }
-
-    public override string ToString() => $"Repeat({Step})";
-}
 
 internal sealed class ParserBuilder<TAccumulator>
 {
@@ -241,7 +83,6 @@ internal sealed class ParserBuilder<TAccumulator>
         ParserBuilder<TChild> parser,
         Func<TChild> seed,
         Func<TAccumulator, TChild, TAccumulator> merge,
-        bool isOptional = false,
         [CallerArgumentExpression(nameof(parser))] string parserText = "",
         [CallerArgumentExpression(nameof(merge))] string mergeText = "")
     {
@@ -296,15 +137,4 @@ internal sealed class ParserBuilder<TAccumulator>
     // Combines the captured matcher/parser text with an optional accumulator lambda for tracing.
     private static string Describe(string matcherText, string accumulatorText) =>
         string.IsNullOrEmpty(accumulatorText) ? matcherText : $"{matcherText} => {accumulatorText}";
-}
-
-internal static class ParserBuilderUtilities
-{
-    public static readonly Matcher AnyType = t => t.Kind == TokenKind.Keyword || t.Kind == TokenKind.Identifier;
-    public static readonly Matcher AnyIdentifier = t => t.Kind == TokenKind.Identifier;
-    public static readonly Matcher AnyIntegerLiteral = t => t.Kind == TokenKind.IntegerLiteral;
-    public static readonly Matcher AnyModifier = t => ParserUtils.IsModifier(t);
-
-    public static Matcher Keyword(string value) => t => t.Kind == TokenKind.Keyword && value.Equals(t.Value, StringComparison.Ordinal);
-    public static Matcher Operator(string value) => t => t.Kind == TokenKind.Operator && value.Equals(t.Value, StringComparison.Ordinal);
 }

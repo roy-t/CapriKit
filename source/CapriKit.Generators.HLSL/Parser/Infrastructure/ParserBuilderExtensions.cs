@@ -1,6 +1,6 @@
-using static CapriKit.Generators.HLSL.Parser.ParserBuilderUtilities;
+using static CapriKit.Generators.HLSL.Parser.Infrastructure.ParserBuilderUtilities;
 
-namespace CapriKit.Generators.HLSL.Parser;
+namespace CapriKit.Generators.HLSL.Parser.Infrastructure;
 
 internal static class ParserBuilderExtensions
 {
@@ -24,4 +24,18 @@ internal static class ParserBuilderExtensions
 
         return parser.OptionalPattern(registerParser);
     }
+
+    public static ParserBuilder<TAccumulator> RequiredRegister<TAccumulator>(this ParserBuilder<TAccumulator> parser, Func<TAccumulator, uint, TAccumulator> merge)
+    {
+        var registerParser = new ParserBuilder<uint>()
+            .Required(Operator(":"))
+            .Required(Keyword("register"))
+            .Required(Operator("("))
+            .Required(AnyIdentifier, (a, b) => ParseRegister(b.Value))
+            .Required(Operator(")"));
+
+        return parser.RequiredPattern(registerParser, () => 0u, merge);
+    }
+
+
 }
