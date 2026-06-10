@@ -1,4 +1,5 @@
 using CapriKit.Generators.HLSL.Tokenizer;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace CapriKit.Generators.HLSL.Parser.Infrastructure;
 
@@ -18,6 +19,11 @@ internal static class ParserBuilderUtilities
     private static readonly HashSet<string> TypeModifiers =
     [
         "const", "row_major", "column_major"
+    ];
+
+    private static readonly HashSet<string> InputModifiers =
+    [
+        "in", "inout", "out", "uniform"
     ];
 
 
@@ -41,5 +47,5 @@ internal static class ParserBuilderUtilities
     /// </summary>
     public static bool IsModifier(Token token) =>
         token.Kind == TokenKind.Keyword &&
-        (InterpolationModifiers.Contains(token.Value) || StorageClasses.Contains(token.Value) || TypeModifiers.Contains(token.Value));
+        (InterpolationModifiers.Contains(token.Value) || StorageClasses.Contains(token.Value) || TypeModifiers.Contains(token.Value)) || InputModifiers.Contains(token.Value);
 }

@@ -99,7 +99,7 @@ internal static class StructBuilder
     /// <summary>
     /// Lays out members back-to-back, the way a regular HLSL struct is packed.
     /// </summary>
-    private static List<Layout> LayOutStructure(IReadOnlyList<Member> members)
+    internal static List<Layout> LayOutStructure(IReadOnlyList<Member> members)
     {
         var fields = new List<Layout>(members.Count);
 
@@ -195,7 +195,7 @@ internal static class StructBuilder
     /// <summary>Rounds up to the next multiple of 16.</summary>
     private static uint Align16(uint value) => (value + 15u) & ~15u;
 
-    private sealed record Layout(
+    internal sealed record Layout(
         Member Member,
         string DotNetType,
         uint ElementCount,

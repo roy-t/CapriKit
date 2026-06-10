@@ -86,7 +86,12 @@ internal class ShaderTypeGeneratorTests
         #include "../utils/defines.hlsl"
 
         sampler TextureSampler : register(s0);
-       
+
+        struct VS_INPUT
+        {
+            float2 pos : POSITION;
+        };
+
         struct PS_INPUT
         {
             float4 position : SV_POSITION;
@@ -107,7 +112,14 @@ internal class ShaderTypeGeneratorTests
         {
             float4x4 WorldViewProjection;
             float4 Color;
-        };       
+        };
+
+        #pragma VertexShader
+        PS_INPUT VS(VS_INPUT input)
+        {
+            return input.pos;
+        };
+
 
         #pragma PixelShader
         OUTPUT PS(PS_INPUT input)
@@ -140,6 +152,14 @@ internal class ShaderTypeGeneratorTests
         {
             public const string Path = "Lines/LineShader.hlsl";
             public const uint TextureSampler = 0;
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            public struct VsInput
+            {
+                /// <summary>
+                /// Semantic: POSITION
+                /// </summary>
+                public System.Numerics.Vector2 Pos;
+            }
             [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
             public struct PsInput
             {
@@ -179,6 +199,14 @@ internal class ShaderTypeGeneratorTests
                 [System.Runtime.InteropServices.FieldOffset(64)]
                 public System.Numerics.Vector4 Color;
             }
+            /// <summary>
+            /// Kind: VertexShader
+            /// </summary>
+            public const string Vs = "VS";
+            public static readonly Vortice.Direct3D11.InputElementDescription[] VsInputElementDescription = new Vortice.Direct3D11.InputElementDescription[]
+            {
+                new("POSITION", 0, Vortice.DXGI.Format.R32G32_Float, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
+            };
             /// <summary>
             /// Kind: PixelShader
             /// </summary>

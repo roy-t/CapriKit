@@ -62,6 +62,7 @@ internal static class ShaderClassBuilder
             }
             builder.WriteSummaryComment(comment.ToString());
             builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidTypeIdentifier(entryPoint.Name), ToLiteral(entryPoint.Name));
+            InputElementDescriptionBuilder.WriteInputElementDescription(builder, entryPoint, metadata.Structures);
         }
 
         classText = SourceText.From(builder.Build(), Encoding.UTF8);

@@ -61,6 +61,13 @@ internal sealed class SourceCodeBuilder
         }
     }
 
+    public void WriteField(Modifiers modifiers, string type, string name, Action<SourceCodeBuilder> writeInitializer)
+    {
+        var modifiersText = GetModifiers(modifiers);
+        Write($"{string.Join(" ", [modifiersText, type, name])} = ");
+        writeInitializer(this);        
+    }
+
     public void WriteAttribute(string name, params string[] values)
     {
         WriteLine($"[{name}({string.Join(", ", values)})]");
@@ -76,6 +83,11 @@ internal sealed class SourceCodeBuilder
     {
         level--;
         WriteLine("}");
+    }
+
+    public void WriteRaw(string text)
+    {
+        builder.Append(text);
     }
 
     public string Build()
@@ -103,13 +115,13 @@ internal sealed class SourceCodeBuilder
         return builder.ToString();
     }
 
-    private void WriteLine(string text)
+    internal void WriteLine(string text)
     {
         builder.Append(' ', level * 4)
                .AppendLine(text);
     }
 
-    private void Write(string text)
+    internal void Write(string text)
     {
         builder.Append(' ', level * 4)
                .Append(text);

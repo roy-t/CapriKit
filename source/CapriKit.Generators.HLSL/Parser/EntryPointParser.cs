@@ -18,6 +18,7 @@ internal static class EntryPointParser
         public EntryPointKind Kind { get; set; } = EntryPointKind.VertexShader;
         public string Name { get; set; } = string.Empty;
         public string Semantic { get; set; } = string.Empty;
+        public List<Argument> Arguments { get; set; } = [];
     }
 
     /// <summary>
@@ -28,12 +29,12 @@ internal static class EntryPointParser
     {
         var parser = new ParserBuilder<EntryPointAccumulator>()
             .Required(PragmaDirective, (a, t) => a with { Kind = GetKindFromPragma(t) })
-            .RequiredPattern(FunctionParser.Create(), () => new FunctionParser.FunctionAccumulator(), (e, f) => e with { Name = f.Name, Semantic = f.Semantic });
+            .RequiredPattern(FunctionParser.Create(), () => new FunctionParser.FunctionAccumulator(), (e, f) => e with { Name = f.Name, Semantic = f.Semantic, Arguments = f.Arguments });
 
         var accumulator = new EntryPointAccumulator();
         if (parser.TryParse(state, ref accumulator))
         {
-            entry = new EntryPoint(accumulator.Kind, accumulator.Name, accumulator.Semantic);
+            entry = new EntryPoint(accumulator.Kind, accumulator.Name, accumulator.Semantic, accumulator.Arguments);
             return true;
         }
 

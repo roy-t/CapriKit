@@ -17,10 +17,11 @@ internal enum IncludeKind
 internal sealed record Include(string Path, IncludeKind Kind);
 internal sealed record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
+internal sealed record Argument(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Structure(string Name, IReadOnlyList<Member> Members);
 internal sealed record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);
-internal sealed record EntryPoint(EntryPointKind Kind, string Name, string Semantic);
-internal sealed record Function(string Name, string Semantic);
+internal sealed record EntryPoint(EntryPointKind Kind, string Name, string Semantic, IReadOnlyList<Argument> Arguments);
+internal sealed record Function(string Name, string Semantic, IReadOnlyList<Argument> Arguments);
 internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints, IReadOnlyList<Function> Functions);
 
 internal static class HLSLParser
