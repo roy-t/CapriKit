@@ -82,7 +82,8 @@ internal class VariantGeneratorTests
         ];
 
         await Assert.That(GeneratorSubject.OfType<VariantGenerator>())
-            .WithSources(inputFiles, true)
+            .WithSources(inputFiles)
+            .WithEmbeddedAttributeDefinition()
             .Generates(generatedFiles);
     }
 }

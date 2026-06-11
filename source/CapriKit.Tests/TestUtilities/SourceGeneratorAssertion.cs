@@ -27,7 +27,10 @@ internal static class GeneratorSubject
     }
 }
 
-internal sealed record class SourceGeneratorInput(IEnumerable<(string fileName, SourceText content)> Sources, IEnumerable<(string fileName, SourceText content)> AdditionalFiles)
+internal sealed record class SourceGeneratorInput(
+    IEnumerable<(string fileName, SourceText content)> Sources,
+    IEnumerable<(string fileName, SourceText content)> AdditionalFiles,
+    params IEnumerable<PackageIdentity> PackageReferences)
 {
     public static readonly SourceGeneratorInput Empty = new([], []);
 
@@ -35,8 +38,8 @@ internal sealed record class SourceGeneratorInput(IEnumerable<(string fileName, 
     {
         List<(string fileName, SourceText content)> sources = [.. Sources, .. other.Sources];
         List<(string fileName, SourceText content)> additionalFiles = [.. AdditionalFiles, .. other.AdditionalFiles];
-
-        return new SourceGeneratorInput(sources, additionalFiles);
+        List<PackageIdentity> packageReferences = [.. PackageReferences, .. other.PackageReferences];
+        return new SourceGeneratorInput(sources, additionalFiles, packageReferences);
     }
 }
 
@@ -86,10 +89,13 @@ internal sealed class SourceGeneratorAssertion<T> : Assertion<GeneratorSubject<T
 
     private static async Task Run(SourceGeneratorInput input, SourceGeneratorOutput output)
     {
+        var references = ReferenceAssemblies.Net.Net100;
+        references = references.AddPackages([.. input.PackageReferences]);
         var harness = new CSharpSourceGeneratorTest<T, DefaultVerifier>()
         {
-            ReferenceAssemblies = ReferenceAssemblies.Net.Net90,
+            ReferenceAssemblies = references,
         };
+
         harness.TestState.Sources.AddRange(input.Sources);
         harness.TestState.AdditionalFiles.AddRange(input.AdditionalFiles);
         harness.TestState.ExpectedDiagnostics.AddRange(output.ExpectedDiagnostics);
@@ -109,16 +115,28 @@ internal static class SourceGeneratorAssertionExtensions
 {
     public static IAssertionSource<GeneratorSubject<T>> WithInput<T>(
     this IAssertionSource<GeneratorSubject<T>> source,
-    SourceGeneratorInput input,
-    bool addEmbeddedAttributeDefinition = false)
+    SourceGeneratorInput input)
     where T : IIncrementalGenerator, new()
     {
-        if (addEmbeddedAttributeDefinition)
-        {
-            input = new SourceGeneratorInput([EmbeddedAttributeDefinition.SourceFile], []).Merge(input);
-        }
         var value = source.Context.Map(generator => generator?.MergeInputs(input));
         return new AssertionSourceAdapter<GeneratorSubject<T>>(value);
+    }
+
+    public static IAssertionSource<GeneratorSubject<T>> WithEmbeddedAttributeDefinition<T>(
+        this IAssertionSource<GeneratorSubject<T>> source)
+        where T : IIncrementalGenerator, new()
+    {
+        var input = new SourceGeneratorInput([EmbeddedAttributeDefinition.SourceFile], []);
+        return source.WithInput(input);
+    }
+
+    public static IAssertionSource<GeneratorSubject<T>> WithPackageReferences<T>(
+        this IAssertionSource<GeneratorSubject<T>> source,
+        params IEnumerable<PackageIdentity> packages)
+        where T : IIncrementalGenerator, new()
+    {
+        var input = new SourceGeneratorInput([], [], packages);
+        return source.WithInput(input);
     }
 
     public static IAssertionSource<GeneratorSubject<T>> WithSources<T>(
@@ -130,16 +148,6 @@ internal static class SourceGeneratorAssertionExtensions
         return WithInput(source, input);
     }
 
-    public static IAssertionSource<GeneratorSubject<T>> WithSources<T>(
-    this IAssertionSource<GeneratorSubject<T>> source,
-    IEnumerable<(string fileName, SourceText content)> sources,
-    bool addEmbeddedAttributeDefinition = false)
-    where T : IIncrementalGenerator, new()
-    {
-        var input = new SourceGeneratorInput(sources, []);
-        return WithInput(source, input, addEmbeddedAttributeDefinition);
-    }
-
     public static IAssertionSource<GeneratorSubject<T>> WithAdditionalFiles<T>(
         this IAssertionSource<GeneratorSubject<T>> source,
         params IEnumerable<(string fileName, SourceText content)> additionalFiles)
@@ -147,16 +155,6 @@ internal static class SourceGeneratorAssertionExtensions
     {
         var input = new SourceGeneratorInput([], additionalFiles);
         return WithInput(source, input);
-    }
-
-    public static IAssertionSource<GeneratorSubject<T>> WithAdditionalFiles<T>(
-       this IAssertionSource<GeneratorSubject<T>> source,
-       IEnumerable<(string fileName, SourceText content)> additionalFiles,
-       bool addEmbeddedAttributeDefinition = false)
-       where T : IIncrementalGenerator, new()
-    {
-        var input = new SourceGeneratorInput([], additionalFiles);
-        return WithInput(source, input, addEmbeddedAttributeDefinition);
     }
 
     public static SourceGeneratorAssertion<T> Generates<T>(

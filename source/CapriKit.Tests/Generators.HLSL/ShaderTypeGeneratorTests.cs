@@ -1,5 +1,6 @@
 using CapriKit.Generators.HLSL;
 using CapriKit.Tests.TestUtilities;
+using Microsoft.CodeAnalysis.Testing;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
 
@@ -10,6 +11,14 @@ internal class ShaderTypeGeneratorTests
     [Test]
     public async Task Execute()
     {
+        // TODO: instead of doing complex guessing of what to generate the input element description for
+        // we should look at a pragma on a struct and only generate those on demand
+        // the outcome of this test should stay the same (it already has the pragma) but the logic
+        // in the parser/generator needs to change to take into account this pragma instead of the
+        // weird guessing game. TODO: create an InputElementParser, similar to the EntryPoint Parser and go from there
+
+        throw new Exception("TODO");
+
         IEnumerable<(string fileName, SourceText content)> additionalFiles =
         [
             new (@"C:/project/CapriKit.Generators.HLSL.json", SourceText.From(ConfigJson, Encoding.UTF8)),
@@ -23,8 +32,14 @@ internal class ShaderTypeGeneratorTests
            new (@"Utils.Defines.Hlsl.g.cs", SourceText.From(ExpectedGeneratedInclude, Encoding.UTF8))
         ];
 
+        IEnumerable<PackageIdentity> packageReferences =
+        [
+            new PackageIdentity("Vortice.Direct3D11", "3.8.3")
+        ];
+
         await Assert.That(GeneratorSubject.OfType<ShaderTypeGenerator>())
             .WithAdditionalFiles(additionalFiles)
+            .WithPackageReferences(packageReferences)
             .Generates(generatedFiles);
     }
 
@@ -87,6 +102,7 @@ internal class ShaderTypeGeneratorTests
 
         sampler TextureSampler : register(s0);
 
+        #pragma GenerateInputElementDescription
         struct VS_INPUT
         {
             float2 pos : POSITION;

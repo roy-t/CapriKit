@@ -8,14 +8,14 @@
     <PackageVersion Include="ImGui.NET" Version="1.91.6.1" />
     <PackageVersion Include="MathNet.Numerics" Version="5.0.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
-    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing" Version="1.1.2" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.SourceGenerators.Testing" Version="1.1.4" />
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
     <!-- Override version used in SourceGenerators.Testing to test newer source generators. See: https://github.com/dotnet/roslyn-sdk/issues/1241#issuecomment-3730711290 -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
-    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.275" />
+    <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.287" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
     <PackageVersion Include="TrxFileParser" Version="4.3.0" />
-    <PackageVersion Include="TUnit" Version="1.40.5" />
+    <PackageVersion Include="TUnit" Version="1.53.0" />
     <PackageVersion Include="Vortice.D3DCompiler" Version="3.8.3" />
     <PackageVersion Include="Vortice.Direct3D11" Version="3.8.3" />
   </ItemGroup>
