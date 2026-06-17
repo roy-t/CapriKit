@@ -10,3 +10,4 @@ A source generator that analyzes HLSL shader files and generates strongly typed 
   - `#pragma VertexShader`
   - `#pragma PixelShader`
   - `#pragma ComputeShader`
+- A struct preceded by `#pragma Input`, gets a generated `InputElementDescription[]` (named `<Struct>ElementDescription`).

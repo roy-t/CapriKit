@@ -19,12 +19,67 @@ internal class FunctionParserTests
         var success = FunctionParser.TryParse(state, out var entry);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(entry!.Name).IsEqualTo("VS");
+        await Assert.That(entry!.Kind).IsNull();
+        await Assert.That(entry.Name).IsEqualTo("VS");
         await Assert.That(entry.Semantic).IsEqualTo("SV_POSITION");
         await Assert.That(entry.Arguments).Count().IsEqualTo(1);
         await Assert.That(entry.Arguments[0].Type).IsEqualTo("VS_INPUT");
         await Assert.That(entry.Arguments[0].Name).IsEqualTo("input");
         await Assert.That(state.IsAtEnd).IsTrue();
+    }
+
+    [Test]
+    public async Task ParseEntryPointCapturesStage()
+    {
+        var source = """
+            #pragma VertexShader
+            PS_INPUT VS(VS_INPUT input) : SV_POSITION
+            {
+                return input;
+            }
+            """;
+        var state = new ParseState(HLSLTokenizer.Parse(source));
+
+        var success = FunctionParser.TryParse(state, out var entry);
+
+        await Assert.That(success).IsTrue();
+        await Assert.That(entry!.Kind).IsEqualTo(FunctionKind.VertexShader);
+        await Assert.That(entry.Name).IsEqualTo("VS");
+        await Assert.That(entry.Semantic).IsEqualTo("SV_POSITION");
+        await Assert.That(state.IsAtEnd).IsTrue();
+    }
+
+    [Test]
+    public async Task ParseEntryPointWithoutSemantic()
+    {
+        var source = """
+            #pragma ComputeShader
+            void Main()
+            {
+                return;
+            }
+            """;
+        var state = new ParseState(HLSLTokenizer.Parse(source));
+
+        var success = FunctionParser.TryParse(state, out var entry);
+
+        await Assert.That(success).IsTrue();
+        await Assert.That(entry!.Kind).IsEqualTo(FunctionKind.ComputeShader);
+        await Assert.That(entry.Name).IsEqualTo("Main");
+        await Assert.That(entry.Semantic).IsEqualTo(string.Empty);
+        await Assert.That(entry.Arguments).IsEmpty();
+        await Assert.That(state.IsAtEnd).IsTrue();
+    }
+
+    [Test]
+    public async Task RejectsUnknownPragmaAndRewinds()
+    {
+        var state = new ParseState(HLSLTokenizer.Parse("#pragma SomethingElse"));
+
+        var success = FunctionParser.TryParse(state, out _);
+
+        await Assert.That(success).IsFalse();
+        await Assert.That(state.Peek().Value).IsEqualTo("#pragma SomethingElse");
     }
 
     [Test]

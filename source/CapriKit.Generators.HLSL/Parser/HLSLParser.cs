@@ -2,12 +2,20 @@ using CapriKit.Generators.HLSL.Tokenizer;
 
 namespace CapriKit.Generators.HLSL.Parser;
 
-internal enum EntryPointKind
+internal enum FunctionKind
 {
+    Function,
     VertexShader,
     PixelShader,
-    ComputeShader,
+    ComputeShader,    
 }
+
+internal enum StructureKind
+{
+    Structure,
+    VertexShaderInput,
+}
+
 internal enum IncludeKind
 {
     Local,
@@ -18,11 +26,10 @@ internal sealed record Include(string Path, IncludeKind Kind);
 internal sealed record Variable(string Type, string Name, uint Register, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Member(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
 internal sealed record Argument(string Type, string Name, string Semantic, IReadOnlyList<string> Modifiers, IReadOnlyList<uint> Dimensions);
-internal sealed record Structure(string Name, IReadOnlyList<Member> Members);
+internal sealed record Structure(string Name, IReadOnlyList<Member> Members, StructureKind Kind);
 internal sealed record ConstantBuffer(string Name, uint Register, IReadOnlyList<Member> Members);
-internal sealed record EntryPoint(EntryPointKind Kind, string Name, string Semantic, IReadOnlyList<Argument> Arguments);
-internal sealed record Function(string Name, string Semantic, IReadOnlyList<Argument> Arguments);
-internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<EntryPoint> EntryPoints, IReadOnlyList<Function> Functions);
+internal sealed record Function(FunctionKind Kind, string Name, string Semantic, IReadOnlyList<Argument> Arguments);
+internal sealed record ShaderMetadata(IReadOnlyList<Include> Includes, IReadOnlyList<Variable> Variables, IReadOnlyList<Structure> Structures, IReadOnlyList<ConstantBuffer> ConstantBuffers, IReadOnlyList<Function> Functions);
 
 internal static class HLSLParser
 {
@@ -32,7 +39,6 @@ internal static class HLSLParser
         var variables = new List<Variable>();
         var structures = new List<Structure>();
         var constantBuffers = new List<ConstantBuffer>();
-        var entryPoints = new List<EntryPoint>();
         var functions = new List<Function>();
         var includes = new List<Include>();
 
@@ -50,10 +56,6 @@ internal static class HLSLParser
             {
                 constantBuffers.Add(buffer);
             }
-            else if (EntryPointParser.TryParse(state, out var entry))
-            {
-                entryPoints.Add(entry);
-            }
             else if (FunctionParser.TryParse(state, out var function))
             {
                 functions.Add(function);
@@ -70,6 +72,6 @@ internal static class HLSLParser
             }
         }
 
-        return new ShaderMetadata(includes, variables, structures, constantBuffers, entryPoints, functions);
+        return new ShaderMetadata(includes, variables, structures, constantBuffers, functions);
     }
 }

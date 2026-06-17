@@ -22,14 +22,16 @@ internal class HLSLParserTests
 
         await Assert.That(result.Structures).Count().IsEqualTo(3);
         await Assert.That(result.ConstantBuffers).Count().IsEqualTo(1);
-        await Assert.That(result.EntryPoints).Count().IsEqualTo(2);
+
+        var entryPoints = result.Functions.Where(f => f.Kind != FunctionKind.Function).ToList();
+        await Assert.That(entryPoints).Count().IsEqualTo(2);
 
         await Assert.That(result.Structures[0].Name).IsEqualTo("VS_INPUT");
         await Assert.That(result.ConstantBuffers[0].Name).IsEqualTo("Constants");
-        await Assert.That(result.EntryPoints[0].Kind).IsEqualTo(EntryPointKind.VertexShader);
-        await Assert.That(result.EntryPoints[0].Name).IsEqualTo("VS");
-        await Assert.That(result.EntryPoints[1].Kind).IsEqualTo(EntryPointKind.PixelShader);
-        await Assert.That(result.EntryPoints[1].Name).IsEqualTo("PS");
+        await Assert.That(entryPoints[0].Kind).IsEqualTo(FunctionKind.VertexShader);
+        await Assert.That(entryPoints[0].Name).IsEqualTo("VS");
+        await Assert.That(entryPoints[1].Kind).IsEqualTo(FunctionKind.PixelShader);
+        await Assert.That(entryPoints[1].Name).IsEqualTo("PS");
         await Assert.That(result.Includes[0].Kind).IsEqualTo(IncludeKind.System);
         await Assert.That(result.Includes[0].Path).IsEqualTo("std.io");
         await Assert.That(result.Includes[1].Kind).IsEqualTo(IncludeKind.Local);

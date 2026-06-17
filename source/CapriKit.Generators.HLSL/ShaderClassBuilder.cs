@@ -44,6 +44,10 @@ internal static class ShaderClassBuilder
         foreach (var @struct in metadata.Structures)
         {
             StructBuilder.WriteStruct(builder, @struct);
+            if (@struct.Kind == StructureKind.VertexShaderInput)
+            {
+                InputElementDescriptionBuilder.WriteInputElementDescription(builder, @struct);
+            }
         }
 
         foreach (var buffer in metadata.ConstantBuffers)
@@ -52,17 +56,22 @@ internal static class ShaderClassBuilder
             StructBuilder.WriteStruct(builder, buffer);
         }
 
-        foreach (var entryPoint in metadata.EntryPoints)
+        foreach (var function in metadata.Functions)
         {
-            var comment = new StringBuilder();
-            comment.AppendLine($"Kind: {entryPoint.Kind}");
-            if (!string.IsNullOrEmpty(entryPoint.Semantic))
+            // Ignore regular functions
+            if (function.Kind == FunctionKind.Function)
             {
-                comment.AppendLine($"Semantic: {entryPoint.Semantic}");
+                continue;
+            }
+
+            var comment = new StringBuilder();
+            comment.AppendLine($"Kind: {function.Kind}");
+            if (!string.IsNullOrEmpty(function.Semantic))
+            {
+                comment.AppendLine($"Semantic: {function.Semantic}");
             }
             builder.WriteSummaryComment(comment.ToString());
-            builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidTypeIdentifier(entryPoint.Name), ToLiteral(entryPoint.Name));
-            InputElementDescriptionBuilder.WriteInputElementDescription(builder, entryPoint, metadata.Structures);
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "string", CreateValidTypeIdentifier(function.Name), ToLiteral(function.Name));
         }
 
         classText = SourceText.From(builder.Build(), Encoding.UTF8);

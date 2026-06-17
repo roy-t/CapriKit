@@ -21,11 +21,32 @@ internal class StructureParserTests
 
         await Assert.That(success).IsTrue();
         await Assert.That(structure!.Name).IsEqualTo("VS_INPUT");
+        await Assert.That(structure.Kind).IsEqualTo(StructureKind.Structure);
         await Assert.That(structure.Members).Count().IsEqualTo(2);
         await Assert.That(structure.Members[0].Type).IsEqualTo("float3");
         await Assert.That(structure.Members[0].Name).IsEqualTo("position");
         await Assert.That(structure.Members[0].Semantic).IsEqualTo("POSITION");
         await Assert.That(structure.Members[1].Name).IsEqualTo("id");
+        await Assert.That(state.IsAtEnd).IsTrue();
+    }
+
+    [Test]
+    public async Task ParseInputStructure()
+    {
+        var source = """
+            #pragma Input
+            struct VS_INPUT
+            {
+                float3 position : POSITION;
+            };
+            """;
+        var state = new ParseState(HLSLTokenizer.Parse(source));
+
+        var success = StructureParser.TryParse(state, out var structure);
+
+        await Assert.That(success).IsTrue();
+        await Assert.That(structure!.Name).IsEqualTo("VS_INPUT");
+        await Assert.That(structure.Kind).IsEqualTo(StructureKind.VertexShaderInput);
         await Assert.That(state.IsAtEnd).IsTrue();
     }
 

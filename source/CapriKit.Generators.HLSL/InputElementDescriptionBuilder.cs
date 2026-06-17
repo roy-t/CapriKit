@@ -4,38 +4,21 @@ using static CapriKit.Generators.HLSL.SourceCodeUtils;
 namespace CapriKit.Generators.HLSL;
 
 /// <summary>
-/// Generates a default input element description, note that only the shader source code
-/// does not give enough information to create a perfect one. So users need an option
-/// to provide their own one if they do things like packing the elements of a float4 in a
-/// R8G8B8A8_UNorm or if they are reading from more than 1 vertex buffer.
+/// Generates a default input element description for a struct marked with <c>#pragma Input</c>.
+/// Note that the shader source code alone does not give enough information to create a perfect one.
+/// So users need an option to provide their own one if they do things like packing the elements of a
+/// float4 in a R8G8B8A8_UNorm or if they are reading from more than 1 vertex buffer.
 /// </summary>
 internal static class InputElementDescriptionBuilder
 {
     private const string InputElementDescriptionArrayType = "Vortice.Direct3D11.InputElementDescription[]";
     private const string PerVertexDataInputClassification = "Vortice.Direct3D11.InputClassification.PerVertexData";
 
-    public static void WriteInputElementDescription(SourceCodeBuilder builder, EntryPoint entryPoint, IReadOnlyList<Structure> structs)
+    public static void WriteInputElementDescription(SourceCodeBuilder builder, Structure @struct)
     {
-        if (entryPoint.Kind != EntryPointKind.VertexShader)
-            return;
-
-        // Assume the first custom structure with at least one user semantic is the complete vertex shader input .
-        Structure? target = default;
-        foreach (var argument in entryPoint.Arguments)
-        {
-            var @struct = structs.FirstOrDefault(s => s.Name.Equals(argument.Type, StringComparison.OrdinalIgnoreCase));
-            if (@struct != default && @struct.Members.Any(m => IsUserSemantic(m.Semantic)))
-            {
-                target = @struct;
-            }
-        }
-
-        if (target == null)
-            return;
-
-        var name = $"{CreateValidTypeIdentifier(entryPoint.Name)}InputElementDescription";
+        var name = $"{CreateValidTypeIdentifier(@struct.Name)}ElementDescription";
         builder.WriteField(Modifiers.Public | Modifiers.Static | Modifiers.ReadOnly,
-            InputElementDescriptionArrayType, name, b => WriteArrayContents(b, target));
+            InputElementDescriptionArrayType, name, b => WriteArrayContents(b, @struct));
     }
 
     private static void WriteArrayContents(SourceCodeBuilder builder, Structure @struct)
@@ -69,10 +52,5 @@ internal static class InputElementDescriptionBuilder
         var text = semantic.Substring(0, split);
         var index = split < semantic.Length ? uint.Parse(semantic.Substring(split)) : 0u;
         return (text, index);
-    }
-
-    private static bool IsUserSemantic(string semantic)
-    {
-        return !string.IsNullOrWhiteSpace(semantic) && !semantic.StartsWith("SV_");
     }
 }

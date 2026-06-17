@@ -11,14 +11,6 @@ internal class ShaderTypeGeneratorTests
     [Test]
     public async Task Execute()
     {
-        // TODO: instead of doing complex guessing of what to generate the input element description for
-        // we should look at a pragma on a struct and only generate those on demand
-        // the outcome of this test should stay the same (it already has the pragma) but the logic
-        // in the parser/generator needs to change to take into account this pragma instead of the
-        // weird guessing game. TODO: create an InputElementParser, similar to the EntryPoint Parser and go from there
-
-        throw new Exception("TODO");
-
         IEnumerable<(string fileName, SourceText content)> additionalFiles =
         [
             new (@"C:/project/CapriKit.Generators.HLSL.json", SourceText.From(ConfigJson, Encoding.UTF8)),
@@ -102,7 +94,7 @@ internal class ShaderTypeGeneratorTests
 
         sampler TextureSampler : register(s0);
 
-        #pragma GenerateInputElementDescription
+        #pragma Input
         struct VS_INPUT
         {
             float2 pos : POSITION;
@@ -176,6 +168,10 @@ internal class ShaderTypeGeneratorTests
                 /// </summary>
                 public System.Numerics.Vector2 Pos;
             }
+            public static readonly Vortice.Direct3D11.InputElementDescription[] VsInputElementDescription = new Vortice.Direct3D11.InputElementDescription[]
+            {
+                new("POSITION", 0, Vortice.DXGI.Format.R32G32_Float, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
+            };
             [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
             public struct PsInput
             {
@@ -219,10 +215,6 @@ internal class ShaderTypeGeneratorTests
             /// Kind: VertexShader
             /// </summary>
             public const string Vs = "VS";
-            public static readonly Vortice.Direct3D11.InputElementDescription[] VsInputElementDescription = new Vortice.Direct3D11.InputElementDescription[]
-            {
-                new("POSITION", 0, Vortice.DXGI.Format.R32G32_Float, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
-            };
             /// <summary>
             /// Kind: PixelShader
             /// </summary>
