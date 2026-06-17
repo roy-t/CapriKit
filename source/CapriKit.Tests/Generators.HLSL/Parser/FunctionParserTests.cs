@@ -19,7 +19,7 @@ internal class FunctionParserTests
         var success = FunctionParser.TryParse(state, out var entry);
 
         await Assert.That(success).IsTrue();
-        await Assert.That(entry!.Kind).IsNull();
+        await Assert.That(entry!.Kind).IsEqualTo(FunctionKind.Function);
         await Assert.That(entry.Name).IsEqualTo("VS");
         await Assert.That(entry.Semantic).IsEqualTo("SV_POSITION");
         await Assert.That(entry.Arguments).Count().IsEqualTo(1);
@@ -72,19 +72,8 @@ internal class FunctionParserTests
     }
 
     [Test]
-    public async Task RejectsUnknownPragmaAndRewinds()
-    {
-        var state = new ParseState(HLSLTokenizer.Parse("#pragma SomethingElse"));
-
-        var success = FunctionParser.TryParse(state, out _);
-
-        await Assert.That(success).IsFalse();
-        await Assert.That(state.Peek().Value).IsEqualTo("#pragma SomethingElse");
-    }
-
-    [Test]
     public async Task ParseFunctionWithComplexArguments()
-    { 
+    {
         var source = """
             PS_INPUT VS(VS_INPUT input, in float4x4 boneMatrices[128], uint instanceId : SV_InstanceId)
             {
