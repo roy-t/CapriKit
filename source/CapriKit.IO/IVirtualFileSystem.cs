@@ -13,7 +13,7 @@ public interface IVirtualFileSystem : IReadOnlyVirtualFileSystem
     Stream AppendWrite(FilePath file);
 
     /// <summary>
-    /// Deletes an existig file. Nothing happens if the file does not exist.
+    /// Deletes an existing file. Nothing happens if the file does not exist.
     /// </summary>
     void Delete(FilePath file);
 }
