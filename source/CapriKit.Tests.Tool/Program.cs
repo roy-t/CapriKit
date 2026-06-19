@@ -53,7 +53,7 @@ public partial class Program
 
             ITestScreen[] tests =
             [
-                //shaderTest,
+                shaderTest,
                 new WindowStatesTest(window),
             ];
 
