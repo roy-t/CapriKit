@@ -15,6 +15,7 @@ internal readonly record struct TranslatedType(string DotNetType, uint FixedSize
 
 internal static class TypeTranslator
 {
+    // TODO: Everyone uses just the .DotNetType name as the whole dimension stuff is fixed somewhere else
     public static TranslatedType Translate(string hlslType, IReadOnlyList<uint> dimensions)
     {
         var dotNetType = MapPrimitive(hlslType);

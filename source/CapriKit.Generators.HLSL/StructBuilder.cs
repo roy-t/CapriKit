@@ -74,7 +74,7 @@ internal static class StructBuilder
             var count = Flatten(member.Dimensions);
             if (count > 1)
             {
-                // Arrays start a new register and each element is padded to 16 bytes.                
+                // Arrays start a new register and each element is padded to 16 bytes.
                 var stride = Align16(size);
                 offset = Align16(offset);
                 fields.Add(new Layout(member, elementType, count, offset, stride));
