@@ -65,7 +65,7 @@ internal sealed class SourceCodeBuilder
     {
         var modifiersText = GetModifiers(modifiers);
         Write($"{string.Join(" ", [modifiersText, type, name])} = ");
-        writeInitializer(this);        
+        writeInitializer(this);
     }
 
     public void WriteAttribute(string name, params string[] values)

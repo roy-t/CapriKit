@@ -14,7 +14,7 @@ internal static class FunctionParser
         "ComputeShader" => FunctionKind.ComputeShader,
         _ => FunctionKind.Function
     };
-    
+
 
     internal record FunctionAccumulator
     {

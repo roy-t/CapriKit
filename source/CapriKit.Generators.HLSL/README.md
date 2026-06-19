@@ -6,8 +6,8 @@ A source generator that analyzes HLSL shader files and generates strongly typed 
 ## Implementation Details & Quirks
 
 - HLSL defines every unmatched single character as an operator. For example `-4.0f` matches as `<operator><floating-point-number>`. The tokenizer follows this rule, but it means that you need to be mindful in parsers when trying to match number literals.
-- The parser assumes that methods preceded by one of the following pragma statements are entrypoints
+- The parser recognizes function with specific preceding pragmas as entry points and marks them with specific kinds so that the generator can generate extra code for them.
   - `#pragma VertexShader`
   - `#pragma PixelShader`
   - `#pragma ComputeShader`
-- A struct preceded by `#pragma Input`, gets a generated `InputElementDescription[]` (named `<Struct>ElementDescription`).
+- Similarly, structs preceded by `#pragma Input` are recognized and marked as vertex shader inputs and the generator generates input element descriptions for them.

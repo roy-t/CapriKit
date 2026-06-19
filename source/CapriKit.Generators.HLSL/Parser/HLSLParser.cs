@@ -7,7 +7,7 @@ internal enum FunctionKind
     Function,
     VertexShader,
     PixelShader,
-    ComputeShader,    
+    ComputeShader,
 }
 
 internal enum StructureKind
