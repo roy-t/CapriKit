@@ -67,7 +67,7 @@ internal sealed class StructTranslator
 
         var structType = new DotNetType(CreateValidTypeIdentifier(@struct.Name), offset);
         var dotNetStruct = new DotNetStruct(structType, members);
-        KnownStructures.Add(@struct.Name, dotNetStruct);
+        KnownStructures[@struct.Name] = dotNetStruct;
 
         return dotNetStruct;
     }

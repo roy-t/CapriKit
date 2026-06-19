@@ -41,19 +41,21 @@ internal static class ShaderClassBuilder
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier(variable.Name), ToLiteral(variable.Register));
         }
 
+        var structTranslator = new StructTranslator();
+
         foreach (var @struct in metadata.Structures)
         {
-            StructBuilder.WriteStruct(builder, @struct);
+            StructBuilder.WriteStruct(builder, structTranslator, @struct);
             if (@struct.Kind == StructureKind.VertexShaderInput)
             {
-                InputElementDescriptionBuilder.WriteInputElementDescription(builder, @struct);
+                InputElementDescriptionBuilder.WriteInputElementDescription(builder, structTranslator, @struct);
             }
         }
 
         foreach (var buffer in metadata.ConstantBuffers)
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
-            StructBuilder.WriteStruct(builder, buffer);
+            StructBuilder.WriteStruct(builder, structTranslator, buffer);
         }
 
         foreach (var function in metadata.Functions)

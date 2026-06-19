@@ -13,16 +13,16 @@ internal static class StructBuilder
     private const string SequentialLayoutKind = "System.Runtime.InteropServices.LayoutKind.Sequential";
 
     /// <summary>
-    /// Creates a struct that follows the explicyt layout rules for constant buffers with
+    /// Creates a struct that follows the explicit layout rules for constant buffers with
     /// C# types that map to the corresponding HLSL types.
     /// Fixed size arrays are supported via helper structs that are padded to 16 bytes, placed
     /// in an <c>[InlineArray]</c>.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules"/>
-    public static void WriteStruct(SourceCodeBuilder builder, ConstantBuffer buffer)
+    public static void WriteStruct(SourceCodeBuilder builder, StructTranslator translator, ConstantBuffer buffer)
     {
-        var fields = LayOutConstantBuffer(buffer.Members, out var sizeInBytes);
-        WriteStruct(builder, CreateValidTypeIdentifier(buffer.Name), fields, ExplicitLayoutKind, $"Size = {sizeInBytes}");
+        var dotNetStruct = translator.LayoutConstantBuffer(buffer);
+        WriteStruct(builder, dotNetStruct);
     }
 
     /// <summary>
@@ -30,101 +30,40 @@ internal static class StructBuilder
     /// Fixed size arrays are supported via <c>[InlineArray]</c>.
     /// </summary>
     /// <seealso href="https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-struct"/>
-    public static void WriteStruct(SourceCodeBuilder builder, Structure @struct)
+    public static void WriteStruct(SourceCodeBuilder builder, StructTranslator translator, Structure @struct)
     {
-        var fields = LayOutStructure(@struct.Members);
-        WriteStruct(builder, CreateValidTypeIdentifier(@struct.Name), fields, SequentialLayoutKind);
+        var dotNetStruct = translator.LayoutStruct(@struct);
+        WriteStruct(builder, dotNetStruct);
     }
 
     /// <summary>
     /// Writes a struct and the <c>[InlineArray]</c> helper structs its array
     /// members need. The helpers are emitted as siblings of the struct.
     /// </summary>
-    private static void WriteStruct(SourceCodeBuilder builder, string name, IReadOnlyList<Layout> fields, params string[] layoutParameters)
+    private static void WriteStruct(SourceCodeBuilder builder, DotNetStruct @struct)
     {
-        builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", layoutParameters);
-        builder.OpenStruct(Modifiers.Public, name);
+        builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", ExplicitLayoutKind, $"Size = {@struct.Type.Size}");
+        builder.OpenStruct(Modifiers.Public, @struct.Type.Name);
 
-        foreach (var field in fields)
+        foreach (var member in @struct.Members)
         {
-            WriteMemberField(builder, name, field);
+            WriteMemberField(builder, @struct.Type.Name, member);
         }
 
         builder.CloseBlock();
 
-        foreach (var field in fields.Where(f => f.IsArray))
+        foreach (var member in @struct.Members.Where(m => m.ElementCount > 1))
         {
-            WriteArrayType(builder, name, field);
+            WriteArrayType(builder, @struct.Type.Name, member);
         }
     }
-
-    /// <summary>
-    /// Assigns byte offsets following the HLSL packing rules.
-    /// </summary>
-    private static List<Layout> LayOutConstantBuffer(IReadOnlyList<Member> members, out uint sizeInBytes)
+   
+    private static void WriteMemberField(SourceCodeBuilder builder, string ownerName, DotNetStructMember member)
     {
-        var fields = new List<Layout>(members.Count);
-        var offset = 0u;
-
-        foreach (var member in members)
-        {
-            var size = TypeTranslator.GetSizeInBytes(member.Type);
-            var elementType = TypeTranslator.Translate(member.Type, []).DotNetType;
-
-            var count = Flatten(member.Dimensions);
-            if (count > 1)
-            {
-                // Arrays start a new register and each element is padded to 16 bytes.
-                var stride = Align16(size);
-                offset = Align16(offset);
-                fields.Add(new Layout(member, elementType, count, offset, stride));
-                offset += stride * count;
-            }
-            else
-            {
-                // A scalar or vector may not straddle a 16-byte boundary.
-                if (offset % 16 + size > 16)
-                {
-                    offset = Align16(offset);
-                }
-                fields.Add(new Layout(member, elementType, 1, offset, null));
-                offset += size;
-            }
-        }
-
-        sizeInBytes = Align16(offset);
-        return fields;
-    }
-
-    /// <summary>
-    /// Lays out members back-to-back, the way a regular HLSL struct is packed.
-    /// </summary>
-    internal static List<Layout> LayOutStructure(IReadOnlyList<Member> members)
-    {
-        var fields = new List<Layout>(members.Count);
-
-        foreach (var member in members)
-        {
-            var elementType = TypeTranslator.Translate(member.Type, []).DotNetType;
-            var count = Flatten(member.Dimensions);
-            fields.Add(new Layout(member, elementType, count));
-        }
-
-        return fields;
-    }
-
-    private static void WriteMemberField(SourceCodeBuilder builder, string ownerName, Layout field)
-    {
-        WriteFieldSummary(builder, field.Member);
-
-        if (field.Offset is uint offset)
-        {
-            builder.WriteAttribute("System.Runtime.InteropServices.FieldOffset", offset.ToString());
-        }
-
-        var name = CreateValidTypeIdentifier(field.Member.Name);
-        var type = field.IsArray ? ArrayStructName(ownerName, name) : field.DotNetType;
-        builder.WriteField(Modifiers.Public, type, name);
+        builder.WriteSummaryComment(member.Documentation);
+        builder.WriteAttribute("System.Runtime.InteropServices.FieldOffset", ToLiteral(member.Offset));
+        var type = member.ElementCount > 1 ? ArrayStructName(ownerName, member.Name) : member.Type.Name;
+        builder.WriteField(Modifiers.Public, type, member.Name);
     }
 
     /// <summary>
@@ -133,26 +72,25 @@ internal static class StructBuilder
     /// element is first wrapped in a struct padded to that size, giving the array
     /// the 16-byte stride that constant buffers require.
     /// </summary>
-    private static void WriteArrayType(SourceCodeBuilder builder, string ownerName, Layout field)
+    private static void WriteArrayType(SourceCodeBuilder builder, string ownerName, DotNetStructMember member)
     {
-        var name = CreateValidTypeIdentifier(field.Member.Name);
-        var inlineElement = field.DotNetType;
+        var inlineElement = member.Type.Name;
 
-        if (field.Stride is uint stride)
+        if (member.Type.Size != member.Stride)
         {
-            var elementName = ElementStructName(ownerName, name);
+            var elementName = ElementStructName(ownerName, member.Name);
             builder.WriteAttribute(
                 "System.Runtime.InteropServices.StructLayout",
                 "System.Runtime.InteropServices.LayoutKind.Sequential",
-                $"Size = {stride}");
+                $"Size = {member.Stride}");
             builder.OpenStruct(Modifiers.Public, elementName);
-            builder.WriteField(Modifiers.Public, field.DotNetType, "Value");
+            builder.WriteField(Modifiers.Public, member.Type.Name, "Value");
             builder.CloseBlock();
             inlineElement = elementName;
         }
 
-        builder.WriteAttribute("System.Runtime.CompilerServices.InlineArray", field.ElementCount.ToString());
-        builder.OpenStruct(Modifiers.Public, ArrayStructName(ownerName, name));
+        builder.WriteAttribute("System.Runtime.CompilerServices.InlineArray", member.ElementCount.ToString());
+        builder.OpenStruct(Modifiers.Public, ArrayStructName(ownerName, member.Name));
         builder.WriteField(Modifiers.Private, inlineElement, "element0");
         builder.CloseBlock();
     }

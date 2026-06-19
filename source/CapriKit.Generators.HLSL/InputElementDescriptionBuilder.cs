@@ -14,24 +14,25 @@ internal static class InputElementDescriptionBuilder
     private const string InputElementDescriptionArrayType = "Vortice.Direct3D11.InputElementDescription[]";
     private const string PerVertexDataInputClassification = "Vortice.Direct3D11.InputClassification.PerVertexData";
 
-    public static void WriteInputElementDescription(SourceCodeBuilder builder, Structure @struct)
+    public static void WriteInputElementDescription(SourceCodeBuilder builder, StructTranslator translator, Structure @struct)
     {
         var name = $"{CreateValidTypeIdentifier(@struct.Name)}ElementDescription";
         builder.WriteField(Modifiers.Public | Modifiers.Static | Modifiers.ReadOnly,
-            InputElementDescriptionArrayType, name, b => WriteArrayContents(b, @struct));
+            InputElementDescriptionArrayType, name, b => WriteArrayContents(b, translator, @struct));
     }
 
-    private static void WriteArrayContents(SourceCodeBuilder builder, Structure @struct)
+    private static void WriteArrayContents(SourceCodeBuilder builder, StructTranslator translator, Structure @struct)
     {
         builder.WriteRaw($"new {InputElementDescriptionArrayType}\r\n");
         builder.WriteLine("{");
-        var memberLayout = StructBuilder.LayOutStructure(@struct.Members);
-        foreach (var layout in memberLayout)
+        var dotNetStruct = translator.LayoutStruct(@struct);
+        for (var i = 0; i < @struct.Members.Count; i++)
         {
-            var member = layout.Member;
+            var member = @struct.Members[i];
+
             var (semantic, semanticIndex) = SplitSemanticInTextAndIndex(member.Semantic);
             var format = TypeTranslator.GetFormat(member.Type); // use the HLSL type here
-            var offset = layout.Offset ?? 0u;
+            var offset = dotNetStruct.Members[i].Offset;
             var slot = 0u;
             var classification = PerVertexDataInputClassification;
             var stepRate = 0u;
