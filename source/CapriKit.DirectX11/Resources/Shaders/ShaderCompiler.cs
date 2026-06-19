@@ -27,8 +27,8 @@ public static class ShaderCompiler
 
     public static VertexShaderByteCode CompileVertexShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(fileSystem, includePath, source, entryPoint, name, VERTEX_SHADER_PROFILE);
-        return new VertexShaderByteCode(blob.ToArray(), entryPoint, name);
+        var bytes = Compile(fileSystem, includePath, source, entryPoint, name, VERTEX_SHADER_PROFILE);
+        return new VertexShaderByteCode(bytes, entryPoint, name);
     }
 
     public static IVertexShader CreateVertexShader(VertexShaderByteCode byteCode, Device device)
@@ -46,8 +46,8 @@ public static class ShaderCompiler
 
     public static PixelShaderByteCode CompilePixelShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(fileSystem, includePath, source, entryPoint, name, PIXEL_SHADER_PROFILE);
-        return new PixelShaderByteCode(blob.ToArray(), entryPoint, name);
+        var bytes = Compile(fileSystem, includePath, source, entryPoint, name, PIXEL_SHADER_PROFILE);
+        return new PixelShaderByteCode(bytes, entryPoint, name);
     }
     public static IPixelShader CreatePixelShader(PixelShaderByteCode byteCode, Device device)
     {
@@ -64,9 +64,9 @@ public static class ShaderCompiler
 
     public static ComputeShaderByteCode CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var blob = Compile(fileSystem, includePath, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
-        var (x, y, z) = QueryNumThreads(blob, name);
-        return new ComputeShaderByteCode(blob.ToArray(), x, y, z, entryPoint, name);
+        var bytes = Compile(fileSystem, includePath, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
+        var (x, y, z) = QueryNumThreads(bytes, name);
+        return new ComputeShaderByteCode(bytes, x, y, z, entryPoint, name);
     }
 
     public static IComputeShader CreateComputeShader(ComputeShaderByteCode byteCode, Device device)
@@ -76,20 +76,23 @@ public static class ShaderCompiler
         return new ComputeShader(shader, byteCode.NumThreadsX, byteCode.NumThreadsY, byteCode.NumThreadsZ);
     }
 
-    private static ReadOnlySpan<byte> Compile(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name, string profile)
+    private static byte[] Compile(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name, string profile)
     {
         using var includeResolver = new ShaderIncludeResolver(fileSystem, includePath);
 
         var result = Compiler.Compile(source, [], includeResolver, entryPoint, name, profile, out var blob, out var errorBlob);
         if (errorBlob != null)
         {
-            ShaderCompilationAnalyzer.ThrowOnWarningOrError(errorBlob.AsSpan());
+            ShaderCompilationAnalyzer.ThrowOnWarningOrError(errorBlob.AsSpan(), "unknown pragma ignored");
+            errorBlob.Dispose();
         }
 
         // Check the general return value for problems, AFTER having analyzed the errors
         result.CheckError();
 
-        return blob.AsSpan();
+        var bytes = blob.AsBytes();
+        blob.Dispose();
+        return bytes;
     }
 
     /// <summary>

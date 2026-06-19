@@ -18,9 +18,13 @@ internal sealed class ShaderTest : ITestScreen
     private readonly IInputLayout InputLayout;
     private readonly VertexBuffer<VsInput> VertexBuffer;
     private readonly IndexBufferU16 IndexBuffer;
-    private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
+    private readonly ConstantBuffer<Constants> ConstantBuffer;
 
-    public ShaderTest(IVertexShader vertexShader, IPixelShader pixelShader, IInputLayout inputLayout, VertexBuffer<VsInput> vertexBuffer, IndexBufferU16 indexBuffer, ConstantBuffer<Matrix4x4> constantBuffer)
+    private readonly VsInput[] Vertices;
+    private readonly ushort[] Indices;
+    private bool isDirty;
+
+    private ShaderTest(IVertexShader vertexShader, IPixelShader pixelShader, IInputLayout inputLayout, VertexBuffer<VsInput> vertexBuffer, IndexBufferU16 indexBuffer, ConstantBuffer<Constants> constantBuffer)
     {
         VertexShader = vertexShader;
         PixelShader = pixelShader;
@@ -28,19 +32,31 @@ internal sealed class ShaderTest : ITestScreen
         VertexBuffer = vertexBuffer;
         IndexBuffer = indexBuffer;
         ConstantBuffer = constantBuffer;
+        Indices = [0, 1, 2];
+        Vertices =
+        [
+            new VsInput(){ Position = new Vector2(-0.5f, -0.5f), Color = new Vector4(1.0f)},
+            new VsInput(){ Position = new Vector2(0.5f, -0.5f), Color = new Vector4(1.0f)},
+            new VsInput(){ Position = new Vector2(0.0f, 0.5f), Color = new Vector4(1.0f)}
+        ];
+
+        isDirty = true;
     }
 
-    public static async Task<ShaderTest> Create(Device device, IVirtualFileSystem fileSystem)
+    public static async Task<ShaderTest> Create(Device device, IReadOnlyVirtualFileSystem fileSystem)
     {
         var source = await fileSystem.ReadAllText(BasicShader.Path);
         var directory = new FilePath(BasicShader.Path).Directory;
 
         var vs = ShaderCompiler.CompileVertexShader(fileSystem, directory, device, source, Vs, nameof(Vs));
         var ps = ShaderCompiler.CompilePixelShader(fileSystem, directory, device, source, Ps, nameof(Ps));
-        var inputLayout = vs.CreateInputLayout(device, []);
+
+        // TODO: the input element description generation is incorrect,
+        // it does not add offsets so the colors are wrong (uses most of the position elements)
+        var inputLayout = vs.CreateInputLayout(device, VsInputElementDescription);
         var vertexBuffer = new VertexBuffer<VsInput>(device, nameof(ShaderTest));
         var indexBuffer = new IndexBufferU16(device, nameof(ShaderTest));
-        var constantBuffer = new ConstantBuffer<Matrix4x4>(device, nameof(ShaderTest));
+        var constantBuffer = new ConstantBuffer<Constants>(device, nameof(ShaderTest));
 
         return new ShaderTest(vs, ps, inputLayout, vertexBuffer, indexBuffer, constantBuffer);
     }
@@ -50,6 +66,40 @@ internal sealed class ShaderTest : ITestScreen
 
     public void Render(DeviceContext context)
     {
+        UploadData(context);
+        context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullNone, PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
+        context.IA.SetVertexBuffer(VertexBuffer);
+        context.IA.SetIndexBuffer(IndexBuffer);
+        context.VS.SetConstantBuffer(0, ConstantBuffer);
+        context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
+        context.DrawIndexed(3);
+    }
+
+    private void UploadData(DeviceContext context)
+    {
+        if (isDirty)
+        {
+            VertexBuffer.Write(context, Vertices);
+            IndexBuffer.Write(context, Indices);
+
+            var constants = new Constants()
+            {
+                ProjectionMatrix = System.Numerics.Matrix4x4.Identity
+            };
+            ConstantBuffer.Write(context, [constants]);
+
+            isDirty = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        ConstantBuffer.Dispose();
+        IndexBuffer.Dispose();
+        VertexBuffer.Dispose();
+        InputLayout.Dispose();
+        PixelShader.Dispose();
+        VertexShader.Dispose();
     }
 }

@@ -1,3 +1,4 @@
+using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Views;
@@ -56,8 +57,11 @@ public sealed class DeferredDeviceContext : DeviceContext
 
 public abstract class DeviceContext : IDisposable
 {
+    private readonly Device Device;
+
     internal DeviceContext(Device device, ID3D11DeviceContext context)
     {
+        Device = device;
         ID3D11DeviceContext = context;
 
         IA = new InputAssemblerContext(context);
@@ -78,6 +82,11 @@ public abstract class DeviceContext : IDisposable
     public PixelShaderContext PS { get; }
     public OutputMergerContext OM { get; }
     public ComputeShaderContext CS { get; }
+
+    public SamplerStates SamplerStates => Device.SamplerStates;
+    public BlendStates BlendStates => Device.BlendStates;
+    public DepthStencilStates DepthStencilStates => Device.DepthStencilStates;
+    public RasterizerStates RasterizerStates => Device.RasterizerStates;
 
     public void Clear(IDepthStencilView view, float depth = 0, byte stencil = 0)
     {

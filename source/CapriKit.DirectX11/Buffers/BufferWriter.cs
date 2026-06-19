@@ -19,7 +19,7 @@ public readonly ref struct BufferWriter<T> : IDisposable
         Resource = context.Map(buffer, 0, MapMode.WriteDiscard, MapFlags.None);
     }
 
-    public void Write(ReadOnlySpan<T> source, int offset)
+    public void Write(ReadOnlySpan<T> source, int offset = 0)
     {
         var span = Resource.AsSpan<T>(Buffer);
         var slice = span.Slice(offset, source.Length);

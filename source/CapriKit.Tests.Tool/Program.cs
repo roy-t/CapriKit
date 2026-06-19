@@ -13,18 +13,54 @@ namespace CapriKit.Tests.Tool;
 public partial class Program
 {
     [STAThread]
-    static void Main() // TODO: main loop is getting a bit cluttered
+    static void Main()
     {
 #if DEBUG // Ensure writes to console are redirected to Visual Studio
         Console.SetOut(new DebugOutputTextWriter());
 #endif
         Win32Application.Initialize("CapriKit.Tests.Tool");
-        using var gameLoop = new GameLoop();
+
+        // TODO: I don't like this construct, figure out how to mix async and sync methods
+        // in the game loading and game loop. Be careful that a regular await
+        // without a synchronization context will return on a different thread
+        // so the Windows message pump doesn't work anymore.
+        using var gameLoop = GameLoop.Create().GetAwaiter().GetResult();
         gameLoop.Run();
     }
 
     private sealed class GameLoop : IDisposable
     {
+        public static async Task<GameLoop> Create()
+        {
+            var window = Win32Application.Window;
+            var keyboard = Win32Application.Keyboard;
+            var mouse = Win32Application.Mouse;
+
+            var renderDoc = CommandLineArguments.IsPresent("--renderdoc")
+                ? RenderDoc.TryLoad()
+                : null;
+
+            renderDoc?.DisableOverlay();
+
+            var device = new Device();
+            var swapChain = new SwapChain(device, window);
+            var imGuiController = new ImGuiController(device, window, keyboard, mouse);
+            var fileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
+
+            // TODO: Something here creates a live DirectX object that is not properly disposed of later!
+            // probably the whole async mess, seperate async to only reading files?
+            var shaderTest = await ShaderTest.Create(device, fileSystem);
+
+            ITestScreen[] tests =
+            [
+                //shaderTest,
+                new WindowStatesTest(window),
+            ];
+
+            return new GameLoop(window, mouse, keyboard, device, swapChain, renderDoc, imGuiController, tests);
+        }
+
+
         private const double DELTA_TIME = 1.0 / 60.0; // constant tick rate of simulation
 
         private readonly Win32Window Window;
@@ -36,39 +72,26 @@ public partial class Program
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
-        private readonly IReadOnlyVirtualFileSystem FileSystem;
-
         private readonly ITestScreen[] Tests;
         private ITestScreen CurrentTest;
 
         private bool running;
 
-        public GameLoop()
+        private GameLoop(Win32Window window, Mouse mouse, Keyboard keyboard, Device device, SwapChain swapChain, RenderDoc? renderDoc, ImGuiController imGuiController, ITestScreen[] tests)
         {
-            Window = Win32Application.Window;
-            Mouse = Win32Application.Mouse;
-            Keyboard = Win32Application.Keyboard;
+            Window = window;
+            Mouse = mouse;
+            Keyboard = keyboard;
+            Device = device;
+            SwapChain = swapChain;
+            RenderDoc = renderDoc;
+            ImGuiController = imGuiController;
+            Tests = tests;
 
-            RenderDoc = CommandLineArguments.IsPresent("--renderdoc")
-                ? RenderDoc.TryLoad()
-                : null;
-
-            RenderDoc?.DisableOverlay();
-
-            Device = new Device();
-            SwapChain = new SwapChain(Device, Window);
-            ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
-            FileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
-
-            Tests =
-            [
-                new WindowStatesTest(Window),
-                //new ShaderTest(Device, FileSystem)
-            ];
             CurrentTest = Tests[0];
         }
 
-        public void Run()
+        public void Run()  // TODO: main loop is getting a bit cluttered
         {
             running = true;
             var elapsed = DELTA_TIME;
@@ -78,14 +101,25 @@ public partial class Program
             {
                 var context = Device.ImmediateDeviceContext;
 
+                // Update
                 ImGuiController.NewFrame((float)elapsed);
                 HandleInput();
                 HandleResize();
 
+                // Render
+
+                // here we decide where to render
+                // (which surface and what part of the surface)                
                 SwapChain.Clear(context);
                 context.OM.SetRenderTargetToBackBuffer(SwapChain);
+                context.RS.SetViewport(SwapChain.Viewport);
+                context.RS.SetScissorRect(SwapChain.Viewport);
+
 
                 UpdateMenu();
+
+                // Individual components decide what and how to render
+                // but for that they only need the device context
                 CurrentTest.Render(context);
                 ImGuiController.Render(context);
 
@@ -160,6 +194,10 @@ public partial class Program
 
         public void Dispose()
         {
+            foreach (var test in Tests)
+            {
+                test.Dispose();
+            }
             ImGuiController.Dispose();
             SwapChain.Dispose();
             Device.Dispose();

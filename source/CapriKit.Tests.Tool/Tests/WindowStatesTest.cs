@@ -29,4 +29,6 @@ internal sealed class WindowStatesTest(Win32Window window) : ITestScreen
             ImGui.End();
         }
     }
+
+    public void Dispose() { }
 }

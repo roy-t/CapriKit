@@ -53,10 +53,10 @@ public class Device : IDisposable
         RasterizerStates = new RasterizerStates(device);
     }
 
-    public SamplerStates SamplerStates { get; }
-    public BlendStates BlendStates { get; }
-    public DepthStencilStates DepthStencilStates { get; }
-    public RasterizerStates RasterizerStates { get; }
+    internal SamplerStates SamplerStates { get; }
+    internal BlendStates BlendStates { get; }
+    internal DepthStencilStates DepthStencilStates { get; }
+    internal RasterizerStates RasterizerStates { get; }
 
     /// <summary>
     /// Gets the immediate device context, of which there is only one and which is NOT thread safe.

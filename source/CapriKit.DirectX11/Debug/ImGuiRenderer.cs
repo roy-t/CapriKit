@@ -110,13 +110,12 @@ public sealed class ImGuiRenderer : IDisposable
     }
 
     private void SetupRenderState(ImDrawDataPtr drawData, DeviceContext context)
-    {
-        var output = new System.Drawing.Rectangle(0, 0, (int)drawData.DisplaySize.X, (int)drawData.DisplaySize.Y);
-        context.Setup(Effect.InputLayout, PrimitiveTopology.TriangleList, Effect.VertexShader, Device.RasterizerStates.CullNone, in output, Effect.PixelShader, Device.BlendStates.NonPreMultiplied, Device.DepthStencilStates.None);
+    {        
+        context.Setup(Effect.InputLayout, PrimitiveTopology.TriangleList, Effect.VertexShader, context.RasterizerStates.CullNone, Effect.PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
         context.VS.SetConstantBuffer(0, ConstantBuffer);
-        context.PS.SetSampler(0, Device.SamplerStates.LinearWrap);
+        context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
     }
 
     public void Dispose()

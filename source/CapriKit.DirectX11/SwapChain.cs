@@ -1,5 +1,6 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
+using CapriKit.DirectX11.Resources;
 using CapriKit.Win32;
 using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
@@ -9,9 +10,9 @@ using Vortice.Mathematics;
 
 namespace CapriKit.DirectX11;
 
-public sealed class SwapChain : IDisposable
+public sealed class SwapChain : IRenderTargetView, IDisposable
 {
-    // Explicitly set the RTV to a format with SRGB while the actual backbuffer is a format without SRGB to properly
+    // Explicitly set the RTV to a format with SRGB while the actual back buffer is a format without SRGB to properly
     // let the output window be gamma corrected. See: https://docs.microsoft.com/en-us/windows/win32/direct3ddxgi/converting-data-color-space
     private const Format BackBufferFormat = Format.R8G8B8A8_UNorm;
     private const Format RenderTargetViewFormat = Format.R8G8B8A8_UNorm_SRgb;
@@ -29,6 +30,8 @@ public sealed class SwapChain : IDisposable
 
         CreateBackBuffer(device);
     }
+
+    ID3D11RenderTargetView IRenderTargetView.ID3D11RenderTargetView => BackBufferView;
 
     public Rectangle Viewport { get; private set; }
     public int Width => Viewport.Width;
