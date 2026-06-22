@@ -1,5 +1,4 @@
 using CapriKit.Generators.HLSL.Parser;
-using CapriKit.Generators.HLSL.Tokenizer;
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
@@ -9,16 +8,16 @@ namespace CapriKit.Generators.HLSL;
 
 internal static class ShaderClassBuilder
 {
-    public static bool TryGenerateShader(string path, SourceText? shaderText, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
+    public static bool TryGenerateShader(string path, ShaderMetadata? metadata, StructBookKeeper bookKeeper, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
     {
         classText = default;
-        if (shaderText == null)
+        if (metadata == null)
         {
             return false;
         }
 
-        var tokens = HLSLTokenizer.Parse(shaderText.ToString());
-        var metadata = HLSLParser.Parse(tokens);
+        var structTranslator = new StructTranslator();
+        bookKeeper.RegisterStructs(structTranslator, path, metadata);
 
         var builder = new SourceCodeBuilder();
         foreach (var include in metadata.Includes.Where(i => i.Kind == IncludeKind.Local))
@@ -30,6 +29,9 @@ internal static class ShaderClassBuilder
             // that references work.
             var (@namespace, @class) = IncludeToClass(path, include, config);
             builder.WriteUsingStatic(@namespace, @class);
+
+            // However, we still need to figure out the size of every struct
+
         }
 
         builder.WriteNamespace(GetNamespace(path, config));
@@ -40,8 +42,6 @@ internal static class ShaderClassBuilder
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier(variable.Name), ToLiteral(variable.Register));
         }
-
-        var structTranslator = new StructTranslator();
 
         foreach (var @struct in metadata.Structures)
         {
@@ -92,7 +92,7 @@ internal static class ShaderClassBuilder
         return (@namespace, @class);
     }
 
-    private static string GetNamespace(string path, GeneratorConfiguration config)
+    public static string GetNamespace(string path, GeneratorConfiguration config)
     {
         // The trailing separator makes Uri treat this as a directory, matching the content root
         var directory = Path.GetDirectoryName(path) + Path.DirectorySeparatorChar;
@@ -105,7 +105,7 @@ internal static class ShaderClassBuilder
             : $"{config.TargetNamespace}.{subNamespace}";
     }
 
-    private static string GetClassName(string path)
+    public static string GetClassName(string path)
     {
         return CreateValidTypeIdentifier(Path.GetFileNameWithoutExtension(path));
     }

@@ -54,7 +54,15 @@ internal static class ConfigUtils
                 DiagnosticSeverity.Error,
                 true
             ),
-            _ => null
+            _ => new DiagnosticDescriptor
+            (
+                "STG003",
+                $"Unexpected error parsing configuration file '{ConfigurationFile}'",
+                "Exception: {0}",
+                "SourceGeneration",
+                DiagnosticSeverity.Error,
+                true
+            ),
         };
 
         if (descriptor is not null)

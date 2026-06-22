@@ -97,7 +97,7 @@ internal class ShaderTypeGeneratorTests
         #pragma Input
         struct VS_INPUT
         {
-            float2 pos : POSITION;
+            DEFINED Def : POSITION;
         };
 
         struct PS_INPUT
@@ -125,7 +125,7 @@ internal class ShaderTypeGeneratorTests
         #pragma VertexShader
         PS_INPUT VS(VS_INPUT input)
         {
-            return input.pos;
+            return input.value;
         };
 
 
@@ -144,9 +144,13 @@ internal class ShaderTypeGeneratorTests
         public class Defines
         {
             public const string Path = "utils/Defines.hlsl";
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
             public struct Defined
             {
+                /// <summary>
+                /// Original Name: value
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
                 public System.Numerics.Vector4 Value;
             }
         }
@@ -160,33 +164,43 @@ internal class ShaderTypeGeneratorTests
         {
             public const string Path = "Lines/LineShader.hlsl";
             public const uint TextureSampler = 0;
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
             public struct VsInput
             {
                 /// <summary>
+                /// Original Name: Def
                 /// Semantic: POSITION
                 /// </summary>
-                public System.Numerics.Vector2 Pos;
+                [System.Runtime.InteropServices.FieldOffset(0)]
+                public Defined Def;
             }
             public static readonly Vortice.Direct3D11.InputElementDescription[] VsInputElementDescription = new Vortice.Direct3D11.InputElementDescription[]
             {
-                new("POSITION", 0, Vortice.DXGI.Format.R32G32_Float, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
+                new("POSITION", 0, Vortice.DXGI.Format.Unknown, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
             };
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
             public struct PsInput
             {
                 /// <summary>
+                /// Original Name: position
                 /// Semantic: SV_POSITION
                 /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
                 public System.Numerics.Vector4 Position;
             }
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 112)]
             public struct Complex
             {
                 /// <summary>
+                /// Original Name: mat
                 /// Dimensions: [3][2]
                 /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
                 public ComplexMatArray Mat;
+                /// <summary>
+                /// Original Name: def
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(96)]
                 public Defined Def;
             }
             [System.Runtime.CompilerServices.InlineArray(6)]
@@ -194,20 +208,28 @@ internal class ShaderTypeGeneratorTests
             {
                 private System.Numerics.Vector4 element0;
             }
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
             public struct Output
             {
                 /// <summary>
+                /// Original Name: color
                 /// Semantic: SV_Target0
                 /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
                 public System.Numerics.Vector4 Color;
             }
             public const uint ConstantsRegister = 0;
             [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 80)]
             public struct Constants
             {
+                /// <summary>
+                /// Original Name: WorldViewProjection
+                /// </summary>
                 [System.Runtime.InteropServices.FieldOffset(0)]
                 public System.Numerics.Matrix4x4 WorldViewProjection;
+                /// <summary>
+                /// Original Name: Color
+                /// </summary>
                 [System.Runtime.InteropServices.FieldOffset(64)]
                 public System.Numerics.Vector4 Color;
             }

@@ -52,6 +52,11 @@ internal sealed class StructTranslator
 
     public DotNetStruct LayoutStruct(Structure @struct)
     {
+        if (KnownStructures.TryGetValue(@struct.Name, out var existing))
+        {
+            return existing;
+        }
+
         var members = new List<DotNetStructMember>(@struct.Members.Count);
         var offset = 0u;
         foreach (var member in @struct.Members)
@@ -72,7 +77,7 @@ internal sealed class StructTranslator
         return dotNetStruct;
     }
 
-    public DotNetType TranslateType(string hlslType)
+    private DotNetType TranslateType(string hlslType)
     {
         if (KnownStructures.TryGetValue(hlslType, out var value))
         {
@@ -103,39 +108,6 @@ internal sealed class StructTranslator
 
         return summary.ToString();
     }
-
-
-
-    //public StructLayout LayoutStructure(Structure @struct)
-    //{
-    //    var members = new List<MemberLayout>(@struct.Members.Count);
-    //    var offset = 0u;
-    //    foreach (var member in @struct.Members)
-    //    {
-    //        var dotNetType = string.Empty;
-    //        var elementCount = Flatten(member.Dimensions);
-    //        var elementSize = 0u;
-    //        var elementStride = 0u;
-    //        if (KnownCustomStructs.TryGetValue(member.Name, out var structLayout))
-    //        {
-    //            dotNetType = structLayout.DotNetType;
-    //            elementSize = structLayout.Size;
-    //            elementStride = structLayout.Stride;
-    //        }
-    //        else
-    //        {
-    //            dotNetType = TypeTranslator.Translate(member.Type);
-    //            elementSize = TypeTranslator.GetSizeInBytes(member.Type);
-    //            elementStride = elementSize;
-    //        }
-
-    //        var layout = new MemberLayout(member, dotNetType, offset, elementSize, elementStride, elementCount);
-    //        offset += layout.MemberSize;
-
-    //        members.Add(layout);
-    //    }
-
-    //}
 
     /// <summary>Multidimensional HLSL arrays are flattened to a single element count. While regular fields are count 1</summary>
     private static uint Flatten(IReadOnlyList<uint> dimensions)
