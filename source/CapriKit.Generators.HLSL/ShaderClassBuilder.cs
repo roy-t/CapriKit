@@ -8,7 +8,7 @@ namespace CapriKit.Generators.HLSL;
 
 internal static class ShaderClassBuilder
 {
-    public static bool TryGenerateShader(string path, ShaderMetadata? metadata, StructBookKeeper bookKeeper, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
+    public static bool TryGenerateShader(string path, ShaderMetadata? metadata, ShaderIndex shaderIndex, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
     {
         classText = default;
         if (metadata == null)
@@ -16,19 +16,18 @@ internal static class ShaderClassBuilder
             return false;
         }
 
-        var structTranslator = new StructTranslator();
-        bookKeeper.RegisterStructs(structTranslator, path, metadata);
+        var structScope = shaderIndex.CreateStructScope(path, metadata);
+        var structTranslator = new StructTranslator(structScope);
 
         var builder = new SourceCodeBuilder();
-        foreach (var include in metadata.Includes.Where(i => i.Kind == IncludeKind.Local))
+        foreach (var include in structScope.IncludedFiles)
         {
             // Every file leads to exactly one class. So /path/to/includes.hlsl leads to
             // the class Includes in namespace ...path.to.
             // A type defined in includes.hlsl will be defined inside the Include class
             // For every include in a file we add `using static path.to.Includes;` so
             // that references work.
-            var (@namespace, @class) = IncludeToClass(path, include, config);
-            builder.WriteUsingStatic(@namespace, @class);
+            builder.WriteUsingStatic(GetNamespace(include.Path, config), GetClassName(include.Path));
         }
 
         builder.WriteNamespace(GetNamespace(path, config));
@@ -75,18 +74,6 @@ internal static class ShaderClassBuilder
 
         classText = SourceText.From(builder.Build(), Encoding.UTF8);
         return true;
-    }
-
-
-    private static (string @namespace, string @class) IncludeToClass(string currentFilePath, Include include, GeneratorConfiguration config)
-    {
-        var currentDirectory = Path.GetDirectoryName(currentFilePath);
-        var absoluteIncludeDirectory = Path.Combine(currentDirectory, include.Path);
-
-        var @namespace = GetNamespace(absoluteIncludeDirectory, config);
-        var @class = GetClassName(include.Path);
-
-        return (@namespace, @class);
     }
 
     public static string GetNamespace(string path, GeneratorConfiguration config)

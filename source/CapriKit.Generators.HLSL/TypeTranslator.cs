@@ -1,64 +1,52 @@
 namespace CapriKit.Generators.HLSL;
 
+internal readonly record struct HlslTypeDescriptor(string DotNetType, uint SizeInBytes, string Format);
+
 internal static class TypeTranslator
 {
-    public static uint GetSizeInBytes(string hlslType) => hlslType switch
+    private const string UnknownFormat = "Vortice.DXGI.Format.Unknown";
+
+    public static HlslTypeDescriptor Translate(string hlslType)
     {
-        "bool" or "int" or "uint" or "dword" or "float" => 4,
-        "int2" => 8,
-        "int3" => 12,
-        "int4" => 16,
-        "uint2" => 8,
-        "uint3" => 12,
-        "uint4" => 16,
-        "double" => 8,
-        "float2" => 8,
-        "float3" => 12,
-        "float4" => 16,
-        "float4x4" => 64,
-        _ => throw new NotSupportedException($"Cannot compute size of {hlslType}")
-    };
+        if (TryTranslate(hlslType, out var type))
+        {
+            return type;
+        }
 
-    public static string GetFormat(string hlslType) => hlslType switch
+        throw new NotSupportedException($"Cannot translate HLSL type '{hlslType}' as a primitive type.");
+    }
+
+    public static bool TryTranslate(string hlslType, out HlslTypeDescriptor type)
     {
-        "int" => "Vortice.DXGI.Format.R32_SInt",
-        "int2" => "Vortice.DXGI.Format.R32G32_SInt",
-        "int3" => "Vortice.DXGI.Format.R32G32B32_SInt",
-        "int4" => "Vortice.DXGI.Format.R32G32B32A32_SInt",
+        type = hlslType switch
+        {
+            "bool" => new HlslTypeDescriptor("bool", 4, UnknownFormat),
 
-        "uint" or "dword" => "Vortice.DXGI.Format.R32_UInt",
-        "uint2" => "Vortice.DXGI.Format.R32G32_UInt",
-        "uint3" => "Vortice.DXGI.Format.R32G32B32_UInt",
-        "uint4" => "Vortice.DXGI.Format.R32G32B32A32_UInt",
+            "int" => new HlslTypeDescriptor("int", 4, "Vortice.DXGI.Format.R32_SInt"),
+            "int2" => new HlslTypeDescriptor("Vortice.Mathematics.Int2", 8, "Vortice.DXGI.Format.R32G32_SInt"),
+            "int3" => new HlslTypeDescriptor("Vortice.Mathematics.Int3", 12, "Vortice.DXGI.Format.R32G32B32_SInt"),
+            "int4" => new HlslTypeDescriptor("Vortice.Mathematics.Int4", 16, "Vortice.DXGI.Format.R32G32B32A32_SInt"),
 
-        "float" => "Vortice.DXGI.Format.R32_Float",
-        "float2" => "Vortice.DXGI.Format.R32G32_Float",
-        "float3" => "Vortice.DXGI.Format.R32G32B32_Float",
-        "float4" => "Vortice.DXGI.Format.R32G32B32A32_Float",
+            "uint" or "dword" => new HlslTypeDescriptor("uint", 4, "Vortice.DXGI.Format.R32_UInt"),
+            "uint2" => new HlslTypeDescriptor("Vortice.Mathematics.UInt2", 8, "Vortice.DXGI.Format.R32G32_UInt"),
+            "uint3" => new HlslTypeDescriptor("Vortice.Mathematics.UInt3", 12, "Vortice.DXGI.Format.R32G32B32_UInt"),
+            "uint4" => new HlslTypeDescriptor("Vortice.Mathematics.UInt4", 16, "Vortice.DXGI.Format.R32G32B32A32_UInt"),
 
-        _ => "Vortice.DXGI.Format.Unknown"
-    };
+            "double" => new HlslTypeDescriptor("double", 8, UnknownFormat),
+            "float" => new HlslTypeDescriptor("float", 4, "Vortice.DXGI.Format.R32_Float"),
+            "float2" => new HlslTypeDescriptor("System.Numerics.Vector2", 8, "Vortice.DXGI.Format.R32G32_Float"),
+            "float3" => new HlslTypeDescriptor("System.Numerics.Vector3", 12, "Vortice.DXGI.Format.R32G32B32_Float"),
+            "float4" => new HlslTypeDescriptor("System.Numerics.Vector4", 16, "Vortice.DXGI.Format.R32G32B32A32_Float"),
+            "float4x4" => new HlslTypeDescriptor("System.Numerics.Matrix4x4", 64, UnknownFormat),
 
-    public static string Translate(string primitiveType) => primitiveType switch
-    {
-        "bool" => "bool",
+            _ => default
+        };
 
-        "int" => "int",
-        "int2" => "Vortice.Mathematics.Int2",
-        "int3" => "Vortice.Mathematics.Int3",
-        "int4" => "Vortice.Mathematics.Int4",
+        return !string.IsNullOrEmpty(type.DotNetType);
+    }
 
-        "uint" or "dword" => "uint",
-        "uint2" => "Vortice.Mathematics.UInt2",
-        "uint3" => "Vortice.Mathematics.UInt3",
-        "uint4" => "Vortice.Mathematics.UInt4",
+    public static uint GetSizeInBytes(string hlslType) => Translate(hlslType).SizeInBytes;
 
-        "double" => "double",
-        "float" => "float",
-        "float2" => "System.Numerics.Vector2",
-        "float3" => "System.Numerics.Vector3",
-        "float4" => "System.Numerics.Vector4",
-        "float4x4" => "System.Numerics.Matrix4x4",
-        _ => SourceCodeUtils.CreateValidTypeIdentifier(primitiveType)
-    };
+    public static string GetFormat(string hlslType)
+        => TryTranslate(hlslType, out var type) ? type.Format : UnknownFormat;
 }

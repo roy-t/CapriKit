@@ -6,12 +6,20 @@ namespace CapriKit.Generators.HLSL;
 
 internal sealed class StructTranslator
 {
-    // The key is a HLSL type name
+    private readonly StructScope Scope;
     private readonly Dictionary<string, DotNetStruct> KnownStructures;
+    private readonly HashSet<string> StructuresInProgress;
 
     public StructTranslator()
+        : this(StructScope.Empty)
     {
+    }
+
+    public StructTranslator(StructScope scope)
+    {
+        Scope = scope;
         KnownStructures = [];
+        StructuresInProgress = [];
     }
 
     public DotNetStruct LayoutConstantBuffer(ConstantBuffer constantBuffer)
@@ -21,7 +29,7 @@ internal sealed class StructTranslator
         foreach (var member in constantBuffer.Members)
         {
             var documentation = DocumentMember(member);
-            var type = TranslateType(member.Type);
+            var type = TranslateType(member.Type, Scope.CurrentFile.Path);
             var name = CreateValidTypeIdentifier(member.Name);
             var elementCount = Flatten(member.Dimensions);
 
@@ -52,42 +60,61 @@ internal sealed class StructTranslator
 
     public DotNetStruct LayoutStruct(Structure @struct)
     {
-        if (KnownStructures.TryGetValue(@struct.Name, out var existing))
+        return LayoutStruct(Scope.GetDefinition(@struct));
+    }
+
+    private DotNetStruct LayoutStruct(ScopedStructure definition)
+    {
+        var key = GetStructureKey(definition);
+        if (KnownStructures.TryGetValue(key, out var existing))
         {
             return existing;
         }
 
-        var members = new List<DotNetStructMember>(@struct.Members.Count);
-        var offset = 0u;
-        foreach (var member in @struct.Members)
+        if (!StructuresInProgress.Add(key))
         {
-            var documentation = DocumentMember(member);
-            var type = TranslateType(member.Type);
-            var name = CreateValidTypeIdentifier(member.Name);
-            var elementCount = Flatten(member.Dimensions);
-
-            members.Add(new DotNetStructMember(documentation, type, name, offset, type.Size, elementCount));
-            offset += type.Size * elementCount;
+            throw new NotSupportedException($"Cannot layout recursive struct '{@definition.Structure.Name}'.");
         }
 
-        var structType = new DotNetType(CreateValidTypeIdentifier(@struct.Name), offset);
-        var dotNetStruct = new DotNetStruct(structType, members);
-        KnownStructures[@struct.Name] = dotNetStruct;
+        try
+        {
+            var members = new List<DotNetStructMember>(definition.Structure.Members.Count);
+            var offset = 0u;
+            foreach (var member in definition.Structure.Members)
+            {
+                var documentation = DocumentMember(member);
+                var type = TranslateType(member.Type, definition.Path);
+                var name = CreateValidTypeIdentifier(member.Name);
+                var elementCount = Flatten(member.Dimensions);
 
-        return dotNetStruct;
+                members.Add(new DotNetStructMember(documentation, type, name, offset, type.Size, elementCount));
+                offset += type.Size * elementCount;
+            }
+
+            var structType = new DotNetType(CreateValidTypeIdentifier(definition.Structure.Name), offset);
+            var dotNetStruct = new DotNetStruct(structType, members);
+            KnownStructures[key] = dotNetStruct;
+            return dotNetStruct;
+        }
+        finally
+        {
+            StructuresInProgress.Remove(key);
+        }
     }
 
-    private DotNetType TranslateType(string hlslType)
+    private DotNetType TranslateType(string hlslType, string originPath)
     {
-        if (KnownStructures.TryGetValue(hlslType, out var value))
+        if (Scope.TryResolve(hlslType, originPath, out var structure))
         {
-            return value.Type;
+            return LayoutStruct(structure).Type;
         }
 
         var type = TypeTranslator.Translate(hlslType);
-        var size = TypeTranslator.GetSizeInBytes(hlslType);
-        return new DotNetType(type, size);
+        return new DotNetType(type.DotNetType, type.SizeInBytes);
     }
+
+    private static string GetStructureKey(ScopedStructure structure)
+        => $"{structure.Path}|{structure.Structure.Name}";
 
     private static string DocumentMember(Member member)
     {

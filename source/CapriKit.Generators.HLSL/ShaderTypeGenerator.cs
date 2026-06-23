@@ -11,19 +11,6 @@ namespace CapriKit.Generators.HLSL;
 [Generator]
 internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 {
-
-    private static (string path, ShaderMetadata? shader) BuildMetaData(AdditionalText text, CancellationToken cancellationToken)
-    {
-        var shaderText = text.GetText(cancellationToken);
-        if (shaderText == null)
-        {
-            return (text.Path, null);
-        }
-        var tokens = HLSLTokenizer.Parse(shaderText.ToString());
-        var metadata = HLSLParser.Parse(tokens);
-        return (text.Path, metadata);
-    }
-
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
         var configurationProvider = CreateConfigurationProvider(context);
@@ -49,11 +36,11 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
             }
 
             var config = input.Right.Configuration;
-            var bookKeeper = new StructBookKeeper(input.Left, config);
-            
+            var shaderIndex = new ShaderIndex(input.Left);
+
             foreach (var (path, shader) in input.Left)
             {
-                if (ShaderClassBuilder.TryGenerateShader(path, shader, bookKeeper, config, out var result))
+                if (ShaderClassBuilder.TryGenerateShader(path, shader, shaderIndex, config, out var result))
                 {
                     var relativePath = SourceCodeUtils.GetRelativePath(config.AbsoluteContentRoot, path);
                     var hintName = $"{SourceCodeUtils.CreateValidNamespace(relativePath)}.g.cs";
@@ -64,7 +51,19 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
                     ReportFailure(context, path);
                 }
             }
-        });     
+        });
+    }
+
+    private static (string path, ShaderMetadata? shader) BuildMetaData(AdditionalText text, CancellationToken cancellationToken)
+    {
+        var shaderText = text.GetText(cancellationToken);
+        if (shaderText == null)
+        {
+            return (text.Path, null);
+        }
+        var tokens = HLSLTokenizer.Parse(shaderText.ToString());
+        var metadata = HLSLParser.Parse(tokens);
+        return (text.Path, metadata);
     }
 
     private static void ReportNoOp(SourceProductionContext context)

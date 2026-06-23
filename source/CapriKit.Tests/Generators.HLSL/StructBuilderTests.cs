@@ -63,7 +63,7 @@ internal class StructBuilderTests
             {
                 private ConstantsEElement element0;
             }
-            
+
             """;
 
         var tokens = HLSLTokenizer.Parse(source);
@@ -87,10 +87,10 @@ internal class StructBuilderTests
         var source = """
             struct Data
             {
-                float3 A : SV_SEMANTIC; 
+                float3 A : SV_SEMANTIC;
                 nointerpolation float B;
-                float3 C;               
-                float2 D;               
+                float3 C;
+                float2 D;
                 float E[3][1]; // flattened to [3]
             };
             """;
@@ -133,7 +133,7 @@ internal class StructBuilderTests
             {
                 private float element0;
             }
-            
+
             """;
 
         var tokens = HLSLTokenizer.Parse(source);
@@ -184,7 +184,7 @@ internal class StructBuilderTests
                 [System.Runtime.InteropServices.FieldOffset(8)]
                 public Element B;
             }
-            
+
             """;
 
         var elementTokens = HLSLTokenizer.Parse(elementSource);
@@ -204,8 +204,7 @@ internal class StructBuilderTests
         }
 
         var builder = new SourceCodeBuilder();
-        var translator = new StructTranslator();
-        translator.LayoutStruct(elementStructure); // ensure elements are already known
+        var translator = new StructTranslator(StructScope.FromLocalStructures([elementStructure, dataStructure]));
         StructBuilder.WriteStruct(builder, translator, dataStructure);
         var code = builder.Build();
         await Assert.That(code).IsEqualTo(expected);
