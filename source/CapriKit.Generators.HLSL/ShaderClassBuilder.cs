@@ -29,9 +29,6 @@ internal static class ShaderClassBuilder
             // that references work.
             var (@namespace, @class) = IncludeToClass(path, include, config);
             builder.WriteUsingStatic(@namespace, @class);
-
-            // However, we still need to figure out the size of every struct
-
         }
 
         builder.WriteNamespace(GetNamespace(path, config));

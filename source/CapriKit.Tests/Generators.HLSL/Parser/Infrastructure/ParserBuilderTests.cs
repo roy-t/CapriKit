@@ -92,7 +92,7 @@ internal class ParserBuilderTests
     {
         var parser = new ParserBuilder<List<string>>()
             .Required(Operator("="))
-            .SkipTo(Operator(";"));
+            .SkipToBefore(Operator(";"));
 
         var (success, _, state) = Run("= 1 + 2;", parser);
 

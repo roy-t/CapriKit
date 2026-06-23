@@ -5,67 +5,30 @@ namespace CapriKit.Tests.Generators.HLSL;
 internal class TypeTranslatorTests
 {
     [Test]
-    public async Task TranslatesScalar()
+    public async Task GetSizeInBytes()
     {
-        var result = TypeTranslator.Translate("float", []);
-
-        await Assert.That(result.DotNetType).IsEqualTo("float");
-        await Assert.That(result.IsFixed).IsFalse();
-        await Assert.That(result.OriginalDimensions).IsEmpty();
+        var result = TypeTranslator.GetSizeInBytes("int2");
+        await Assert.That(result).IsEqualTo(8);
     }
 
     [Test]
-    public async Task TranslatesVectorToSystemNumerics()
+    public async Task GetFormat()
     {
-        var result = TypeTranslator.Translate("float4", []);
-
-        await Assert.That(result.DotNetType).IsEqualTo("System.Numerics.Vector4");
-        await Assert.That(result.IsFixed).IsFalse();
+        var result = TypeTranslator.GetFormat("dword");
+        await Assert.That(result).IsEqualTo("Vortice.DXGI.Format.R32_UInt");
     }
 
     [Test]
-    public async Task TranslatesMatrixToSystemNumerics()
+    public async Task Translate()
     {
-        var result = TypeTranslator.Translate("float4x4", []);
-
-        await Assert.That(result.DotNetType).IsEqualTo("System.Numerics.Matrix4x4");
+        var result = TypeTranslator.Translate("float");
+        await Assert.That(result).IsEqualTo("float");
     }
 
     [Test]
-    public async Task TranslatesDwordAliasToUint()
+    public async Task TranslateUnknownTypeFallsBackToValidIdentifier()
     {
-        var result = TypeTranslator.Translate("dword", []);
-
-        await Assert.That(result.DotNetType).IsEqualTo("uint");
-    }
-
-    [Test]
-    public async Task FixedSizeArrayBecomesFixedBuffer()
-    {
-        var result = TypeTranslator.Translate("float", [4]);
-
-        await Assert.That(result.DotNetType).IsEqualTo("float");
-        await Assert.That(result.IsFixed).IsTrue();
-        await Assert.That(result.FixedSize).IsEqualTo(4u);
-        await Assert.That(result.OriginalDimensions).IsEquivalentTo(new uint[] { 4 });
-    }
-
-    [Test]
-    public async Task MultidimensionalArrayIsFlattened()
-    {
-        var result = TypeTranslator.Translate("float", [4, 2]);
-
-        await Assert.That(result.IsFixed).IsTrue();
-        await Assert.That(result.FixedSize).IsEqualTo(8u);
-        await Assert.That(result.OriginalDimensions).IsEquivalentTo(new uint[] { 4, 2 });
-    }
-
-    [Test]
-    public async Task UnknownTypeFallsBackToValidIdentifier()
-    {
-        var result = TypeTranslator.Translate("MyStruct", []);
-
-        await Assert.That(result.DotNetType).IsEqualTo("MyStruct");
-        await Assert.That(result.IsFixed).IsFalse();
+        var result = TypeTranslator.Translate("MyStruct");
+        await Assert.That(result).IsEqualTo("MyStruct");
     }
 }

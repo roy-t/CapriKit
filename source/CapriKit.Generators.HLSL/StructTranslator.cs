@@ -84,7 +84,7 @@ internal sealed class StructTranslator
             return value.Type;
         }
 
-        var type = TypeTranslator.Translate(hlslType, []).DotNetType;
+        var type = TypeTranslator.Translate(hlslType);
         var size = TypeTranslator.GetSizeInBytes(hlslType);
         return new DotNetType(type, size);
     }

@@ -44,7 +44,7 @@ internal sealed class ParserBuilder<TAccumulator>
     /// <summary>
     /// Consumes everything, up-to-EXCLUDING the requested token
     /// </summary>
-    public ParserBuilder<TAccumulator> SkipTo(
+    public ParserBuilder<TAccumulator> SkipToBefore(
     Matcher matcher,
     [CallerArgumentExpression(nameof(matcher))] string matcherText = "")
     {
