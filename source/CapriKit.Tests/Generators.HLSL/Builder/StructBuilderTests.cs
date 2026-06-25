@@ -1,22 +1,22 @@
-using CapriKit.Generators.HLSL;
+using CapriKit.Generators.HLSL.Builder;
 using CapriKit.Generators.HLSL.Parser;
 using CapriKit.Generators.HLSL.Tokenizer;
 
-namespace CapriKit.Tests.Generators.HLSL;
+namespace CapriKit.Tests.Generators.HLSL.Builder;
 
 internal class StructBuilderTests
 {
     [Test]
-    public async Task WriteStruct_ConstantBuffer()
+    public async Task WriteCBufferAppliesConstantBufferPacking()
     {
         var source = """
-            cbuffer Constants // takes up 96 bytes although there is only 48 bytes of data
+            cbuffer Constants
             {
-                float3 A : SV_SEMANTIC; // bytes 0-3, 4-7, 8-11
-                nointerpolation float B;// bytes 12-15, fits in the last 4 bytes of this block
-                float3 C;               // bytes 16-27
-                float2 D;               // bytes 32-39, does not fit in the previous block, so starts at new boundary
-                float E[3][1];          // bytes 48-95, arrays always starts at a new block, flattened to [3]
+                float3 A : SV_SEMANTIC;
+                nointerpolation float B;
+                float3 C;
+                float2 D;
+                float E[3][1];
             };
             """;
 
@@ -63,35 +63,27 @@ internal class StructBuilderTests
             {
                 private ConstantsEElement element0;
             }
-            
+
             """;
 
-        var tokens = HLSLTokenizer.Parse(source);
-        var parser = new ParseState(tokens);
-        if (!ConstantBufferParser.TryParse(parser, out var buffer))
-        {
-            Assert.Fail("Failed to parse constant buffer");
-            return;
-        }
-
+        var buffer = ParseConstantBuffer(source);
         var builder = new SourceCodeBuilder();
-        var translator = new StructTranslator();
-        StructBuilder.WriteStruct(builder, translator, buffer);
-        var code = builder.Build();
-        await Assert.That(code).IsEqualTo(expected);
+        new StructBuilder().WriteCBuffer(builder, "", Shader(), buffer);
+
+        await Assert.That(builder.Build()).IsEqualTo(expected);
     }
 
     [Test]
-    public async Task WriteStruct_Struct()
+    public async Task WriteStructPacksTightlyWithFlattenedArray()
     {
         var source = """
             struct Data
             {
-                float3 A : SV_SEMANTIC; 
+                float3 A : SV_SEMANTIC;
                 nointerpolation float B;
-                float3 C;               
-                float2 D;               
-                float E[3][1]; // flattened to [3]
+                float3 C;
+                float2 D;
+                float E[3][1];
             };
             """;
 
@@ -133,41 +125,32 @@ internal class StructBuilderTests
             {
                 private float element0;
             }
-            
+
             """;
 
-        var tokens = HLSLTokenizer.Parse(source);
-        var parser = new ParseState(tokens);
-        if (!StructureParser.TryParse(parser, out var structure))
-        {
-            Assert.Fail("Failed to parse struct");
-            return;
-        }
-
+        var structure = ParseStructure(source);
         var builder = new SourceCodeBuilder();
-        var translator = new StructTranslator();
-        StructBuilder.WriteStruct(builder, translator, structure);
-        var code = builder.Build();
-        await Assert.That(code).IsEqualTo(expected);
+        new StructBuilder().WriteStruct(builder, "", Shader(), structure);
+
+        await Assert.That(builder.Build()).IsEqualTo(expected);
     }
 
     [Test]
-    public async Task WriteStruct_StructWithStructs()
+    public async Task WriteStructResolvesRegisteredNestedStruct()
     {
-        var elementSource = """
+        var element = ParseStructure("""
             struct Element
             {
                 float2 El;
             };
-            """;
-
-        var dataSource = """
+            """);
+        var data = ParseStructure("""
             struct Data
             {
                 Element A;
                 Element B;
             };
-            """;
+            """);
 
         var expected = """
             [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 16)]
@@ -184,30 +167,74 @@ internal class StructBuilderTests
                 [System.Runtime.InteropServices.FieldOffset(8)]
                 public Element B;
             }
-            
+
             """;
 
-        var elementTokens = HLSLTokenizer.Parse(elementSource);
-        var elementsParser = new ParseState(elementTokens);
-        if (!StructureParser.TryParse(elementsParser, out var elementStructure))
-        {
-            Assert.Fail("Failed to parse struct");
-            return;
-        }
-
-        var dataTokens = HLSLTokenizer.Parse(dataSource);
-        var dataParser = new ParseState(dataTokens);
-        if (!StructureParser.TryParse(dataParser, out var dataStructure))
-        {
-            Assert.Fail("Failed to parse struct");
-            return;
-        }
+        var structBuilder = new StructBuilder();
+        structBuilder.RegisterStructs([("", Shader(element))]); // ensure Element is already known
 
         var builder = new SourceCodeBuilder();
-        var translator = new StructTranslator();
-        translator.LayoutStruct(elementStructure); // ensure elements are already known
-        StructBuilder.WriteStruct(builder, translator, dataStructure);
-        var code = builder.Build();
-        await Assert.That(code).IsEqualTo(expected);
+        structBuilder.WriteStruct(builder, "", Shader(data), data);
+
+        await Assert.That(builder.Build()).IsEqualTo(expected);
     }
+
+    [Test]
+    public async Task WriteStructEmitsInputElementDescriptionForVertexInput()
+    {
+        var structure = ParseStructure("""
+            #pragma Input
+            struct VS_INPUT
+            {
+                float3 Position : POSITION;
+            };
+            """);
+
+        var expected = """
+            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Explicit, Size = 12)]
+            public struct VsInput
+            {
+                /// <summary>
+                /// Original Name: Position
+                /// Semantic: POSITION
+                /// </summary>
+                [System.Runtime.InteropServices.FieldOffset(0)]
+                public System.Numerics.Vector3 Position;
+            }
+            public static readonly Vortice.Direct3D11.InputElementDescription[] VsInputElementDescription = new Vortice.Direct3D11.InputElementDescription[]
+            {
+                new("POSITION", 0, Vortice.DXGI.Format.R32G32B32_Float, 0, 0, Vortice.Direct3D11.InputClassification.PerVertexData, 0),
+            };
+
+            """;
+
+        var builder = new SourceCodeBuilder();
+        new StructBuilder().WriteStruct(builder, "", Shader(), structure);
+
+        await Assert.That(builder.Build()).IsEqualTo(expected);
+    }
+
+    private static ConstantBuffer ParseConstantBuffer(string source)
+    {
+        var state = new ParseState(HLSLTokenizer.Parse(source));
+        if (!ConstantBufferParser.TryParse(state, out var buffer))
+        {
+            throw new InvalidOperationException("Failed to parse constant buffer");
+        }
+
+        return buffer;
+    }
+
+    private static Structure ParseStructure(string source)
+    {
+        var state = new ParseState(HLSLTokenizer.Parse(source));
+        if (!StructureParser.TryParse(state, out var structure))
+        {
+            throw new InvalidOperationException("Failed to parse struct");
+        }
+
+        return structure;
+    }
+
+    private static ShaderMetadata Shader(params Structure[] structures) => new([], [], structures, [], []);
 }

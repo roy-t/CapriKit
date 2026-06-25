@@ -35,9 +35,9 @@ internal sealed class ShaderTest : ITestScreen
         Indices = [0, 1, 2];
         Vertices =
         [
-            new VsInput(){ Position = new Vector2(-0.5f, -0.5f), Color = new Vector4(1.0f)},
-            new VsInput(){ Position = new Vector2(0.5f, -0.5f), Color = new Vector4(1.0f)},
-            new VsInput(){ Position = new Vector2(0.0f, 0.5f), Color = new Vector4(1.0f)}
+            new VsInput(){ Position = new Vector2(0.5f, -0.5f), Color = new Vector4(0.0f, 1.0f, 0.0f, 1.0f)},
+            new VsInput(){ Position = new Vector2(-0.5f, -0.5f), Color = new Vector4(1.0f, 0.0f, 0.0f, 1.0f)},
+            new VsInput(){ Position = new Vector2(0.0f, 0.5f), Color = new Vector4(0.0f, 0.0f, 1.0f, 1.0f)}
         ];
 
         isDirty = true;
@@ -51,8 +51,6 @@ internal sealed class ShaderTest : ITestScreen
         var vs = ShaderCompiler.CompileVertexShader(fileSystem, directory, device, source, Vs, nameof(Vs));
         var ps = ShaderCompiler.CompilePixelShader(fileSystem, directory, device, source, Ps, nameof(Ps));
 
-        // TODO: the input element description generation is incorrect,
-        // it does not add offsets so the colors are wrong (uses most of the position elements)
         var inputLayout = vs.CreateInputLayout(device, VsInputElementDescription);
         var vertexBuffer = new VertexBuffer<VsInput>(device, nameof(ShaderTest));
         var indexBuffer = new IndexBufferU16(device, nameof(ShaderTest));
@@ -67,7 +65,7 @@ internal sealed class ShaderTest : ITestScreen
     public void Render(DeviceContext context)
     {
         UploadData(context);
-        context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullNone, PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
+        context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
         context.VS.SetConstantBuffer(0, ConstantBuffer);

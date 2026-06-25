@@ -9,7 +9,7 @@ internal sealed class IncludeResolver
 
     public IncludeResolver(ImmutableArray<(string, ShaderMetadata?)> shaders)
     {
-        Shaders = [];
+        Shaders = new Dictionary<string, ShaderMetadata>(StringComparer.OrdinalIgnoreCase);
         foreach (var (path, shader) in shaders)
         {
             if (!string.IsNullOrEmpty(path) && shader != null)
