@@ -42,17 +42,17 @@ internal static class ShaderClassBuilder
 
         // Write the structs and input element descriptions
         var structBuilder = new StructBuilder();
-        structBuilder.RegisterStructs(includes, config);
+        structBuilder.RegisterStructs(includes);
         foreach (var @struct in metadata.Structures)
         {
-            structBuilder.WriteStruct(builder, path, metadata, @struct, config);
+            structBuilder.WriteStruct(builder, path, metadata, @struct);
         }
 
         // Write the cbuffer structs and registers
         foreach (var buffer in metadata.ConstantBuffers)
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
-            structBuilder.WriteCBuffer(builder, path, metadata, buffer, config);
+            structBuilder.WriteCBuffer(builder, path, metadata, buffer);
         }
 
         // Write entry points

@@ -25,21 +25,23 @@ internal sealed class IncludeResolver
     public IReadOnlyList<(string, ShaderMetadata)> GetIncludedFiles(string path, ShaderMetadata shader)
     {
         var seen = new HashSet<string>();
-        var stack = new Stack<(string, ShaderMetadata)>();
-        CollectIncludedFiles(seen, stack, path, shader);
+        var ordered = new List<(string, ShaderMetadata)>();
+        CollectIncludedFiles(seen, ordered, path, shader);
 
-        return stack.ToList();
+        return ordered;
     }
 
-    private void CollectIncludedFiles(HashSet<string> seen, Stack<(string, ShaderMetadata)> stack, string key, ShaderMetadata metadata)
+    private void CollectIncludedFiles(HashSet<string> seen, List<(string, ShaderMetadata)> ordered, string key, ShaderMetadata metadata)
     {
         foreach (var include in metadata.Includes)
         {
-            if (TryResolveInclude(key, include, out var found))
+            // seen.Add returns false once a file has been visited, which breaks include cycles
+            // and collapses diamonds to a single entry. Recurse before adding so that a file is
+            // always emitted after the files it depends on.
+            if (TryResolveInclude(key, include, out var found) && seen.Add(found.path))
             {
-                seen.Add(found.path);
-                stack.Push(found);
-                CollectIncludedFiles(seen, stack, found.path, found.metadata);
+                CollectIncludedFiles(seen, ordered, found.path, found.metadata);
+                ordered.Add(found);
             }
         }
     }

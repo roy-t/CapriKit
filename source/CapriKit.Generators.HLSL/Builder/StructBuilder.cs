@@ -13,13 +13,13 @@ internal sealed class StructBuilder
     /// Registers all structs defined in the list of shaders. Ensure that the list of shaders is sorted
     /// so that a definition of a struct happens earlier than the usage of a struct in another struct.
     /// </summary>
-    public void RegisterStructs(IReadOnlyList<(string, ShaderMetadata)> shaders, GeneratorConfiguration config)
+    public void RegisterStructs(IReadOnlyList<(string, ShaderMetadata)> shaders)
     {
         foreach (var (path, shader) in shaders)
         {
             foreach (var @struct in shader.Structures)
             {
-                GetMetaData(path, shader, @struct, config);
+                GetMetaData(path, shader, @struct);
             }
         }
     }
@@ -27,7 +27,7 @@ internal sealed class StructBuilder
     /// <summary>
     /// Emits a single explicitly laid out cbuffer and any required supporting structs.
     /// </summary>
-    public void WriteCBuffer(SourceCodeBuilder builder, string path, ShaderMetadata shader, ConstantBuffer buffer, GeneratorConfiguration config)
+    public void WriteCBuffer(SourceCodeBuilder builder, string path, ShaderMetadata shader, ConstantBuffer buffer)
     {
         var meta = LayoutCBuffer(buffer);
         builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", ExplicitLayoutKind, $"Size = {meta.Type.Size}");
@@ -37,9 +37,9 @@ internal sealed class StructBuilder
     /// <summary>
     /// Emits a single explicitly laid out struct, any required supporting structs and element layouts.
     /// </summary>
-    public void WriteStruct(SourceCodeBuilder builder, string path, ShaderMetadata shader, Structure @struct, GeneratorConfiguration config)
+    public void WriteStruct(SourceCodeBuilder builder, string path, ShaderMetadata shader, Structure @struct)
     {
-        var meta = GetMetaData(path, shader, @struct, config);
+        var meta = GetMetaData(path, shader, @struct);
         builder.WriteAttribute("System.Runtime.InteropServices.StructLayout", ExplicitLayoutKind, $"Size = {meta.Type.Size}");
         WriteStructDefinition(builder, meta);
 
@@ -110,17 +110,16 @@ internal sealed class StructBuilder
         builder.CloseBlock();
     }
 
-    private StructMetadata GetMetaData(string path, ShaderMetadata shader, Structure @struct, GeneratorConfiguration config)
+    private StructMetadata GetMetaData(string path, ShaderMetadata shader, Structure @struct)
     {
-        var id = CreateValidTypeIdentifier(@struct.Name);
-        var key = $"{path}:{id}";
-        if (KnownStructs.TryGetValue(key, out var meta))
+        // Within one shader file a struct name is unique, even if it was included from another file
+        if (KnownStructs.TryGetValue(@struct.Name, out var meta))
         {
             return meta;
         }
 
         meta = LayoutStruct(@struct);
-        KnownStructs.Add(key, meta);
+        KnownStructs.Add(@struct.Name, meta);
         return meta;
     }
 
@@ -195,5 +194,3 @@ internal sealed class StructBuilder
         return new TypeMetadata(type, size);
     }
 }
-
-
