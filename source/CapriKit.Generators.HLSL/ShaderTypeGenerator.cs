@@ -1,3 +1,4 @@
+using CapriKit.Generators.HLSL.Builder;
 using CapriKit.Generators.HLSL.Parser;
 using CapriKit.Generators.HLSL.Tokenizer;
 using Microsoft.CodeAnalysis;
@@ -49,11 +50,12 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
             }
 
             var config = input.Right.Configuration;
-            var bookKeeper = new StructBookKeeper(input.Left, config);
+            var includeResolver = new IncludeResolver(input.Left);
+            
             
             foreach (var (path, shader) in input.Left)
             {
-                if (ShaderClassBuilder.TryGenerateShader(path, shader, bookKeeper, config, out var result))
+                if (ShaderClassBuilder.TryGenerateShader(path, shader, includeResolver, config, out var result))
                 {
                     var relativePath = SourceCodeUtils.GetRelativePath(config.AbsoluteContentRoot, path);
                     var hintName = $"{SourceCodeUtils.CreateValidNamespace(relativePath)}.g.cs";

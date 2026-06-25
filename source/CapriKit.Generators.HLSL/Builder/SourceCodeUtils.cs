@@ -1,7 +1,7 @@
 using Microsoft.CodeAnalysis.CSharp;
 using System.Text;
 
-namespace CapriKit.Generators.HLSL;
+namespace CapriKit.Generators.HLSL.Builder;
 
 internal static class SourceCodeUtils
 {

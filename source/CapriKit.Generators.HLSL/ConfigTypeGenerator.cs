@@ -2,7 +2,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Text;
 using static CapriKit.Generators.HLSL.ConfigUtils;
-using static CapriKit.Generators.HLSL.SourceCodeUtils;
+using static CapriKit.Generators.HLSL.Builder.SourceCodeUtils;
+using CapriKit.Generators.HLSL.Builder;
 
 namespace CapriKit.Generators.HLSL;
 

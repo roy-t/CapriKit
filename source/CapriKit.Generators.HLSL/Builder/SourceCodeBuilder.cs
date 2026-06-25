@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CapriKit.Generators.HLSL;
+namespace CapriKit.Generators.HLSL.Builder;
 
 [Flags]
 internal enum Modifiers

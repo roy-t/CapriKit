@@ -2,13 +2,13 @@ using CapriKit.Generators.HLSL.Parser;
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using static CapriKit.Generators.HLSL.SourceCodeUtils;
+using static CapriKit.Generators.HLSL.Builder.SourceCodeUtils;
 
-namespace CapriKit.Generators.HLSL;
+namespace CapriKit.Generators.HLSL.Builder;
 
 internal static class ShaderClassBuilder
 {
-    public static bool TryGenerateShader(string path, ShaderMetadata? metadata, StructBookKeeper bookKeeper, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
+    public static bool TryGenerateShader(string path, ShaderMetadata? metadata, IncludeResolver includeResolver, GeneratorConfiguration config, [NotNullWhen(true)] out SourceText? classText)
     {
         classText = default;
         if (metadata == null)
@@ -16,18 +16,17 @@ internal static class ShaderClassBuilder
             return false;
         }
 
-        var structTranslator = new StructTranslator();
-        bookKeeper.RegisterStructs(structTranslator, path, metadata);
+        var includes = includeResolver.GetIncludedFiles(path, metadata);
 
         var builder = new SourceCodeBuilder();
-        foreach (var include in metadata.Includes.Where(i => i.Kind == IncludeKind.Local))
+        foreach (var (includePath, include) in includes)
         {
             // Every file leads to exactly one class. So /path/to/includes.hlsl leads to
             // the class Includes in namespace ...path.to.
             // A type defined in includes.hlsl will be defined inside the Include class
             // For every include in a file we add `using static path.to.Includes;` so
             // that references work.
-            var (@namespace, @class) = IncludeToClass(path, include, config);
+            var (@namespace, @class) = IncludeToClass(includePath, include, config);
             builder.WriteUsingStatic(@namespace, @class);
         }
 
@@ -35,34 +34,30 @@ internal static class ShaderClassBuilder
         builder.OpenClass(Modifiers.Public, GetClassName(path));
         builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "Path", ToLiteral(GetRelativePath(config.AbsoluteContentRoot, path)));
 
+        // Write any variable (uniform)
         foreach (var variable in metadata.Variables)
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier(variable.Name), ToLiteral(variable.Register));
         }
 
+        // Write the structs and input element descriptions
+        var structBuilder = new StructBuilder();
+        structBuilder.RegisterStructs(includes, config);
         foreach (var @struct in metadata.Structures)
         {
-            StructBuilder.WriteStruct(builder, structTranslator, @struct);
-            if (@struct.Kind == StructureKind.VertexShaderInput)
-            {
-                InputElementDescriptionBuilder.WriteInputElementDescription(builder, structTranslator, @struct);
-            }
+            structBuilder.WriteStruct(builder, path, metadata, @struct, config);
         }
 
+        // Write the cbuffer structs and registers
         foreach (var buffer in metadata.ConstantBuffers)
         {
             builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier($"{buffer.Name}Register"), ToLiteral(buffer.Register));
-            StructBuilder.WriteStruct(builder, structTranslator, buffer);
+            structBuilder.WriteCBuffer(builder, path, metadata, buffer, config);
         }
 
-        foreach (var function in metadata.Functions)
+        // Write entry points
+        foreach (var function in metadata.Functions.Where(f => f.Kind != FunctionKind.Function))
         {
-            // Ignore regular functions
-            if (function.Kind == FunctionKind.Function)
-            {
-                continue;
-            }
-
             var comment = new StringBuilder();
             comment.AppendLine($"Kind: {function.Kind}");
             if (!string.IsNullOrEmpty(function.Semantic))
@@ -78,14 +73,10 @@ internal static class ShaderClassBuilder
     }
 
 
-    private static (string @namespace, string @class) IncludeToClass(string currentFilePath, Include include, GeneratorConfiguration config)
+    private static (string @namespace, string @class) IncludeToClass(string path, ShaderMetadata include, GeneratorConfiguration config)
     {
-        var currentDirectory = Path.GetDirectoryName(currentFilePath);
-        var absoluteIncludeDirectory = Path.Combine(currentDirectory, include.Path);
-
-        var @namespace = GetNamespace(absoluteIncludeDirectory, config);
-        var @class = GetClassName(include.Path);
-
+        var @namespace = GetNamespace(path, config);
+        var @class = GetClassName(path);
         return (@namespace, @class);
     }
 

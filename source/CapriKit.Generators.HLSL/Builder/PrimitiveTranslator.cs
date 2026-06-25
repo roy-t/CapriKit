@@ -1,8 +1,8 @@
-namespace CapriKit.Generators.HLSL;
+namespace CapriKit.Generators.HLSL.Builder;
 
-internal static class TypeTranslator
+internal static class PrimitiveTranslator
 {
-    public static uint GetSizeInBytes(string hlslType) => hlslType switch
+    public static uint GetSizeInBytes(string hlslPrimitive) => hlslPrimitive switch
     {
         "bool" or "int" or "uint" or "dword" or "float" => 4,
         "int2" => 8,
@@ -16,10 +16,10 @@ internal static class TypeTranslator
         "float3" => 12,
         "float4" => 16,
         "float4x4" => 64,
-        _ => throw new NotSupportedException($"Cannot compute size of {hlslType}")
+        _ => throw new NotSupportedException($"Cannot compute size of {hlslPrimitive}")
     };
 
-    public static string GetFormat(string hlslType) => hlslType switch
+    public static string GetFormat(string hlslPrimitive) => hlslPrimitive switch
     {
         "int" => "Vortice.DXGI.Format.R32_SInt",
         "int2" => "Vortice.DXGI.Format.R32G32_SInt",
@@ -39,7 +39,7 @@ internal static class TypeTranslator
         _ => "Vortice.DXGI.Format.Unknown"
     };
 
-    public static string Translate(string primitiveType) => primitiveType switch
+    public static string Translate(string hlslPrimitive) => hlslPrimitive switch
     {
         "bool" => "bool",
 
@@ -59,6 +59,6 @@ internal static class TypeTranslator
         "float3" => "System.Numerics.Vector3",
         "float4" => "System.Numerics.Vector4",
         "float4x4" => "System.Numerics.Matrix4x4",
-        _ => SourceCodeUtils.CreateValidTypeIdentifier(primitiveType)
+        _ => SourceCodeUtils.CreateValidTypeIdentifier(hlslPrimitive)
     };
 }

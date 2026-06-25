@@ -20,8 +20,8 @@ internal sealed class IncludeResolver
     }
 
     /// <summary>
-    /// All files directly and indirectly included in the given shader, returned in the order that they should be resolved.
-    /// </summary>    
+    /// Retrieves all files directly and indirectly included in the given shader, returned in the order that they should be resolved.
+    /// </summary>
     public IReadOnlyList<(string, ShaderMetadata)> GetIncludedFiles(string path, ShaderMetadata shader)
     {
         var seen = new HashSet<string>();
