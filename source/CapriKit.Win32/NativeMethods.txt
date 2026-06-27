@@ -87,6 +87,7 @@ ShowWindow
 GetWindowLongPtr
 SetWindowLongPtr
 SetWindowPos
+GetMenu
 
 // Monitor
 MonitorFromWindow

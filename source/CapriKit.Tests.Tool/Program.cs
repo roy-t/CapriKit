@@ -18,8 +18,8 @@ public partial class Program
 #if DEBUG // Ensure writes to console are redirected to Visual Studio
         Console.SetOut(new DebugOutputTextWriter());
 #endif
-        Win32Application.Initialize("CapriKit.Tests.Tool");
-
+        // TODO: this still sucks, also set a way to tell I want x and y to be absolute or an offset from the primary screen's center
+        Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(int.MinValue, int.MinValue, 1280, 1024, WindowMeasure.ClientArea));
         // TODO: I don't like this construct, figure out how to mix async and sync methods
         // in the game loading and game loop. Be careful that a regular await
         // without a synchronization context will return on a different thread
@@ -46,9 +46,6 @@ public partial class Program
             var swapChain = new SwapChain(device, window);
             var imGuiController = new ImGuiController(device, window, keyboard, mouse);
             var fileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
-
-            // TODO: Something here creates a live DirectX object that is not properly disposed of later!
-            // probably the whole async mess, seperate async to only reading files?
             var shaderTest = await ShaderTest.Create(device, fileSystem);
 
             ITestScreen[] tests =
@@ -109,7 +106,7 @@ public partial class Program
                 // Render
 
                 // here we decide where to render
-                // (which surface and what part of the surface)                
+                // (which surface and what part of the surface)
                 SwapChain.Clear(context);
                 context.OM.SetRenderTargetToBackBuffer(SwapChain);
                 context.RS.SetViewport(SwapChain.Viewport);

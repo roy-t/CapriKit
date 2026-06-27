@@ -80,6 +80,8 @@ public sealed class Win32Window
     /// </summary>
     public void SetCursorPosition(Vector2 position) => SetCursorPosition(new Point((int)position.X, (int)position.Y));
 
+    // All methods that change window state, position or size trigger OnResize so we don't have to set any properties ourselves
+
     public void SwitchToBorderlessFullScreen()
     {
         restoreX = X; restoreY = Y; restoreWidth = Width; restoreHeight = Height;
@@ -89,6 +91,16 @@ public sealed class Win32Window
     public void SwitchToWindowed()
     {
         IsBorderlessFullScreen = !Win32Utilities.MakeWindowed(Hwnd, restoreX, restoreY, restoreWidth, restoreHeight);
+    }
+
+    public void Resize(int width, int height)
+    {
+        Win32Utilities.ResizeWindow(Hwnd, width, height);
+    }
+
+    public void ResizeWithTargetClientAreaSize(int clientAreaWidth, int clientAreaHeight)
+    {
+        Win32Utilities.ResizeClientArea(Hwnd, clientAreaWidth, clientAreaHeight);
     }
 
     private TRACKMOUSEEVENT trackMouseEventData;
@@ -114,12 +126,12 @@ public sealed class Win32Window
 
     internal HWND Hwnd { get; private set; }
 
-    internal void OnMove(int x, int y)
+    internal void OnMove(int x = CW_USEDEFAULT, int y = CW_USEDEFAULT)
     {
         X = x;
         Y = y;
     }
-    internal void OnSizeChanged(int width, int height)
+    internal void OnSizeChanged(int width = CW_USEDEFAULT, int height = CW_USEDEFAULT)
     {
         Width = width;
         Height = height;

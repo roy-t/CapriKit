@@ -18,14 +18,16 @@ public static class Win32Application
     private static WindowEventProcessor? WindowEventProcessor;
     private static InputEventProcessor? InputEventProcessor;
 
-    public static void Initialize(string windowTitle)
+    public static void Initialize(string windowTitle) => Initialize(windowTitle, new WindowCreationOptions());
+
+    public static void Initialize(string windowTitle, WindowCreationOptions options)
     {
         unsafe
         {
             Win32Utilities.RegisterWindowClass(&WndProc);
         }
 
-        var handle = Win32Utilities.CreateWindow(windowTitle);
+        var handle = Win32Utilities.CreateWindow(windowTitle, options);
         Window.UpdateHandle(handle);
         WindowEventProcessor = new(Window);
         InputEventProcessor = new(Window, Mouse, Keyboard);
