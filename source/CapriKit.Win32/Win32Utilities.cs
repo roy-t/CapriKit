@@ -9,13 +9,25 @@ using static Windows.Win32.PInvoke;
 
 namespace CapriKit.Win32;
 
+/// <summary>
+/// Whether to define the size of a window from the border (outside) or client area (drawable area).
+/// </summary>
 public enum WindowMeasure
 {
     Border,
     ClientArea
 }
 
-public record WindowCreationOptions(int X = CW_USEDEFAULT, int Y = CW_USEDEFAULT, int Width = CW_USEDEFAULT, int Height = CW_USEDEFAULT, WindowMeasure Measure = WindowMeasure.Border);
+/// <summary>
+/// Whether to define the position of a window absolutely or as an offset from the center of the primary monitor.
+/// </summary>
+public enum WindowOrigin
+{
+    Absolute,
+    CenterOffset
+}
+
+public record WindowCreationOptions(int X = CW_USEDEFAULT, int Y = CW_USEDEFAULT, int Width = CW_USEDEFAULT, int Height = CW_USEDEFAULT, WindowOrigin Origin = WindowOrigin.Absolute, WindowMeasure Measure = WindowMeasure.Border);
 
 [SupportedOSPlatform(WindowsVersions.WindowsXP)]
 internal static class Win32Utilities
@@ -62,9 +74,17 @@ internal static class Win32Utilities
             AdjustWindowRectEx(ref desired, RegularWindowStyle, false, RegularWindowStyleEx);
         }
 
+        var x = options.X;
+        var y = options.Y;
+        if (options.Origin == WindowOrigin.CenterOffset)
+        {
+            x += (GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CXSCREEN) - desired.Width) / 2;
+            y += (GetSystemMetrics(SYSTEM_METRICS_INDEX.SM_CYSCREEN) - desired.Height) / 2;
+        }
+
         return CreateWindowEx(
             RegularWindowStyleEx, WindowClassName, title, RegularWindowStyle,
-            options.X, options.Y, desired.Width, desired.Height,
+            x, y, desired.Width, desired.Height,
             (HWND)IntPtr.Zero, null, null, null);
     }
 

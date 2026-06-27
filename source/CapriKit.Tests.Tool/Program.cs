@@ -18,8 +18,7 @@ public partial class Program
 #if DEBUG // Ensure writes to console are redirected to Visual Studio
         Console.SetOut(new DebugOutputTextWriter());
 #endif
-        // TODO: this still sucks, also set a way to tell I want x and y to be absolute or an offset from the primary screen's center
-        Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(int.MinValue, int.MinValue, 1280, 1024, WindowMeasure.ClientArea));
+        Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(0, 0, 1280, 1024, WindowOrigin.CenterOffset, WindowMeasure.ClientArea));
         // TODO: I don't like this construct, figure out how to mix async and sync methods
         // in the game loading and game loop. Be careful that a regular await
         // without a synchronization context will return on a different thread
