@@ -36,11 +36,11 @@ internal sealed class TestScreenLoader
             try
             {
                 var screen = await job.Work();
-                Work.Writer.TryWrite(new Loaded<ITestScreen>(job.Id, screen, null));
+                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, screen, null));
             }
             catch (Exception ex)
             {
-                Work.Writer.Complete(ex);
+                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, null, ex));
             }
         }).Forget();
         // Or should this just be static and return a channel?
