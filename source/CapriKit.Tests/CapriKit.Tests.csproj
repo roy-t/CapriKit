@@ -16,6 +16,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
+    <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" />
@@ -25,5 +26,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="DirectX11\Resources\" />
+    <Folder Include="Concurrency\" />
   </ItemGroup>
 </Project>
