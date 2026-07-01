@@ -10,16 +10,18 @@ public static class FireAndForgetExtensions
     public static void FireAndForget(
         this Task task,
         Action<Exception> onException,
+        Action? onCompleted = null,
         [CallerMemberName] string member = "",
         [CallerFilePath] string file = "",
         [CallerLineNumber] int line = 0)
     {
-        _ = AwaitAndCatch(task, onException, member, file, line);
+        _ = AwaitAndCatch(task, onException, onCompleted, member, file, line);
     }
 
     private static async Task AwaitAndCatch(
         Task task,
         Action<Exception> onException,
+        Action? onCompleted,
         string member,
         string file,
         int line)
@@ -32,6 +34,8 @@ public static class FireAndForgetExtensions
         try
         {
             await task.ConfigureAwait(false);
+            onCompleted?.Invoke();
+
         }
         catch (OperationCanceledException)
         {

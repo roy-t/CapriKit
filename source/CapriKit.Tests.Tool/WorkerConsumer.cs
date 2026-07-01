@@ -1,6 +1,5 @@
 using CapriKit.Concurrency.Async;
 using CapriKit.Tests.Tool.Tests.Framework;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Channels;
@@ -41,12 +40,16 @@ internal sealed class TestScreenLoader
             {
                 await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, null, ex));
             }
-        }).FireAndForget(ex => Debugger.Log(1, "Task", ex.Message));
-        // Or should this just be static and return a channel?
+        }).FireAndForget(ex => Debugger.Log(1, "Task", ex.Message), OnCompleted);
+    }
+
+    private void OnCompleted()
+    {
+        Work.Writer.Complete();
     }
 
     public bool TryDequeue([NotNullWhen(true)] out Loaded<ITestScreen>? screen)
     {
         return Work.Reader.TryRead(out screen);
-    }  
+    }
 }

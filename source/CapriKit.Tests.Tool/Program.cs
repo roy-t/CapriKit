@@ -128,7 +128,7 @@ public partial class Program
 
         private void InsertLoadedTests(TestScreenLoader loader)
         {
-            if (loader.TryDequeue(out var loaded))
+            while (loader.TryDequeue(out var loaded))
             {
                 if (loaded.Exception != null)
                 {
