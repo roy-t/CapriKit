@@ -15,15 +15,12 @@ namespace CapriKit.Tests.Tool;
 internal record Loaded<T>(string Id, T? Item, Exception? Exception);
 internal record Job<T>(string Id, Func<Task<T>> Work);
 
-// TODO: this would probably all work better with async/await
 internal sealed class TestScreenLoader
 {
-    private readonly BlockingCollection<Job<ITestScreen>> Jobs;
     private readonly Channel<Loaded<ITestScreen>> Work;
 
-    public TestScreenLoader(int concurrency)
+    public TestScreenLoader()
     {
-        Jobs = new BlockingCollection<Job<ITestScreen>>();
         Work = Channel.CreateUnbounded<Loaded<ITestScreen>>(new()
         {
             SingleReader = true,
@@ -46,32 +43,10 @@ internal sealed class TestScreenLoader
             }
         }).FireAndForget(ex => Debugger.Log(1, "Task", ex.Message));
         // Or should this just be static and return a channel?
-        // No need for BlockingCollection now.
     }
 
     public bool TryDequeue([NotNullWhen(true)] out Loaded<ITestScreen>? screen)
     {
         return Work.Reader.TryRead(out screen);
-    }
-
-    //public void Enqueue(string source) => Jobs.Add(source);
-    //public void CompleteAdding() => Jobs.CompleteAdding();      // happy-path shutdown
-    //public bool TryDequeue([NotNullWhen(true)] out LoadedShader? shader) => Work.Reader.TryRead(out shader);
-
-    //private void Run()// If we want to do async IO we can also do Parallel.ForEachAsync
-    //{
-    //    foreach (var source in Jobs.GetConsumingEnumerable())  // ends after CompleteAdding + drain
-    //    {
-    //        try { Work.Writer.TryWrite(DoMagic(source)); }
-    //        catch (Exception ex)
-    //        {
-    //            Work.Writer.Complete(ex); // throws the exception bout only out of ReadAsync/WaitReadAsync
-    //        }
-    //    }
-    //}
-
-    //private static LoadedShader DoMagic(string source)
-    //{
-    //    return new LoadedShader([]);
-    //}
+    }  
 }

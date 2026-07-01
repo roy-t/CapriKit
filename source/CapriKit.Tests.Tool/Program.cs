@@ -19,76 +19,56 @@ public partial class Program
         Console.SetOut(new DebugOutputTextWriter());
 #endif
         Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(0, 0, 1280, 1024, WindowOrigin.CenterOffset, WindowMeasure.ClientArea));
-        // TODO: I don't like this construct, figure out how to mix async and sync methods
-        // in the game loading and game loop. Be careful that a regular await
-        // without a synchronization context will return on a different thread
-        // so the Windows message pump doesn't work anymore.
-        using var gameLoop = GameLoop.Create().GetAwaiter().GetResult();
+        using var gameLoop = new GameLoop();
         gameLoop.Run();
     }
 
     private sealed class GameLoop : IDisposable
     {
-        public static async Task<GameLoop> Create()
-        {
-            var window = Win32Application.Window;
-            var keyboard = Win32Application.Keyboard;
-            var mouse = Win32Application.Mouse;
-
-            var renderDoc = CommandLineArguments.IsPresent("--renderdoc")
-                ? RenderDoc.TryLoad()
-                : null;
-
-            renderDoc?.DisableOverlay();
-
-            var device = new Device();
-            var swapChain = new SwapChain(device, window);
-            var imGuiController = new ImGuiController(device, window, keyboard, mouse);
-            var fileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
-            var shaderTest = await ShaderTest.Create(device, fileSystem);
-
-            ITestScreen[] tests =
-            [
-                shaderTest,
-                new WindowStatesTest(window),
-            ];
-
-            return new GameLoop(window, mouse, keyboard, device, swapChain, renderDoc, imGuiController, tests);
-        }
-
-
         private const double DELTA_TIME = 1.0 / 60.0; // constant tick rate of simulation
 
         private readonly Win32Window Window;
         private readonly Mouse Mouse;
         private readonly Keyboard Keyboard;
 
+        private readonly IReadOnlyVirtualFileSystem FileSystem;
+
         private readonly Device Device;
         private readonly SwapChain SwapChain;
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
-        private readonly ITestScreen[] Tests;
-        private ITestScreen CurrentTest;
+        private readonly List<ITestScreen> Tests;
+        private ITestScreen? CurrentTest;
 
         private bool running;
 
-        private GameLoop(Win32Window window, Mouse mouse, Keyboard keyboard, Device device, SwapChain swapChain, RenderDoc? renderDoc, ImGuiController imGuiController, ITestScreen[] tests)
+        public GameLoop()
         {
-            Window = window;
-            Mouse = mouse;
-            Keyboard = keyboard;
-            Device = device;
-            SwapChain = swapChain;
-            RenderDoc = renderDoc;
-            ImGuiController = imGuiController;
-            Tests = tests;
+            Window = Win32Application.Window;
+            Keyboard = Win32Application.Keyboard;
+            Mouse = Win32Application.Mouse;
 
-            CurrentTest = Tests[0];
+            RenderDoc = CommandLineArguments.IsPresent("--renderdoc")
+                ? RenderDoc.TryLoad()
+                : null;
+
+            RenderDoc?.DisableOverlay();
+
+            FileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
+
+            Device = new Device();
+            SwapChain = new SwapChain(Device, Window);
+            ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
+
+            Tests = [];
+            CurrentTest = null;
         }
 
         public void Run()  // TODO: main loop is getting a bit cluttered
         {
+            var loader = StartLoadingTests();
+
             running = true;
             var elapsed = DELTA_TIME;
             var stopwatch = Stopwatch.StartNew();
@@ -116,7 +96,7 @@ public partial class Program
 
                 // Individual components decide what and how to render
                 // but for that they only need the device context
-                CurrentTest.Render(context);
+                CurrentTest?.Render(context);
                 ImGuiController.Render(context);
 
                 context.OM.UnsetRenderTargets();
@@ -126,9 +106,45 @@ public partial class Program
 
                 elapsed = stopwatch.Elapsed.TotalSeconds;
                 stopwatch.Restart();
+
+                InsertLoadedTests(loader);
             }
 
             AnalyzeRenderDocCaptures();
+        }
+
+
+        private TestScreenLoader StartLoadingTests()
+        {
+            var loader = new TestScreenLoader();
+
+            loader.StartWork([
+                    new Job<ITestScreen>(nameof(ShaderTest), async () => await ShaderTest.Create(Device, FileSystem)),
+                    new Job<ITestScreen>(nameof(WindowStatesTest), async () => new WindowStatesTest(Window)),
+                ]);
+
+            return loader;
+        }
+
+        private void InsertLoadedTests(TestScreenLoader loader)
+        {
+            if (loader.TryDequeue(out var loaded))
+            {
+                if (loaded.Exception != null)
+                {
+                    throw loaded.Exception;
+                }
+
+                if (loaded.Item != null)
+                {
+                    Tests.Add(loaded.Item);
+                    // Hack to set preferred test independent of loading order
+                    if (loaded.Id == nameof(ShaderTest))
+                    {
+                        CurrentTest = Tests[^1];
+                    }
+                }
+            }
         }
 
         private void UpdateMenu()
