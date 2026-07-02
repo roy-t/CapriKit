@@ -5,7 +5,9 @@ namespace CapriKit.Concurrency.Async;
 public static class FireAndForgetExtensions
 {
     /// <summary>
-    /// Fires and forgets a task while safely observing any exceptions
+    /// Fires and forgets a task while safely observing any exceptions.
+    /// <paramref name="onCompleted"/> is invoked once the task has finished,
+    /// whether it completed successfully, was cancelled, or faulted.
     /// </summary>
     public static void FireAndForget(
         this Task task,
@@ -26,16 +28,9 @@ public static class FireAndForgetExtensions
         string file,
         int line)
     {
-        if (task.IsCompletedSuccessfully)
-        {
-            return;
-        }
-
         try
         {
             await task.ConfigureAwait(false);
-            onCompleted?.Invoke();
-
         }
         catch (OperationCanceledException)
         {
@@ -43,8 +38,12 @@ public static class FireAndForgetExtensions
         }
         catch (Exception ex)
         {
-            // TODO: does this make sense, does this break the stacktrace
+            // The original stack trace is preserved via the inner exception
             onException(new FaFTaskException(ex, member, file, line));
+        }
+        finally
+        {
+            onCompleted?.Invoke();
         }
     }
 }
