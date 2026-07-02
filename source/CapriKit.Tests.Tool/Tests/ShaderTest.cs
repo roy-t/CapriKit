@@ -43,10 +43,13 @@ internal sealed class ShaderTest : ITestScreen
         isDirty = true;
     }
 
-    public static async Task<ShaderTest> Create(Device device, IReadOnlyVirtualFileSystem fileSystem)
+    public static async Task<ShaderTest> Create(Device device, IReadOnlyVirtualFileSystem fileSystem, CancellationToken token)
     {
         var source = await fileSystem.ReadAllText(BasicShader.Path);
         var directory = new FilePath(BasicShader.Path).Directory;
+
+        // Compiling shaders is expensive, bail out early if the result is no longer needed
+        token.ThrowIfCancellationRequested();
 
         var vs = ShaderCompiler.CompileVertexShader(fileSystem, directory, device, source, Vs, nameof(Vs));
         var ps = ShaderCompiler.CompilePixelShader(fileSystem, directory, device, source, Ps, nameof(Ps));

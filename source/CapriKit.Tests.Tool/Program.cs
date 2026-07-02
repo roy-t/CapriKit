@@ -7,6 +7,7 @@ using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using ImGuiNET;
 using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 
 namespace CapriKit.Tests.Tool;
 
@@ -67,7 +68,7 @@ public partial class Program
 
         public void Run()  // TODO: main loop is getting a bit cluttered
         {
-            var loader = StartLoadingTests();
+            using var loader = StartLoadingTests();
 
             running = true;
             var elapsed = DELTA_TIME;
@@ -110,6 +111,11 @@ public partial class Program
                 InsertLoadedTests(loader);
             }
 
+            // Cancel outstanding jobs, then wait for in-flight ones; they may still
+            // be using the device, and their results would otherwise never be disposed
+            loader.Cancel();
+            loader.DrainAndDisposeRemaining();
+
             AnalyzeRenderDocCaptures();
         }
 
@@ -119,8 +125,8 @@ public partial class Program
             var loader = new TestScreenLoader();
 
             loader.StartWork([
-                    new Job<ITestScreen>(nameof(ShaderTest), async () => await ShaderTest.Create(Device, FileSystem)),
-                    new Job<ITestScreen>(nameof(WindowStatesTest), async () => new WindowStatesTest(Window)),
+                    new Job<ITestScreen>(nameof(ShaderTest), async token => await ShaderTest.Create(Device, FileSystem, token)),
+                    new Job<ITestScreen>(nameof(WindowStatesTest), async token => new WindowStatesTest(Window)),
                 ]);
 
             return loader;
@@ -132,7 +138,8 @@ public partial class Program
             {
                 if (loaded.Exception != null)
                 {
-                    throw loaded.Exception;
+                    // Rethrow without destroying the original stack trace
+                    ExceptionDispatchInfo.Capture(loaded.Exception).Throw();
                 }
 
                 if (loaded.Item != null)
