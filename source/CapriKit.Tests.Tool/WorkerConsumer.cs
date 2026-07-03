@@ -36,7 +36,7 @@ internal sealed class TestScreenLoader : IDisposable
             try
             {
                 var screen = await job.Work(token);
-                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, screen, null));
+                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, screen, null), token);
             }
             catch (OperationCanceledException)
             {
@@ -44,7 +44,7 @@ internal sealed class TestScreenLoader : IDisposable
             }
             catch (Exception ex)
             {
-                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, null, ex));
+                await Work.Writer.WriteAsync(new Loaded<ITestScreen>(job.Id, null, ex), token);
             }
         }).FireAndForget(ex => Debugger.Log(1, "Task", ex.Message), OnCompleted);
     }
