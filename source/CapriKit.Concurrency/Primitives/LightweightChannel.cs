@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.ExceptionServices;
 
-namespace CapriKit.Concurrency.Jobs;
+namespace CapriKit.Concurrency.Primitives;
 
 /// <summary>
 /// Lightweight variant of <see cref="System.Threading.Channels.Channel"/> that allows ONE reader

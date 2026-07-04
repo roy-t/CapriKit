@@ -1,15 +1,14 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
-namespace CapriKit.Concurrency.Jobs;
-
-public sealed class CompletedJob<T>
+namespace CapriKit.Concurrency.Async;
+public sealed class JobResult<T>
 {
     private readonly string Id;
     private readonly T? Result;
     private readonly ExceptionDispatchInfo? Exception;
 
-    private CompletedJob(string Id, T? Result, ExceptionDispatchInfo? Exception)
+    private JobResult(string Id, T? Result, ExceptionDispatchInfo? Exception)
     {
         Debug.Assert(Result == null ^ Exception == null);
 
@@ -18,14 +17,14 @@ public sealed class CompletedJob<T>
         this.Exception = Exception;
     }
 
-    public static CompletedJob<T> Failure(string Id, ExceptionDispatchInfo exception)
+    public static JobResult<T> Failure(string Id, ExceptionDispatchInfo exception)
     {
-        return new CompletedJob<T>(Id, default, exception);
+        return new JobResult<T>(Id, default, exception);
     }
 
-    public static CompletedJob<T> Success(string Id, T result)
+    public static JobResult<T> Success(string Id, T result)
     {
-        return new CompletedJob<T>(Id, result, default);
+        return new JobResult<T>(Id, result, default);
     }
 
     public void Match(Action<string, T> onSuccess, Action<string, ExceptionDispatchInfo> onFailure)
