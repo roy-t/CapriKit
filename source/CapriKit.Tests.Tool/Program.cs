@@ -1,3 +1,4 @@
+using CapriKit.Concurrency.Async;
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.IO;
@@ -7,7 +8,6 @@ using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using ImGuiNET;
 using System.Diagnostics;
-using System.Runtime.ExceptionServices;
 
 namespace CapriKit.Tests.Tool;
 
@@ -68,7 +68,7 @@ public partial class Program
 
         public void Run()  // TODO: main loop is getting a bit cluttered
         {
-            using var loader = StartLoadingTests();
+            var drain = StartLoadingTests();
 
             running = true;
             var elapsed = DELTA_TIME;
@@ -108,50 +108,43 @@ public partial class Program
                 elapsed = stopwatch.Elapsed.TotalSeconds;
                 stopwatch.Restart();
 
-                InsertLoadedTests(loader);
+                InsertLoadedTests(drain);
             }
 
             // Cancel outstanding jobs, then wait for in-flight ones; they may still
             // be using the device, and their results would otherwise never be disposed
-            loader.Cancel();
-            loader.DrainAndDisposeRemaining();
-
+            CancelLoadingTests(drain);
             AnalyzeRenderDocCaptures();
         }
 
 
-        private TestScreenLoader StartLoadingTests()
+        private Drain<ITestScreen> StartLoadingTests()
         {
-            var loader = new TestScreenLoader();
-
-            loader.StartWork([
-                    new Job<ITestScreen>(nameof(ShaderTest), async token => await ShaderTest.Create(Device, FileSystem, token)),
-                    new Job<ITestScreen>(nameof(WindowStatesTest), async token => new WindowStatesTest(Window)),
+            return BackgroundWorker.Create([
+                    new Job<ITestScreen>(nameof(ShaderTest), token => ShaderTest.Create(Device, FileSystem, token)),
+                    new Job<ITestScreen>(nameof(WindowStatesTest), token => Task.FromResult<ITestScreen>(new WindowStatesTest(Window))),
                 ]);
-
-            return loader;
         }
 
-        private void InsertLoadedTests(TestScreenLoader loader)
+        private void CancelLoadingTests(Drain<ITestScreen> drain)
         {
-            while (loader.TryDequeue(out var loaded))
+            drain.Cancel();
+            while (drain.HasOutstandingWork() || InsertLoadedTests(drain))
             {
-                if (loaded.Exception != null)
-                {
-                    // Rethrow without destroying the original stack trace
-                    ExceptionDispatchInfo.Capture(loaded.Exception).Throw();
-                }
-
-                if (loaded.Item != null)
-                {
-                    Tests.Add(loaded.Item);
-                    // Hack to set preferred test independent of loading order
-                    if (loaded.Id == nameof(ShaderTest))
-                    {
-                        CurrentTest = Tests[^1];
-                    }
-                }
+                Thread.Yield();
             }
+        }
+
+        private bool InsertLoadedTests(Drain<ITestScreen> drain)
+        {
+            if (drain.TryTake(out var loaded))
+            {
+                loaded.Match(
+                    (id, screen) => Tests.Add(screen),
+                    (id, exception) => exception.Throw());
+                return true;
+            }
+            return false;
         }
 
         private void UpdateMenu()

@@ -43,7 +43,7 @@ internal sealed class ShaderTest : ITestScreen
         isDirty = true;
     }
 
-    public static async Task<ShaderTest> Create(Device device, IReadOnlyVirtualFileSystem fileSystem, CancellationToken token)
+    public static async Task<ITestScreen> Create(Device device, IReadOnlyVirtualFileSystem fileSystem, CancellationToken token)
     {
         var source = await fileSystem.ReadAllText(BasicShader.Path);
         var directory = new FilePath(BasicShader.Path).Directory;

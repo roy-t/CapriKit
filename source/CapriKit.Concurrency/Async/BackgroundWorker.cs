@@ -12,6 +12,7 @@ public static class BackgroundWorker
     {
         var cancellation = new CancellationTokenSource();
         var channel = new LightweightChannel<JobResult<T>>();
+        var drain = new Drain<T>(cancellation, channel);
 
         Parallel.ForEachAsync(jobs, cancellation.Token, async (job, token) =>
         {
@@ -20,6 +21,7 @@ public static class BackgroundWorker
             // clean it up.
             try
             {
+                drain.OnJobStarted();
                 var result = await job.Callback(token);
                 channel.Write(JobResult<T>.Success(job.Id, result));
             }
@@ -32,8 +34,12 @@ public static class BackgroundWorker
                 var info = ExceptionDispatchInfo.Capture(ex);
                 channel.Write(JobResult<T>.Failure(job.Id, info));
             }
+            finally
+            {
+                drain.OnJobCompleted();
+            }
         }).FireAndForget(exception => channel.Write(exception));
 
-        return new Drain<T>(cancellation, channel);
+        return drain;
     }
 }
