@@ -1,13 +1,13 @@
 using CapriKit.Concurrency.Async;
 
-namespace CapriKit.Tests.Concurrency;
+namespace CapriKit.Tests.Concurrency.Async;
 
 internal class FireAndForgetExtensionsTests
 {
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(5);
 
     [Test]
-    public async Task OnCompleted_Is_Invoked_After_A_Successful_Task()
+    public async Task FireAndForget()
     {
         var completed = new TaskCompletionSource();
         var work = new TaskCompletionSource();
@@ -19,7 +19,7 @@ internal class FireAndForgetExtensionsTests
     }
 
     [Test]
-    public async Task OnCompleted_Is_Invoked_For_An_Already_Completed_Task()
+    public async Task FireAndForget_AlreadyCompletedTask()
     {
         var completed = new TaskCompletionSource();
 
@@ -29,7 +29,7 @@ internal class FireAndForgetExtensionsTests
     }
 
     [Test]
-    public async Task OnCompleted_Is_Invoked_For_A_Cancelled_Task_Without_Reporting_An_Exception()
+    public async Task FireAndForget_CancelledTask()
     {
         Exception? observed = null;
         var completed = new TaskCompletionSource();
@@ -42,7 +42,7 @@ internal class FireAndForgetExtensionsTests
     }
 
     [Test]
-    public async Task OnException_Wraps_The_Failure_And_OnCompleted_Is_Still_Invoked()
+    public async Task FireAndForget_FaultedTask()
     {
         Exception? observed = null;
         var completed = new TaskCompletionSource();

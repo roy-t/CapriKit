@@ -26,6 +26,5 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="DirectX11\Resources\" />
-    <Folder Include="Concurrency\" />
   </ItemGroup>
 </Project>

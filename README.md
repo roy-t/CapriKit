@@ -20,14 +20,24 @@ In general you can use the standard .net commands. These examples here assume yo
 ```pwsh
 # build the solution
 dotnet build
+```
 
+```pwsh
 # run all tests or a single test
 dotnet test     
 dotnet test --treenode-filter /Assembly/Namespace/Class/Method
+```
+for example, to run all tests in the `LightweightChannelTests` test class
+```
+dotnet test --treenode-filter "/*/CapriKit.Tests.Concurrency.Primitives/LightweightChannelTests/*"
+```
 
+```pwsh
 # formatting according to .editorconfig
 dotnet format   # format code
+```
 
+```pwsh
 # running an individual project
 dotnet run --project <the project>
 ```

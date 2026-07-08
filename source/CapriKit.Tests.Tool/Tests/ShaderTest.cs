@@ -45,7 +45,7 @@ internal sealed class ShaderTest : ITestScreen
 
     public static async Task<ITestScreen> Create(Device device, IReadOnlyVirtualFileSystem fileSystem, CancellationToken token)
     {
-        var source = await fileSystem.ReadAllText(BasicShader.Path);
+        var source = await fileSystem.ReadAllText(BasicShader.Path, cancellationToken: token);
         var directory = new FilePath(BasicShader.Path).Directory;
 
         // Compiling shaders is expensive, bail out early if the result is no longer needed
