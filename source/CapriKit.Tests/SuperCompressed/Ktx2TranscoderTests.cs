@@ -14,22 +14,22 @@ internal class Ktx2TranscoderTests
     [Test]
     public async Task OpenReadsTheTextureMetadata()
     {
-        using var transcoder = Ktx2Transcoder.Open(EncodeGradientWithMips());
+        using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());
 
-        await Assert.That(transcoder.Width).IsEqualTo(16);
-        await Assert.That(transcoder.Height).IsEqualTo(16);
-        await Assert.That(transcoder.Levels).IsEqualTo(5); // 16, 8, 4, 2, 1
-        await Assert.That(transcoder.Faces).IsEqualTo(1);
-        await Assert.That(transcoder.Format).IsEqualTo(BasisTexFormat.UastcLdr4x4);
-        await Assert.That(transcoder.IsSrgb).IsTrue();
+        await Assert.That(Ktx2Transcoder.GetWidth(ktx2File)).IsEqualTo(16);
+        await Assert.That(Ktx2Transcoder.GetHeight(ktx2File)).IsEqualTo(16);
+        await Assert.That(Ktx2Transcoder.GetLevels(ktx2File)).IsEqualTo(5); // 16, 8, 4, 2, 1
+        await Assert.That(Ktx2Transcoder.GetFaces(ktx2File)).IsEqualTo(1);
+        await Assert.That(Ktx2Transcoder.GetFormat(ktx2File)).IsEqualTo(BasisTexFormat.UastcLdr4x4);
+        await Assert.That(Ktx2Transcoder.IsSrgb(ktx2File)).IsTrue();
     }
 
     [Test]
     public async Task TranscodeToUncompressedRgba32()
     {
-        using var transcoder = Ktx2Transcoder.Open(EncodeGradientWithMips());
+        using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());
 
-        var level0 = transcoder.Transcode(TranscodeFormat.Rgba32);
+        var level0 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Rgba32);
 
         await Assert.That(level0.Width).IsEqualTo(16);
         await Assert.That(level0.Height).IsEqualTo(16);
@@ -43,7 +43,7 @@ internal class Ktx2TranscoderTests
         await Assert.That(topRightRed).IsGreaterThan(248);
         await Assert.That(topRightAlpha).IsEqualTo(255);
 
-        var level4 = transcoder.Transcode(TranscodeFormat.Rgba32, level: 4);
+        var level4 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Rgba32, level: 4);
         await Assert.That(level4.Width).IsEqualTo(1);
         await Assert.That(level4.Height).IsEqualTo(1);
         await Assert.That(level4.Data.Length).IsEqualTo(4);
@@ -52,9 +52,9 @@ internal class Ktx2TranscoderTests
     [Test]
     public async Task TranscodeToBlockCompressedBc7()
     {
-        using var transcoder = Ktx2Transcoder.Open(EncodeGradientWithMips());
+        using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());
 
-        var level0 = transcoder.Transcode(TranscodeFormat.Bc7Rgba);
+        var level0 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Bc7Rgba);
 
         // 16x16 pixels = 4x4 blocks of 16 bytes each
         await Assert.That(level0.Width).IsEqualTo(16);

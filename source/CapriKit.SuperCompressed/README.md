@@ -18,7 +18,8 @@ Encoding, typically done offline in an asset pipeline:
 using CapriKit.SuperCompressed;
 
 // Image.Load decodes JPG/PNG/BMP/TGA/PSD/GIF; or construct one from raw RGBA32 pixels
-var image = Image.Load(File.OpenRead("albedo.png"));
+using var stream = File.OpenRead("albedo.png");
+var image = Image.Load(stream);
 
 // A color texture: sRGB, with a full mipmap chain, using all cores
 var ktx2 = Encoder.Encode(image, BasisTexFormat.UastcLdr4x4,
@@ -30,11 +31,11 @@ File.WriteAllBytes("albedo.ktx2", ktx2);
 Transcoding, done at load time:
 
 ```csharp
-using var transcoder = Ktx2Transcoder.Open(File.ReadAllBytes("albedo.ktx2"));
+using var ktx2File = Ktx2Transcoder.Open(File.ReadAllBytes("albedo.ktx2"));
 
-for (var level = 0; level < transcoder.Levels; level++)
+for (var level = 0; level < Ktx2Transcoder.GetLevels(ktx2File); level++)
 {
-    var mip = transcoder.Transcode(TranscodeFormat.Bc7Rgba, level);
+    var mip = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Bc7Rgba, level);
     // Upload mip.Data to the GPU; mip.RowPitch matches D3D11_SUBRESOURCE_DATA.SysMemPitch
 }
 ```

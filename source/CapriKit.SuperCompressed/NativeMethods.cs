@@ -185,10 +185,13 @@ internal static partial class NativeMethods
 
     /// <remarks>
     /// The native side keeps referencing <paramref name="data"/> after this call: the memory
-    /// must stay valid (and, if managed, pinned) until the returned handle is disposed.
+    /// must stay valid (and, if managed, pinned) until the returned handle is closed.
+    /// Returns a raw handle (zero on failure) because the source generator cannot construct
+    /// a <see cref="Ktx2FileHandle"/>, whose constructor is internal on purpose; wrap the
+    /// result via <see cref="System.Runtime.InteropServices.Marshal.InitHandle"/>.
     /// </remarks>
     [LibraryImport(DllName)]
-    public static partial Ktx2FileHandle bt_ktx2_open(IntPtr data, uint dataLength);
+    public static partial IntPtr bt_ktx2_open(IntPtr data, uint dataLength);
 
     [LibraryImport(DllName)]
     public static partial void bt_ktx2_close(IntPtr ktx2Handle);

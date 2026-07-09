@@ -26,14 +26,18 @@ public sealed class Image
         return new Image(result.Data, result.Width, result.Height);
     }
 
+    /// <summary>
+    /// Wraps existing RGBA32 pixel data in an image. The array is not copied:
+    /// later changes to it are visible through <see cref="Pixels"/>.
+    /// </summary>
     public Image(byte[] rgba32Pixels, int width, int height)
     {
         ArgumentNullException.ThrowIfNull(rgba32Pixels);
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        if (rgba32Pixels.Length != width * height * 4)
+        if (rgba32Pixels.Length != (long)width * height * 4)
         {
-            throw new ArgumentException($"Expected {width}x{height}x4 = {width * height * 4} bytes of RGBA32 pixel data, got {rgba32Pixels.Length} bytes", nameof(rgba32Pixels));
+            throw new ArgumentException($"Expected {width}x{height}x4 = {(long)width * height * 4} bytes of RGBA32 pixel data, got {rgba32Pixels.Length} bytes", nameof(rgba32Pixels));
         }
 
         pixels = rgba32Pixels;

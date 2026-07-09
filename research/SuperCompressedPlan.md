@@ -113,8 +113,11 @@ This mirrors how upstream builds its own `example_capi` target. Details:
 3. **Public API** (span-based, no pointers):
    - `Image` — RGBA32 pixels + dimensions; `Image.Load(stream/bytes)` via StbImageSharp.
    - `Encoder.Encode(Image, BasisTexFormat, Quality, Effort, options) → byte[]` (`.ktx2` blob).
-   - `Ktx2Transcoder : IDisposable` — `Open(ReadOnlySpan<byte>)`; `Width/Height/Levels/Layers/
-     Faces/Format/HasAlpha`; `Transcode(level, layer, face, TranscodeFormat) → TranscodedImage`
+   - `Ktx2Transcoder` (static, like `Encoder`) — `Open(ReadOnlySpan<byte>) → Ktx2FileHandle`
+     (a public SafeHandle with internal members that owns both the native reader and the
+     pinned file data, so the interop marshaller keeps the buffer alive during every native
+     call); `GetWidth/GetHeight/GetLevels/GetLayers/GetFaces/GetFormat/HasAlpha/IsSrgb(handle)`;
+     `Transcode(handle, TranscodeFormat, level, layer, face) → TranscodedImage`
      (byte[], dimensions, pitch).
    - `TranscodeFormat → DXGI_FORMAT` mapping belongs in `CapriKit.DirectX11`, not here.
 4. **Tests** (TUnit, `CapriKit.Tests`, happy path) — encode a small generated gradient with
