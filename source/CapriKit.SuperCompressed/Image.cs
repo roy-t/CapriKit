@@ -3,7 +3,7 @@ using StbImageSharp;
 namespace CapriKit.SuperCompressed;
 
 /// <summary>
-/// An uncompressed 32 bits-per-pixel RGBA image, the input format of <see cref="Encoder"/>.
+/// An uncompressed 32 bits-per-pixel RGBA image, the input format of <see cref="Ktx2Encoder"/>.
 /// </summary>
 public sealed class Image
 {

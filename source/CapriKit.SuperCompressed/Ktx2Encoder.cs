@@ -6,7 +6,7 @@ namespace CapriKit.SuperCompressed;
 /// Encodes images into supercompressed KTX2 textures, which <see cref="Ktx2Transcoder"/>
 /// can later transcode to GPU-native formats.
 /// </summary>
-public static class Encoder
+public static class Ktx2Encoder
 {
     public const int MinQuality = 1;
     public const int MaxQuality = 100;
@@ -30,7 +30,6 @@ public static class Encoder
     /// <returns>The contents of a .ktx2 file.</returns>
     public static byte[] Encode(Image image, BasisTexFormat format, int quality = 85, int effort = 2, CompressionFlags flags = CompressionFlags.None)
     {
-        ArgumentNullException.ThrowIfNull(image);
         ArgumentOutOfRangeException.ThrowIfLessThan(quality, MinQuality);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(quality, MaxQuality);
         ArgumentOutOfRangeException.ThrowIfLessThan(effort, MinEffort);

@@ -33,9 +33,10 @@ Transcoding, done at load time:
 ```csharp
 using var ktx2File = Ktx2Transcoder.Open(File.ReadAllBytes("albedo.ktx2"));
 
-for (var level = 0; level < Ktx2Transcoder.GetLevels(ktx2File); level++)
+// Transcodes every mip level (and layer/face) in parallel;
+// use Ktx2Transcoder.Transcode to transcode a single image instead
+foreach (var mip in Ktx2Transcoder.TranscodeAll(ktx2File, TranscodeFormat.Bc7Rgba))
 {
-    var mip = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Bc7Rgba, level);
     // Upload mip.Data to the GPU; mip.RowPitch matches D3D11_SUBRESOURCE_DATA.SysMemPitch
 }
 ```

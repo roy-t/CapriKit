@@ -7,7 +7,7 @@ internal class Ktx2TranscoderTests
     private static byte[] EncodeGradientWithMips()
     {
         var image = TestImages.CreateGradient();
-        return Encoder.Encode(image, BasisTexFormat.UastcLdr4x4, effort: 2,
+        return Ktx2Encoder.Encode(image, BasisTexFormat.UastcLdr4x4, effort: 2,
             flags: CompressionFlags.Srgb | CompressionFlags.GenMipsClamp);
     }
 
@@ -16,10 +16,10 @@ internal class Ktx2TranscoderTests
     {
         using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());
 
-        await Assert.That(Ktx2Transcoder.GetWidth(ktx2File)).IsEqualTo(16);
-        await Assert.That(Ktx2Transcoder.GetHeight(ktx2File)).IsEqualTo(16);
-        await Assert.That(Ktx2Transcoder.GetLevels(ktx2File)).IsEqualTo(5); // 16, 8, 4, 2, 1
-        await Assert.That(Ktx2Transcoder.GetFaces(ktx2File)).IsEqualTo(1);
+        await Assert.That(Ktx2Transcoder.GetWidth(ktx2File)).IsEqualTo(16u);
+        await Assert.That(Ktx2Transcoder.GetHeight(ktx2File)).IsEqualTo(16u);
+        await Assert.That(Ktx2Transcoder.GetLevels(ktx2File)).IsEqualTo(5u); // 16, 8, 4, 2, 1
+        await Assert.That(Ktx2Transcoder.GetFaces(ktx2File)).IsEqualTo(1u);
         await Assert.That(Ktx2Transcoder.GetFormat(ktx2File)).IsEqualTo(BasisTexFormat.UastcLdr4x4);
         await Assert.That(Ktx2Transcoder.IsSrgb(ktx2File)).IsTrue();
     }
@@ -31,9 +31,9 @@ internal class Ktx2TranscoderTests
 
         var level0 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Rgba32);
 
-        await Assert.That(level0.Width).IsEqualTo(16);
-        await Assert.That(level0.Height).IsEqualTo(16);
-        await Assert.That(level0.RowPitch).IsEqualTo(16 * 4);
+        await Assert.That(level0.Width).IsEqualTo(16u);
+        await Assert.That(level0.Height).IsEqualTo(16u);
+        await Assert.That(level0.RowPitch).IsEqualTo(16u * 4);
         await Assert.That(level0.Data.Length).IsEqualTo(16 * 16 * 4);
 
         // The gradient's top-right pixel is fully red; UASTC at the lower effort levels
@@ -44,9 +44,31 @@ internal class Ktx2TranscoderTests
         await Assert.That(topRightAlpha).IsEqualTo(255);
 
         var level4 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Rgba32, level: 4);
-        await Assert.That(level4.Width).IsEqualTo(1);
-        await Assert.That(level4.Height).IsEqualTo(1);
+        await Assert.That(level4.Width).IsEqualTo(1u);
+        await Assert.That(level4.Height).IsEqualTo(1u);
         await Assert.That(level4.Data.Length).IsEqualTo(4);
+    }
+
+    [Test]
+    public async Task TranscodeAllTranscodesEveryLevelLayerAndFace()
+    {
+        using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());
+
+        var images = Ktx2Transcoder.TranscodeAll(ktx2File, TranscodeFormat.Rgba32);
+
+        // 5 mip levels, not an array, not a cubemap
+        await Assert.That(images.Length).IsEqualTo(5);
+        for (var level = 0u; level < images.Length; level++)
+        {
+            var image = images[level];
+            var expectedWidth = 16u >> (int)level;
+            await Assert.That(image.Level).IsEqualTo(level);
+            await Assert.That(image.Layer).IsEqualTo(0u);
+            await Assert.That(image.Face).IsEqualTo(0u);
+            await Assert.That(image.Width).IsEqualTo(expectedWidth);
+            await Assert.That(image.Height).IsEqualTo(expectedWidth);
+            await Assert.That(image.Data.Length).IsEqualTo((int)(expectedWidth * expectedWidth * 4));
+        }
     }
 
     [Test]
@@ -57,9 +79,9 @@ internal class Ktx2TranscoderTests
         var level0 = Ktx2Transcoder.Transcode(ktx2File, TranscodeFormat.Bc7Rgba);
 
         // 16x16 pixels = 4x4 blocks of 16 bytes each
-        await Assert.That(level0.Width).IsEqualTo(16);
-        await Assert.That(level0.Height).IsEqualTo(16);
-        await Assert.That(level0.RowPitch).IsEqualTo(4 * 16);
+        await Assert.That(level0.Width).IsEqualTo(16u);
+        await Assert.That(level0.Height).IsEqualTo(16u);
+        await Assert.That(level0.RowPitch).IsEqualTo(4u * 16);
         await Assert.That(level0.Data.Length).IsEqualTo(4 * 4 * 16);
     }
 }

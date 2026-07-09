@@ -118,7 +118,9 @@ This mirrors how upstream builds its own `example_capi` target. Details:
      pinned file data, so the interop marshaller keeps the buffer alive during every native
      call); `GetWidth/GetHeight/GetLevels/GetLayers/GetFaces/GetFormat/HasAlpha/IsSrgb(handle)`;
      `Transcode(handle, TranscodeFormat, level, layer, face) → TranscodedImage`
-     (byte[], dimensions, pitch).
+     (byte[], level/layer/face, dimensions, pitch); `TranscodeAll(handle, TranscodeFormat)
+     → TranscodedImage[]` transcodes every image in parallel (`Parallel.ForEach` with a
+     per-thread native transcode state from `bt_ktx2_create_transcode_state`).
    - `TranscodeFormat → DXGI_FORMAT` mapping belongs in `CapriKit.DirectX11`, not here.
 4. **Tests** (TUnit, `CapriKit.Tests`, happy path) — encode a small generated gradient with
    mips → open → assert level count/dimensions → transcode to BC7 and RGBA32 → assert buffer
