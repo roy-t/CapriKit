@@ -10,3 +10,6 @@ Assume you can only use Powershell to execute commands, the `dotnet` tool and la
 
 ## Technologies
 See `Directory.Packages.props` for an overview of NuGet packages used.
+
+## Misc
+The `external` folder in the root of the repository contains git submodules that point to external repositories. You can depend on code in these external repositories but you can never make changes to them.

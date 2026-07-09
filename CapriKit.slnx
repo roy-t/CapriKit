@@ -3,8 +3,17 @@
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
     <BuildType Name="Test" />
+    <Platform Name="ARM64EC" />
     <Platform Name="x64" />
+    <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/External/">
+    <Project Path="external/basis_universal/basisu.vcxproj" Id="59586a07-8e7e-411d-bc3d-387e039aa423">
+      <BuildType Solution="Test|ARM64EC" Project="Release" />
+      <BuildType Solution="Test|x64" Project="Debug" />
+      <BuildType Solution="Test|x86" Project="Debug" />
+    </Project>
+  </Folder>
   <Folder Name="/Generators/">
     <Project Path="source/CapriKit.Generators.HLSL/CapriKit.Generators.HLSL.csproj" />
     <Project Path="source/CapriKit.Generators.PrecisionVariants/CapriKit.Generators.PrecisionVariants.csproj" />
@@ -48,6 +57,9 @@
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.Meta/CapriKit.Meta.csproj">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.SuperCompressed/CapriKit.SuperCompressed.csproj" Id="c70c1e4c-dd91-49a2-a41c-bf76475db45d">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.Win32/CapriKit.Win32.csproj">
