@@ -22,6 +22,7 @@
     <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
+    <ProjectReference Include="..\CapriKit.SuperCompressed\CapriKit.SuperCompressed.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
   <ItemGroup>
