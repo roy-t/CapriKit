@@ -3,7 +3,7 @@
 #
 # The basis_universal submodule is never modified. Its own CMake build provides the
 # basisu_encoder static library, so upstream maintains the source list and compiler flags.
-# See README.md for how to build and how to update to a newer basis_universal.
+# See ../README.md for how to build and how to update to a newer basis_universal.
 cmake_minimum_required(VERSION 3.20)
 
 # Use a static CRT (/MT) so the DLL has no Visual C++ redistributable dependency.
@@ -18,7 +18,7 @@ project(caprikit_basisu C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(BASISU_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../external/basis_universal)
+set(BASISU_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../../../external/basis_universal)
 
 # Pin the upstream build options we rely on. The compile definitions on our target
 # below must stay consistent with these: upstream applies BASISD_SUPPORT_KTX2_ZSTD and

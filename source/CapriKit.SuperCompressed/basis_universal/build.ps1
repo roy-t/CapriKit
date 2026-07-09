@@ -1,6 +1,6 @@
 # Builds caprikit_basisu.dll from the basis_universal submodule.
 # Requires CMake and the Visual Studio C++ toolchain.
-# Output: <repo>\.build\bin\CapriKit.SuperCompressed.Native\caprikit_basisu.dll
+# Output: <repo>\.build\bin\caprikit_basisu\caprikit_basisu.dll
 #
 # Rerun this script after updating the basis_universal submodule; it also
 # regenerates exports.def so new bu_*/bt_* functions are exported automatically.
@@ -11,9 +11,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$repoRoot = (Resolve-Path "$PSScriptRoot\..\..").Path
+$repoRoot = (Resolve-Path "$PSScriptRoot\..\..\..").Path
 $buildDir = Join-Path $repoRoot '.build\native\caprikit_basisu'
-$outDir = Join-Path $repoRoot '.build\bin\CapriKit.SuperCompressed.Native'
+$outDir = Join-Path $repoRoot '.build\bin\caprikit_basisu'
 
 # Find CMake: PATH first, then the default install location.
 $cmake = (Get-Command cmake -ErrorAction SilentlyContinue)?.Source ?? 'C:\Program Files\CMake\bin\cmake.exe'

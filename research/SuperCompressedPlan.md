@@ -104,8 +104,9 @@ This mirrors how upstream builds its own `example_capi` target. Details:
 
 ## Implementation plan
 
-1. **`source/CapriKit.SuperCompressed.Native/`** — `CMakeLists.txt` (as above), `exports.def`,
-   `build.ps1`. Produces `caprikit_basisu.dll` (x64 Release). Never modifies the submodule.
+1. **`source/CapriKit.SuperCompressed/basis_universal/`** — `CMakeLists.txt` (as above),
+   `exports.def`, `build.ps1`. Not an MSBuild project, just the native build helpers for
+   `caprikit_basisu.dll` (x64 Release). Never modifies the submodule.
 2. **Interop layer** (internal, in `CapriKit.SuperCompressed`) — `NativeMethods.cs` with
    `[LibraryImport]` mirroring the two headers 1:1; `ulong` handles wrapped in `SafeHandle`s
    (`CompParamsHandle`, `Ktx2Handle`); enums mirroring `BTF_*`/`TF_*`/flags constants;

@@ -30,7 +30,7 @@ jobs:
 
       - name: Build basis_universal native library
         shell: pwsh
-        run: .\source\CapriKit.SuperCompressed.Native\build.ps1
+        run: .\source\CapriKit.SuperCompressed\basis_universal\build.ps1
 
       - name: Run unit tests
         shell: pwsh
