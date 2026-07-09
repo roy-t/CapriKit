@@ -3,9 +3,7 @@
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
     <BuildType Name="Test" />
-    <Platform Name="ARM64EC" />
     <Platform Name="x64" />
-    <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Generators/">
     <Project Path="source/CapriKit.Generators.HLSL/CapriKit.Generators.HLSL.csproj" />
@@ -37,7 +35,7 @@
   <Project Path="source/CapriKit.Build/CapriKit.Build.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="source/CapriKit.Concurrency/CapriKit.Concurrency.csproj" Id="ea1d18e3-af9b-4a08-8e53-6a98d653e326">
+  <Project Path="source/CapriKit.Concurrency/CapriKit.Concurrency.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.DirectX11/CapriKit.DirectX11.csproj">
@@ -52,7 +50,7 @@
   <Project Path="source/CapriKit.Meta/CapriKit.Meta.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="source/CapriKit.SuperCompressed/CapriKit.SuperCompressed.csproj" Id="c70c1e4c-dd91-49a2-a41c-bf76475db45d">
+  <Project Path="source/CapriKit.SuperCompressed/CapriKit.SuperCompressed.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.Win32/CapriKit.Win32.csproj">

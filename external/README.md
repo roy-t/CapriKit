@@ -5,5 +5,5 @@ This folder contains git submodules that point to external repositories. Do not 
 If you do not see any subfolders run:
 
 ```
-git submodule update --init --recursive.
+git submodule update --init --recursive
 ```

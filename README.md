@@ -18,7 +18,7 @@ With CapriKit I try to make a library where I gather all code that I find releva
 When checking out ensure that you also checkout and update all submodules using:
 
 ```pwsh
-git submodule update --init --recursive.
+git submodule update --init --recursive
 ```
 
 In general you can use the standard .net commands. These examples here assume you are using `powershell`. 
