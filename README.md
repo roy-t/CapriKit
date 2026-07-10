@@ -10,7 +10,7 @@ _Roy Triesscheijn's collection of code libraries_
 
 ## Goal
 
-I have been writing code since 2003. I started in Visual Basic 6 and I switched to C# code since 2007. Since then I have written thousands of lines of code. Most of that code was barely tested and sits in forgotten repositories.
+I have been writing code since 2003. I started in Visual Basic 6 and I switched to C# code in 2007. Since then I have written thousands of lines of code. Most of that code was barely tested and sits in forgotten repositories.
 
 With CapriKit I try to make a library where I gather all code that I find relevant and through documentation and testing I try to make it reusable and have lasting value. For myself, and maybe for others. Most of the code is focussed on game engine development as that is my favorite hobby.
 
@@ -20,7 +20,6 @@ When checking out ensure that you also checkout and update all submodules using:
 ```pwsh
 git submodule update --init --recursive
 ```
-
 In general you can use the standard .net commands. These examples here assume you are using `powershell`. 
 
 ```pwsh
@@ -47,6 +46,8 @@ dotnet format   # format code
 # running an individual project
 dotnet run --project <the project>
 ```
+
+For native C and C++ libraries (like the basis_universal submodule) I use `cmake` and powershell based build scripts.
 
 > [!WARNING]
 > These examples assume you are using `powershell`. When using Git Bash the `/` characters are silently converted to `\`, making the commands fail. Use powershell or set `MSYS_NO_PATHCONV=1` to work around this problem.
