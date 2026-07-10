@@ -1,9 +1,8 @@
 namespace CapriKit.SuperCompressed;
 
-/// <summary>
-/// Flags for transcoding, mirrors the DECODE_FLAGS_* constants in
-/// external/basis_universal/encoder/basisu_wasm_api_common.h (basist::basisu_decode_flags).
-/// </summary>
+// Mirrors the DECODE_FLAGS_* constants (basist::basisu_decode_flags) in
+// external/basis_universal/encoder/basisu_wasm_api_common.h.
+/// <summary>Options for the <see cref="Ktx2Transcoder"/> transcode methods.</summary>
 [Flags]
 public enum DecodeFlags : uint
 {

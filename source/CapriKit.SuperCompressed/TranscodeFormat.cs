@@ -1,9 +1,8 @@
 namespace CapriKit.SuperCompressed;
 
-/// <summary>
-/// The GPU texture formats a .ktx2 file can be transcoded to, mirrors the TF_* constants in
-/// external/basis_universal/encoder/basisu_wasm_api_common.h (basist::transcoder_texture_format).
-/// </summary>
+// Mirrors the TF_* constants (basist::transcoder_texture_format) in
+// external/basis_universal/encoder/basisu_wasm_api_common.h.
+/// <summary>The GPU texture formats a .ktx2 file can be transcoded to.</summary>
 public enum TranscodeFormat : uint
 {
     Etc1Rgb = 0,

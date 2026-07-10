@@ -1,10 +1,9 @@
 namespace CapriKit.SuperCompressed;
 
-/// <summary>
-/// Flags for encoding, mirrors the BU_COMP_FLAGS_* constants in
-/// external/basis_universal/encoder/basisu_wasm_api_common.h.
-/// The native parameter is 64 bits wide, so this enum is backed by ulong.
-/// </summary>
+// Mirrors the BU_COMP_FLAGS_* constants in
+// external/basis_universal/encoder/basisu_wasm_api_common.h; backed by ulong to match
+// the 64-bit native flags parameter.
+/// <summary>Encoding options for <see cref="Ktx2Encoder.Encode"/>.</summary>
 /// <remarks>
 /// Bits 23-24 (XUASTC LDR syntax), 25-26 (texture type) and 29-31 (XUBC7 base encoder)
 /// are multi-bit fields rather than independent flags. The default (0) means: full

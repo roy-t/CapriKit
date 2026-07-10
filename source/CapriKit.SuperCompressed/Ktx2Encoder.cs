@@ -13,9 +13,7 @@ public static class Ktx2Encoder
     public const int MinEffort = 0;
     public const int MaxEffort = 10;
 
-    /// <summary>
-    /// Encodes an image into a KTX2 texture. The defaults match basis_universal's own example code.
-    /// </summary>
+    /// <summary>Encodes an image into a KTX2 texture.</summary>
     /// <param name="image">The source image.</param>
     /// <param name="format">The intermediate texture format stored inside the KTX2 file.</param>
     /// <param name="quality">Encoding quality, <see cref="MinQuality"/> (smallest) to <see cref="MaxQuality"/> (best).</param>
@@ -24,8 +22,6 @@ public static class Ktx2Encoder
     /// Encoding options, for example <see cref="CompressionFlags.Srgb"/> for color textures,
     /// <see cref="CompressionFlags.GenMipsClamp"/> or <see cref="CompressionFlags.GenMipsWrap"/> to
     /// generate mipmaps, and <see cref="CompressionFlags.Threaded"/> to use all cores.
-    /// <see cref="CompressionFlags.Ktx2Output"/> is always added: this wrapper is KTX2-only because
-    /// the basis_universal C transcoding API cannot read .basis files.
     /// </param>
     /// <returns>The contents of a .ktx2 file.</returns>
     public static byte[] Encode(Image image, BasisTexFormat format, int quality = 85, int effort = 2, CompressionFlags flags = CompressionFlags.None)

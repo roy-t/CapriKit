@@ -1,9 +1,8 @@
 namespace CapriKit.SuperCompressed;
 
-/// <summary>
-/// The texture formats a .ktx2 file can store, mirrors the BTF_* constants in
-/// external/basis_universal/encoder/basisu_wasm_api_common.h (basist::basis_tex_format).
-/// </summary>
+// Mirrors the BTF_* constants (basist::basis_tex_format) in
+// external/basis_universal/encoder/basisu_wasm_api_common.h.
+/// <summary>The intermediate texture formats a .ktx2 file can store.</summary>
 public enum BasisTexFormat : uint
 {
     Etc1s = 0,
