@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <CapriKitNativeDll>$(MSBuildThisFileDirectory)..\..\.build\bin\caprikit_basisu\caprikit_basisu.dll</CapriKitNativeDll>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="StbImageSharp" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The native half of this package (basis_universal's C API), built separately
+         by basis_universal\build.ps1 because dotnet cannot build C++.
+         In the NuGet package it ships as a win-x64 runtime asset. -->
+    <None Include="$(CapriKitNativeDll)" Link="caprikit_basisu.dll" CopyToOutputDirectory="PreserveNewest" Pack="true" PackagePath="runtimes\win-x64\native" />
+  </ItemGroup>
+
+  <Target Name="EnsureNativeDllExists" BeforeTargets="BeforeBuild" Condition="!Exists('$(CapriKitNativeDll)')">
+    <Error Text="caprikit_basisu.dll not found at $(CapriKitNativeDll). Run source\CapriKit.SuperCompressed\basis_universal\build.ps1 first." />
+  </Target>
+
+</Project>
