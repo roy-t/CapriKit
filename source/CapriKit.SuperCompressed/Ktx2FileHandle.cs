@@ -16,10 +16,10 @@ public sealed class Ktx2FileHandle : SafeHandle
         // pinned buffer here keeps it reachable for at least as long as any native call can
         // read through this handle: the interop marshaller keeps the handle (and with it this
         // field) alive for the duration of every call the handle is passed to.
-        FileDate = fileData;
+        FileData = fileData;
     }
 
-    internal byte[] FileDate { get; }
+    internal byte[] FileData { get; }
 
     public override bool IsInvalid => handle == IntPtr.Zero;
 
