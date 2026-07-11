@@ -5,7 +5,14 @@ public class FileSystem : IVirtualFileSystem
     public Stream AppendWrite(FilePath file)
     {
         var absoluteFile = FindOrThrow(file);
-        return absoluteFile.Open(FileMode.Append, FileAccess.Write, FileShare.Read);
+        var options = new FileStreamOptions()
+        {
+            Mode = FileMode.Append,
+            Access = FileAccess.Write,
+            Share = FileShare.Read,
+            Options = FileOptions.Asynchronous
+        };
+        return new FileStream(absoluteFile.FullName, options);
     }
 
     public Stream CreateReadWrite(FilePath file)
@@ -16,8 +23,14 @@ public class FileSystem : IVirtualFileSystem
             var directory = absoluteFile.DirectoryName ?? string.Empty;
             Directory.CreateDirectory(directory);
         }
-
-        return absoluteFile.Open(FileMode.Create, FileAccess.ReadWrite, FileShare.Read);
+        var options = new FileStreamOptions()
+        {
+            Mode = FileMode.Create,
+            Access = FileAccess.ReadWrite,
+            Share = FileShare.Read,
+            Options = FileOptions.Asynchronous
+        };
+        return new FileStream(absoluteFile.FullName, options);
     }
 
     public void Delete(FilePath file)
@@ -41,7 +54,14 @@ public class FileSystem : IVirtualFileSystem
     public Stream OpenRead(FilePath file)
     {
         var absoluteFile = FindOrThrow(file);
-        return absoluteFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+        var options = new FileStreamOptions()
+        {
+            Mode = FileMode.Open,
+            Access = FileAccess.Read,
+            Share = FileShare.Read,
+            Options = FileOptions.Asynchronous
+        };
+        return new FileStream(absoluteFile.FullName, options);
     }
 
     public long SizeInBytes(FilePath file)
@@ -65,11 +85,6 @@ public class FileSystem : IVirtualFileSystem
         return filePaths;
     }
 
-    public FileSystemEventListener Watch(DirectoryPath directory, bool includeSubDirectories = true)
-    {
-        return new FileSystemEventListener(this, directory, includeSubDirectories);
-    }
-
     private FileInfo FindOrThrow(FilePath file)
     {
         var info = GetFileInfo(file);
@@ -81,18 +96,18 @@ public class FileSystem : IVirtualFileSystem
         throw new FileNotFoundException(null, file.ToString());
     }
 
-    internal FilePath GetFilePath(string path)
+    internal static FilePath GetFilePath(string path)
     {
         return new FilePath(path);
     }
 
-    internal FileInfo GetFileInfo(FilePath file)
+    internal static FileInfo GetFileInfo(FilePath file)
     {
         var absolutePath = file.IsAbsolute ? file : file.ToAbsolute();
         return new FileInfo(absolutePath.ToString());
     }
 
-    internal DirectoryInfo GetDirectoryInfo(DirectoryPath path)
+    internal static DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
         var absolutePath = path.IsAbsolute ? path : path.ToAbsolute();
         return new DirectoryInfo(absolutePath.ToString());

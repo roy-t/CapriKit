@@ -11,17 +11,13 @@ public delegate void FileSystemEventHandler(object sender, (FilePath target, Fil
 
 public sealed class FileSystemEventListener : IDisposable
 {
-    private readonly FileSystem FileSystem;
     private readonly FileSystemWatcher Watcher;
 
     private event FileSystemEventHandler? onFileChanged;
 
-    public FileSystemEventListener(FileSystem fileSystem, DirectoryPath directory, bool includeSubDirectories = true)
+    public FileSystemEventListener(DirectoryPath directory, bool includeSubDirectories = true)
     {
-        FileSystem = fileSystem;
         Directory = directory;
-
-        // Take the directory info since all file system types will point that to the true absolute path
         var directoryInfo = FileSystem.GetDirectoryInfo(directory);
         if (!directoryInfo.Exists)
         {

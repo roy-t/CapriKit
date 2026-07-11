@@ -4,8 +4,19 @@ using System.Text;
 
 namespace CapriKit.IO.Buffers;
 
+public static class SequenceReaders
+{
+    public static SequenceReader<byte> Create(byte[] bytes, int start, int length)
+    {
+        var sequence = new ReadOnlySequence<byte>(bytes, start, length);
+        return new SequenceReader<byte>(sequence);
+    }
+}
+
 public static class SequenceReaderExtensions
 {
+
+
     /// <summary>
     /// Reads a length prefixed string written by
     /// <see cref="BufferWriterExtensions.Write(IBufferWriter{byte}, string, Encoding?)"/>.

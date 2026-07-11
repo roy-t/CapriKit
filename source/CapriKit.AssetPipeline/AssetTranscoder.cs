@@ -7,6 +7,7 @@ namespace CapriKit.AssetPipeline;
 
 internal sealed record Envelope<T>(T Asset, IReadOnlySet<FilePath> Dependencies);
 
+// TODO: split in encoder and decoder and make the encoder as nice as the decoder
 internal static class AssetTranscoder
 {
     // Encoder id (16 bytes) + encoder version (4 bytes) + payload length (4 bytes)
@@ -49,29 +50,31 @@ internal static class AssetTranscoder
 
         using var input = fileSystem.OpenRead(inputPath);
 
-        // Header
-        var header = new byte[HeaderSizeInBytes];
-        await input.ReadExactlyAsync(header);
-        var payloadLength = ReadHeader(header, decoder, inputPath);
+        var payloadLength = await ReadHeader(input, decoder, inputPath);
+        var asset = await ReadPayload(input, payloadLength, decoder, id);
+        var dependencies = await ReadDependencies(input);
 
-        // Note: rented buffers are AT LEAST the requested length
-        var remainingLength = (int)(input.Length - input.Position);
-        var buffer = ArrayPool<byte>.Shared.Rent(remainingLength);
+        return new Envelope<T>(asset, dependencies);
+    }
+
+    private static async Task<int> ReadHeader<T>(Stream input, IAssetDecoder<T> decoder, FilePath path)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent(HeaderSizeInBytes);
         try
         {
-            await input.ReadExactlyAsync(buffer.AsMemory(0, remainingLength));
+            await input.ReadExactlyAsync(buffer.AsMemory(0, HeaderSizeInBytes));
+            var reader = SequenceReaders.Create(buffer, 0, HeaderSizeInBytes);
+            var id = reader.ReadGuid();
+            var version = reader.ReadInt32();
+            var payloadLength = reader.ReadInt32();
 
-            // Payload
-            var payloadBuffer = buffer.AsMemory(0, payloadLength);
-            var payloadReader = new SequenceReader<byte>(new ReadOnlySequence<byte>(payloadBuffer));
-            var asset = decoder.Decode(id, ref payloadReader);
+            if (id != decoder.Id || version != decoder.Version)
+            {
+                throw new InvalidDataException(
+                    $"Cannot decode {path}, it was encoded by {id} v{version} but the decoder is {decoder.Id} v{decoder.Version}");
+            }
 
-            // Dependencies
-            var dependencyBuffer = buffer.AsMemory(payloadLength, remainingLength - payloadLength);
-            var dependencyReader = new SequenceReader<byte>(new ReadOnlySequence<byte>(dependencyBuffer));
-            var dependencies = ReadDependencies(ref dependencyReader);
-
-            return new Envelope<T>(asset, dependencies);
+            return payloadLength;
         }
         finally
         {
@@ -79,32 +82,42 @@ internal static class AssetTranscoder
         }
     }
 
-    private static int ReadHeader<T>(byte[] header, IAssetDecoder<T> decoder, FilePath path)
+    private static async Task<T> ReadPayload<T>(Stream input, int payloadLength, IAssetDecoder<T> decoder, AssetId id)
     {
-        var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(header));
-        var id = reader.ReadGuid();
-        var version = reader.ReadInt32();
-        var payloadLength = reader.ReadInt32();
-
-        if (id != decoder.Id || version != decoder.Version)
+        var buffer = ArrayPool<byte>.Shared.Rent(payloadLength);
+        try
         {
-            throw new InvalidDataException(
-                $"Cannot decode {path}, it was encoded by {id} v{version} but the decoder is {decoder.Id} v{decoder.Version}");
+            await input.ReadExactlyAsync(buffer.AsMemory(0, payloadLength));
+            var reader = SequenceReaders.Create(buffer, 0, payloadLength);
+            return decoder.Decode(id, ref reader);
         }
-
-        return payloadLength;
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
-    private static HashSet<FilePath> ReadDependencies(ref SequenceReader<byte> reader)
+    private static async Task<HashSet<FilePath>> ReadDependencies(Stream input)
     {
-        var count = reader.ReadInt32();
-        var dependencies = new HashSet<FilePath>(count);
-        for (var i = 0; i < count; i++)
+        var length = (int)(input.Length - input.Position);
+        var buffer = ArrayPool<byte>.Shared.Rent(length);
+        try
         {
-            dependencies.Add(reader.ReadString());
-        }
+            await input.ReadExactlyAsync(buffer.AsMemory(0, length));
+            var reader = SequenceReaders.Create(buffer, 0, length);
 
-        return dependencies;
+            var count = reader.ReadInt32();
+            var dependencies = new HashSet<FilePath>(count);
+            for (var i = 0; i < count; i++)
+            {
+                dependencies.Add(reader.ReadString());
+            }
+            return dependencies;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
     }
 
     private static FilePath ToEncodedFilePath(FilePath path)

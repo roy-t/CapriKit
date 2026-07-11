@@ -30,10 +30,9 @@ internal class FileSystemEventListenerTests
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var deleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-
         var fileSystem = new FileSystem();
         var scopedFileSystem = new ScopedFileSystem(fileSystem, TempDirectory);
-        using var watcher = fileSystem.Watch(TempDirectory);
+        using var watcher = new FileSystemEventListener(TempDirectory, false);
         watcher.OnFileChanged += (s, e) =>
         {
             if (e.reason == FileSystemChangeKind.Created && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
