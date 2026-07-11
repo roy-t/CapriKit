@@ -15,6 +15,7 @@
     <PackageReference Include="TUnit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.AssetPipeline\CapriKit.AssetPipeline.csproj" />
     <ProjectReference Include="..\CapriKit.Build\CapriKit.Build.csproj" />
     <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />

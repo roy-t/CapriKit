@@ -4,15 +4,15 @@ namespace CapriKit.DirectX11.Resources.Shaders;
 
 public interface IVertexShader : IDisposable
 {
-    internal ID3D11VertexShader ID3D11VertexShader { get; }
+    internal ID3D11VertexShader ID3D11VertexShader { get; set; }
 
-    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements); // TODO: How to do this without exposing types from Vortice?
+    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements);
 }
 
 internal sealed class VertexShader : IVertexShader
 {
     private readonly byte[] Blob;
-    private readonly ID3D11VertexShader Shader;
+    private ID3D11VertexShader Shader;
 
     internal VertexShader(byte[] blob, ID3D11VertexShader shader)
     {
@@ -20,7 +20,11 @@ internal sealed class VertexShader : IVertexShader
         Shader = shader;
     }
 
-    ID3D11VertexShader IVertexShader.ID3D11VertexShader => Shader;
+    ID3D11VertexShader IVertexShader.ID3D11VertexShader
+    {
+        get { return Shader; }
+        set { Shader = value; }
+    }
 
     public IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements)
     {
