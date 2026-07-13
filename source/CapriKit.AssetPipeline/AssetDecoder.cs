@@ -1,48 +1,13 @@
 using CapriKit.IO;
 using CapriKit.IO.Buffers;
 using System.Buffers;
-using System.IO.Pipelines;
+
+using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
-internal sealed record Envelope<T>(T Asset, IReadOnlySet<FilePath> Dependencies);
-
-// TODO: split in encoder and decoder and make the encoder as nice as the decoder
-internal static class AssetTranscoder
+internal static class AssetDecoder
 {
-    // Encoder id (16 bytes) + encoder version (4 bytes) + payload length (4 bytes)
-    private const int HeaderSizeInBytes = 24;
-
-    public static async Task Encode(AssetId id, IVirtualFileSystem fileSystem, IAssetEncoder encoder)
-    {
-        ThrowOnFileNotFound(id.Path, fileSystem);
-
-        var outputPath = ToEncodedFilePath(id.Path);
-        using var output = fileSystem.CreateReadWrite(outputPath);
-        var writer = PipeWriter.Create(output);
-
-        // Header
-        writer.Write(encoder.Id);
-        writer.Write(encoder.Version);
-
-        // Payload
-        var payload = new ArrayBufferWriter<byte>();
-        var spy = fileSystem.SpyOn();
-        await encoder.Encode(id, spy, payload);
-        writer.Write(payload.WrittenCount);
-        writer.Write(payload.WrittenSpan);
-
-        // Asset dependencies, including the source file itself
-        writer.Write(spy.OpenedFiles.Count);
-        foreach (var dependency in spy.OpenedFiles)
-        {
-            writer.Write(dependency);
-        }
-
-        await writer.FlushAsync();
-        await writer.CompleteAsync();
-    }
-
     public static async Task<Envelope<T>> Decode<T>(AssetId id, IVirtualFileSystem fileSystem, IAssetDecoder<T> decoder)
     {
         var inputPath = ToEncodedFilePath(id.Path);
@@ -59,6 +24,8 @@ internal static class AssetTranscoder
 
     private static async Task<int> ReadHeader<T>(Stream input, IAssetDecoder<T> decoder, FilePath path)
     {
+        // Encoder id (16 bytes) + encoder version (4 bytes) + payload length (4 bytes)
+        const int HeaderSizeInBytes = 24;
         var buffer = ArrayPool<byte>.Shared.Rent(HeaderSizeInBytes);
         try
         {
@@ -117,19 +84,6 @@ internal static class AssetTranscoder
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
-        }
-    }
-
-    private static FilePath ToEncodedFilePath(FilePath path)
-    {
-        return path + ".cka";
-    }
-
-    private static void ThrowOnFileNotFound(FilePath path, IVirtualFileSystem fileSystem)
-    {
-        if (!fileSystem.Exists(path))
-        {
-            throw new FileNotFoundException(null, path);
         }
     }
 }
