@@ -1,0 +1,2 @@
+# Research
+This folder holds is a scatchpad of ideas that I want to investigate later. Most are excerpts of conversations with AI agents because I wanted to follow-up on something interesting it said.

@@ -1,0 +1,2 @@
+# Quaternions or Rotors
+The debate on quaternions versus rotors seems to have spiked in interest again. I'm still not sure if I can wrap my head around it or if there are any real benefits. But it would be interesting to look at https://marctenbosch.com/quaternions/ and the work by Eric Lengyel to see if I can implement it.
