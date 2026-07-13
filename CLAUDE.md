@@ -18,6 +18,9 @@ If you are asked to generate code,keep changes as small as possible. Focus on cr
 ## Documentation 
 When generating documentation focus on the target audiance: The code maintainers and library users. Write XML documentation to educate the library users on how to use a class, method, property or other component correctly and in which situations it should be used or not be used. Sparingly use in-line comments to explain gotcha's, non-obvious behavior or future points of improvemnts to code maintainers. Remember that documentation also needs to be maintained so focus on writing short to-the-point documentation that is easy for me to maintain.
 
+## Research
+In some cases I want to follow-up later on an interesting architecture, coding pattern or tooling suggestion. If I ask you to store or save such an idea for later, create a markdown document in the `research` folder where you explain the suggestion and summarize what we were working on when you suggested it. 
+
 ## Environment
 Assume you can only use Powershell to execute commands. The `dotnet` tool and latest version of the .NET SDK are available to you. The primary language we use is C#, shaders are written in HLSL. See `README.md` in the root project for build, run, test and lint commands. Consult `README.md` files in subdirectories to learn the quirks and implementation details of individual projects. Some projects build or interop with native C/C++ libraries. For those projects use `cmake`.
 
