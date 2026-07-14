@@ -8,7 +8,6 @@
     <PackageReference Include="Vortice.Direct3D11" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\CapriKit.AssetPipeline\CapriKit.AssetPipeline.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
