@@ -5,6 +5,9 @@ using System.Buffers;
 
 namespace CapriKit.AssetPipeline.Shaders;
 
+// TODO: I am not happy that this code is here, but I also do not want to put it in CapriKit.DirectX11
+// maybe I can make a CapriKit.AssetPipeline.DirectX11 project that has all the DirectX11 specific bits?
+// (shaders, textures)
 internal sealed class VertexShaderTranscoder(Device device) : IAssetEncoder, IAssetDecoder<IVertexShader>
 {
     public IReadOnlySet<string> SupportedExtensions => ShaderTranscoder.SupportedExtensions;
