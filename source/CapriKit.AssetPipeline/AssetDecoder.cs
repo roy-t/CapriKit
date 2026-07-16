@@ -6,9 +6,25 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
+public interface IAssetDecoder
+{
+    Guid Id { get; }
+    int Version { get; }
+
+}
+
+public interface IAssetDecoder<TAsset> : IAssetDecoder
+{
+    // Synchronous by design: the envelope owns all file IO and hands the decoder an
+    // in-memory payload. The reader's buffer is only valid for the duration of the call,
+    // decoders must copy out anything they want to keep.
+    TAsset Decode(AssetId id, ref SequenceReader<byte> reader);
+    void HotSwap(TAsset instance, TAsset replacement);
+}
+
 internal static class AssetDecoder
 {
-    public static async Task<Envelope<T>> Decode<T>(AssetId id, IVirtualFileSystem fileSystem, IAssetDecoder<T> decoder)
+    public static async Task<Asset<T>> Decode<T>(AssetId id, IVirtualFileSystem fileSystem, IAssetDecoder<T> decoder)
     {
         var inputPath = ToEncodedFilePath(id.Path);
         ThrowOnFileNotFound(inputPath, fileSystem);
@@ -19,7 +35,7 @@ internal static class AssetDecoder
         var asset = await ReadPayload(input, payloadLength, decoder, id);
         var dependencies = await ReadDependencies(input);
 
-        return new Envelope<T>(asset, dependencies);
+        return new Asset<T>(asset, dependencies);
     }
 
     private static async Task<int> ReadHeader<T>(Stream input, IAssetDecoder<T> decoder, FilePath path)

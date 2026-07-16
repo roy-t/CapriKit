@@ -18,7 +18,7 @@ internal class AssetDecoderTests
         var envelope = await AssetDecoder.Decode(id, fileSystem, transcoder);
 
         FilePath expectedDependency = "hello.txt";
-        await Assert.That(envelope.Asset).IsEqualTo("HÉLLO");
+        await Assert.That(envelope.Value).IsEqualTo("HÉLLO");
         await Assert.That(envelope.Dependencies.Count).IsEqualTo(1);
         await Assert.That(envelope.Dependencies.First()).IsEqualTo(expectedDependency);
     }

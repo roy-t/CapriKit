@@ -11,7 +11,7 @@ internal class GenericBufferTests
 {
     /// <summary>
     /// Tests StructuredBuffer, RWStructuredBuffer and StagingBuffer through a round-trip of data.
-    /// </summary>    
+    /// </summary>
     [Test]
     public async Task Mix_Upload_Modify_Download_Staging()
     {

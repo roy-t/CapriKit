@@ -6,6 +6,15 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
+public interface IAssetEncoder
+{
+    IReadOnlySet<string> SupportedExtensions { get; }
+    Guid Id { get; }
+    int Version { get; }
+
+    Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer);
+}
+
 internal sealed class AssetEncoder
 {
     public static async Task Encode(AssetId id, IVirtualFileSystem fileSystem, IAssetEncoder encoder)
