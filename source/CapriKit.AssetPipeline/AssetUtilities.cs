@@ -4,9 +4,15 @@ namespace CapriKit.AssetPipeline;
 
 internal static class AssetUtilities
 {
-    public static FilePath ToEncodedFilePath(FilePath path)
+    public static FilePath ToEncodedFilePath(AssetId id)
     {
-        return path + ".cka";
+        if (string.IsNullOrEmpty(id.Key))
+        {
+            return $"{id.Path}.cka";
+        }
+
+        var key = IOUtilities.EscapeFileName(id.Key);
+        return $"{id.Path}.{key}.cka";
     }
 
     public static void ThrowOnFileNotFound(FilePath path, IVirtualFileSystem fileSystem)

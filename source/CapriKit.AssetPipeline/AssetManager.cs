@@ -1,30 +1,54 @@
+using CapriKit.IO;
+
 namespace CapriKit.AssetPipeline;
 
 public class AssetManager
 {
+    private readonly IVirtualFileSystem FileSystem;
+    private readonly Dictionary<Type, IAssetTranscoder> Transcoders = [];
 
-    private readonly Dictionary<Type, IAssetEncoder> Encoders = [];
-    private readonly Dictionary<Type, IAssetDecoder> Decoders = [];
-
-    public void RegisterTranscoder<T>(IAssetEncoder encoder, IAssetDecoder<T> decoder)
+    public AssetManager(DirectoryPath rootDirectory)
     {
-        var typeKey = typeof(T);
-        Encoders[typeKey] = encoder;
-        Decoders[typeKey] = decoder;
+        FileSystem = new FileSystem().ScopedTo(rootDirectory);
     }
 
-    public T Decode<T>(AssetId id)
+    public AssetManager(IVirtualFileSystem fileSystem)
     {
-        var typeKey = typeof(T);
-        var encoder = Encoders[typeKey];
-        var decoder = Decoders[typeKey];
+        FileSystem = fileSystem;
+    }
 
-        var extension = new string(id.Path.Extension);
-        if (encoder.SupportedExtensions.Contains(extension))
-        {
+    public void RegisterTranscoder<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder)
+        where TSettings : IAssetSettings<TAsset>
+    {
+        var typeKey = typeof(TAsset);
+        Transcoders[typeKey] = transcoder;
+    }
 
-        }
+    public void Encode<TAsset, TSettings>(AssetId id, TSettings settings)
+        where TSettings : IAssetSettings<TAsset>
+    {
+        var typeKey = typeof(TAsset);
+        var transcoder = Transcoders[typeKey];
 
         throw new NotImplementedException();
     }
+
+    public TAsset Decode<TAsset, TSettings>(AssetId id, TSettings settings)
+        where TSettings : IAssetSettings<TAsset>
+    {
+        var typeKey = typeof(TAsset);
+        var transcoder = Transcoders[typeKey];
+
+        throw new NotImplementedException();
+    }
+
+    // TODO: the current typing and generic constraints are neat for writing transcoders but encoding/decoding requires all
+    // type parameters as type inference doesn't pick up that TAsset can be derived from that kind of IAssetSettings<X> TSettings is.
+    /*
+        AssetManager m;
+        var settings = new NoSettings<string>();
+        m.RegisterTranscoder(transcoder);
+        m.Encode<string, NoSettings<string>>(id, settings);
+        m.Decode<string, NoSettings<string>>(id, settings);
+    */
 }

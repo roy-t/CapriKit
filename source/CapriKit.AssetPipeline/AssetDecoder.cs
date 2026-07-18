@@ -6,39 +6,30 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
-public interface IAssetDecoder
-{
-    Guid Id { get; }
-    int Version { get; }
-
-}
-
-public interface IAssetDecoder<TAsset> : IAssetDecoder
-{
-    // Synchronous by design: the envelope owns all file IO and hands the decoder an
-    // in-memory payload. The reader's buffer is only valid for the duration of the call,
-    // decoders must copy out anything they want to keep.
-    TAsset Decode(AssetId id, ref SequenceReader<byte> reader);
-    void HotSwap(TAsset instance, TAsset replacement);
-}
-
 internal static class AssetDecoder
 {
-    public static async Task<Asset<T>> Decode<T>(AssetId id, IVirtualFileSystem fileSystem, IAssetDecoder<T> decoder)
+    public static async Task<Asset<TAsset>> Decode<TAsset, TSettings>(AssetId id, TSettings settings,
+        IAssetTranscoder<TAsset, TSettings> decoder, IVirtualFileSystem fileSystem)
+        where TSettings : IAssetSettings<TAsset>
     {
-        var inputPath = ToEncodedFilePath(id.Path);
+        var inputPath = ToEncodedFilePath(id);
         ThrowOnFileNotFound(inputPath, fileSystem);
 
         using var input = fileSystem.OpenRead(inputPath);
 
-        var payloadLength = await ReadHeader(input, decoder, inputPath);
-        var asset = await ReadPayload(input, payloadLength, decoder, id);
+        var payloadLength = await ReadHeader(input, settings, decoder, inputPath);
+
+        // TODO: read settings so we can do a byte-for-byte check they have stayed the same
+
+        var asset = await ReadPayload(input, payloadLength, id, settings, decoder);
         var dependencies = await ReadDependencies(input);
 
-        return new Asset<T>(asset, dependencies);
+        return new Asset<TAsset>(asset, dependencies);
     }
 
-    private static async Task<int> ReadHeader<T>(Stream input, IAssetDecoder<T> decoder, FilePath path)
+    private static async Task<int> ReadHeader<TAsset, TSettings>(Stream input,
+        TSettings settings, IAssetTranscoder<TAsset, TSettings> decoder, FilePath path)
+        where TSettings : IAssetSettings<TAsset>
     {
         // Encoder id (16 bytes) + encoder version (4 bytes) + payload length (4 bytes)
         const int HeaderSizeInBytes = 24;
@@ -65,14 +56,16 @@ internal static class AssetDecoder
         }
     }
 
-    private static async Task<T> ReadPayload<T>(Stream input, int payloadLength, IAssetDecoder<T> decoder, AssetId id)
+    private static async Task<TAsset> ReadPayload<TAsset, TSettings>(Stream input, int payloadLength,
+        AssetId id, TSettings setting, IAssetTranscoder<TAsset, TSettings> decoder)
+        where TSettings : IAssetSettings<TAsset>
     {
         var buffer = ArrayPool<byte>.Shared.Rent(payloadLength);
         try
         {
             await input.ReadExactlyAsync(buffer.AsMemory(0, payloadLength));
             var reader = SequenceReaders.Create(buffer, 0, payloadLength);
-            return decoder.Decode(id, ref reader);
+            return decoder.Decode(id, setting, ref reader);
         }
         finally
         {

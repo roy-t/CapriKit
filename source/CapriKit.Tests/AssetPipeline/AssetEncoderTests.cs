@@ -15,8 +15,8 @@ internal class AssetEncoderTests
         var transcoder = new DummyTranscoder();
         var id = new AssetId("Main", "hello.txt");
 
-        await AssetEncoder.Encode(id, fileSystem, transcoder);
-        var bytes = await fileSystem.ReadAllBytes("hello.txt.cka");
+        await AssetEncoder.Encode(id, default, transcoder, fileSystem);
+        var bytes = await fileSystem.ReadAllBytes("hello.txt.Main.cka");
 
         var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(bytes));
         var encoderId = reader.ReadGuid();

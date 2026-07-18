@@ -6,49 +6,45 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
-public interface IAssetEncoder
-{
-    IReadOnlySet<string> SupportedExtensions { get; }
-    Guid Id { get; }
-    int Version { get; }
-
-    Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer);
-}
-
 internal sealed class AssetEncoder
 {
-    public static async Task Encode(AssetId id, IVirtualFileSystem fileSystem, IAssetEncoder encoder)
+    public static async Task Encode<TAsset, TSettings>(AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, IVirtualFileSystem fileSystem)
+        where TSettings : IAssetSettings<TAsset>
     {
         ThrowOnFileNotFound(id.Path, fileSystem);
-        var outputPath = ToEncodedFilePath(id.Path);
+        var outputPath = ToEncodedFilePath(id);
 
         using var output = fileSystem.CreateReadWrite(outputPath);
         var writer = PipeWriter.Create(output);
         var spy = fileSystem.SpyOn();
 
         WriteHeader(writer, encoder); // payload length is written in WritePayload
-        await WritePayload(id, encoder, writer, spy);
-        WriteDependencies(spy, writer);
+
+        // TODO: write settings so we can verify they have stayed the same
+
+        await WritePayload(writer, id, settings, encoder, spy);
+        WriteDependencies(writer, spy);
 
         await writer.FlushAsync();
         await writer.CompleteAsync();
     }
 
-    private static void WriteHeader(PipeWriter writer, IAssetEncoder encoder)
+    private static void WriteHeader(PipeWriter writer, IAssetTranscoder encoder)
     {
         writer.Write(encoder.Id);
         writer.Write(encoder.Version);
     }
 
-    private static async Task WritePayload(AssetId id, IAssetEncoder encoder, PipeWriter writer, VirtualFileSystemSpy spy)
+    private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, VirtualFileSystemSpy spy)
+        where TSettings : IAssetSettings<TAsset>
     {
         var payload = new ArrayBufferWriter<byte>();
-        await encoder.Encode(id, spy, payload);
+        await encoder.Encode(id, settings, spy, payload);
         writer.Write(payload.WrittenCount);
         writer.Write(payload.WrittenSpan);
     }
 
-    private static void WriteDependencies(VirtualFileSystemSpy spy, PipeWriter writer)
+    private static void WriteDependencies(PipeWriter writer, VirtualFileSystemSpy spy)
     {
         writer.Write(spy.OpenedFiles.Count);
         foreach (var dependency in spy.OpenedFiles)
@@ -56,6 +52,4 @@ internal sealed class AssetEncoder
             writer.Write(dependency);
         }
     }
-
-
 }

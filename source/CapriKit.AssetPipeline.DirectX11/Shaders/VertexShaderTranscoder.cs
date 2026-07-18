@@ -5,13 +5,12 @@ using System.Buffers;
 
 namespace CapriKit.AssetPipeline.DirectX11.Shaders;
 
-public sealed class VertexShaderTranscoder(Device device) : IAssetEncoder, IAssetDecoder<IVertexShader>
+public sealed class VertexShaderTranscoder(Device device) : IAssetTranscoder<IVertexShader, NoSettings<IVertexShader>>
 {
-    public IReadOnlySet<string> SupportedExtensions => ShaderTranscoder.SupportedExtensions;
     public Guid Id => Guid.Parse("{CA3CB37D-9880-4B61-AB09-EBC17E7533E6}");
     public int Version => 1;
 
-    public async Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
+    public async Task Encode(AssetId id, NoSettings<IVertexShader> _, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
     {
         var source = await fileSystem.ReadAllText(id.Path);
         var includePath = id.Path.Directory;
@@ -19,7 +18,7 @@ public sealed class VertexShaderTranscoder(Device device) : IAssetEncoder, IAsse
         ShaderTranscoder.WriteCommon(bytes.Common, writer);
     }
 
-    public IVertexShader Decode(AssetId id, ref SequenceReader<byte> reader)
+    public IVertexShader Decode(AssetId id, NoSettings<IVertexShader> _, ref SequenceReader<byte> reader)
     {
         var common = ShaderTranscoder.ReadCommon(ref reader);
         return ShaderCompiler.CreateVertexShader(new VertexShaderByteCode(common), device);
