@@ -14,7 +14,7 @@ internal class AssetDecoderTests
         var transcoder = new DummyTranscoder();
         var id = new AssetId("Main", "hello.txt");
 
-        await AssetEncoder.Encode(id, default, transcoder, fileSystem);
+        await AssetEncoder.Encode(id, new NoSettings<string>(), transcoder, fileSystem);
         var envelope = await AssetDecoder.Decode(id, transcoder, fileSystem);
 
         FilePath expectedDependency = "hello.txt";

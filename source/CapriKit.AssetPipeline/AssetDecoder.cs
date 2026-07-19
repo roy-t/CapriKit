@@ -8,9 +8,8 @@ namespace CapriKit.AssetPipeline;
 
 internal static class AssetDecoder
 {
-    public static async Task<Asset<TAsset>> Decode<TAsset, TSettings>(AssetId id,
-        IAssetTranscoder<TAsset, TSettings> decoder, IVirtualFileSystem fileSystem)
-        where TSettings : IAssetSettings<TAsset>
+    public static async Task<Asset<TAsset>> Decode<TAsset>(AssetId id,
+        IAssetTranscoder<TAsset> decoder, IVirtualFileSystem fileSystem)
     {
         var inputPath = ToEncodedFilePath(id);
         ThrowOnFileNotFound(inputPath, fileSystem);
@@ -49,9 +48,8 @@ internal static class AssetDecoder
         }
     }
 
-    private static async Task<TSettings> ReadSettings<TAsset, TSettings>(Stream input,
-        IAssetTranscoder<TAsset, TSettings> decoder)
-        where TSettings : IAssetSettings<TAsset>
+    private static async Task<IAssetSettings<TAsset>> ReadSettings<TAsset>(Stream input,
+        IAssetTranscoder<TAsset> decoder)
     {
         var settingsLength = await ReadInt32(input);
         var buffer = ArrayPool<byte>.Shared.Rent(settingsLength);
@@ -67,9 +65,8 @@ internal static class AssetDecoder
         }
     }
 
-    private static async Task<TAsset> ReadPayload<TAsset, TSettings>(Stream input,
-        AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> decoder)
-        where TSettings : IAssetSettings<TAsset>
+    private static async Task<TAsset> ReadPayload<TAsset>(Stream input,
+        AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> decoder)
     {
         var payloadLength = await ReadInt32(input);
         var buffer = ArrayPool<byte>.Shared.Rent(payloadLength);
@@ -108,6 +105,7 @@ internal static class AssetDecoder
         }
     }
 
+    // TODO: move to an extension method in CapriKit.IO
     private static async Task<int> ReadInt32(Stream input)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(sizeof(int));

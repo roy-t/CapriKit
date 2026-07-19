@@ -9,8 +9,7 @@ namespace CapriKit.AssetPipeline;
 // File format: [encoder id][encoder version][settings length][settings][payload length][payload][dependency count][dependencies]
 internal static class AssetEncoder
 {
-    public static async Task Encode<TAsset, TSettings>(AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, IVirtualFileSystem fileSystem)
-        where TSettings : IAssetSettings<TAsset>
+    public static async Task Encode<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> encoder, IVirtualFileSystem fileSystem)
     {
         ThrowOnFileNotFound(id.Path, fileSystem);
         var outputPath = ToEncodedFilePath(id);
@@ -34,8 +33,8 @@ internal static class AssetEncoder
         writer.Write(encoder.Version);
     }
 
-    private static void WriteSettings<TAsset, TSettings>(PipeWriter writer, IAssetTranscoder<TAsset, TSettings> transcoder, TSettings settings)
-        where TSettings : IAssetSettings<TAsset>
+    // Settings are stored in full so that decoding does not require the caller to supply them again
+    private static void WriteSettings<TAsset>(PipeWriter writer, IAssetTranscoder<TAsset> transcoder, IAssetSettings<TAsset> settings)
     {
         var buffer = new ArrayBufferWriter<byte>();
         transcoder.WriteSettings(settings, buffer);
@@ -43,8 +42,7 @@ internal static class AssetEncoder
         writer.Write(buffer.WrittenSpan);
     }
 
-    private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, VirtualFileSystemSpy spy)
-        where TSettings : IAssetSettings<TAsset>
+    private static async Task WritePayload<TAsset>(PipeWriter writer, AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> encoder, VirtualFileSystemSpy spy)
     {
         var payload = new ArrayBufferWriter<byte>();
         await encoder.Encode(id, settings, spy, payload);
