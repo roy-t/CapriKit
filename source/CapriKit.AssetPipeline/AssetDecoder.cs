@@ -1,7 +1,6 @@
 using CapriKit.IO;
 using CapriKit.IO.Buffers;
 using System.Buffers;
-
 using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
@@ -19,8 +18,6 @@ internal static class AssetDecoder
 
         var payloadLength = await ReadHeader(input, settings, decoder, inputPath);
 
-        // TODO: read settings so we can do a byte-for-byte check they have stayed the same
-
         var asset = await ReadPayload(input, payloadLength, id, settings, decoder);
         var dependencies = await ReadDependencies(input);
 
@@ -31,8 +28,8 @@ internal static class AssetDecoder
         TSettings settings, IAssetTranscoder<TAsset, TSettings> decoder, FilePath path)
         where TSettings : IAssetSettings<TAsset>
     {
-        // Encoder id (16 bytes) + encoder version (4 bytes) + payload length (4 bytes)
-        const int HeaderSizeInBytes = 24;
+        // Encoder id (16 bytes) + encoder version (4 bytes) + settings hash (16 bytes) + payload length (4 bytes)
+        const int HeaderSizeInBytes = 40;
         var buffer = ArrayPool<byte>.Shared.Rent(HeaderSizeInBytes);
         try
         {
@@ -40,12 +37,21 @@ internal static class AssetDecoder
             var reader = SequenceReaders.Create(buffer, 0, HeaderSizeInBytes);
             var id = reader.ReadGuid();
             var version = reader.ReadInt32();
+            var hashOfSettingsUsedToEncode = reader.ReadBytes(16);
             var payloadLength = reader.ReadInt32();
 
             if (id != decoder.Id || version != decoder.Version)
             {
                 throw new InvalidDataException(
                     $"Cannot decode {path}, it was encoded by {id} v{version} but the decoder is {decoder.Id} v{decoder.Version}");
+            }
+
+            // Validate that the settings used for encoding, match the settings used for decoding
+            // by doing a byte-for-byte comparison of the hashes of each.
+            var hashOfSettingsUsedToDecode = HashSettings<TAsset, TSettings>(settings);
+            if (!hashOfSettingsUsedToEncode.SequenceEqual(hashOfSettingsUsedToDecode))
+            {
+                throw new InvalidDataException($"Settings used to encode {id} do not match settings used to decode it");
             }
 
             return payloadLength;

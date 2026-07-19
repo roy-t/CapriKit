@@ -18,9 +18,7 @@ internal sealed class AssetEncoder
         var writer = PipeWriter.Create(output);
         var spy = fileSystem.SpyOn();
 
-        WriteHeader(writer, encoder); // payload length is written in WritePayload
-
-        // TODO: write settings so we can verify they have stayed the same
+        WriteHeader(writer, encoder, settings); // Payload length is written in WritePayload
 
         await WritePayload(writer, id, settings, encoder, spy);
         WriteDependencies(writer, spy);
@@ -29,10 +27,14 @@ internal sealed class AssetEncoder
         await writer.CompleteAsync();
     }
 
-    private static void WriteHeader(PipeWriter writer, IAssetTranscoder encoder)
+    private static void WriteHeader<TAsset, TSettings>(PipeWriter writer, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings)
+        where TSettings : IAssetSettings<TAsset>
     {
         writer.Write(encoder.Id);
         writer.Write(encoder.Version);
+
+        var hash = HashSettings<TAsset, TSettings>(settings);
+        writer.Write(hash);
     }
 
     private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, VirtualFileSystemSpy spy)
