@@ -6,7 +6,8 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
-internal sealed class AssetEncoder
+// File format: [encoder id][encoder version][settings length][settings][payload length][payload][dependency count][dependencies]
+internal static class AssetEncoder
 {
     public static async Task Encode<TAsset, TSettings>(AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, IVirtualFileSystem fileSystem)
         where TSettings : IAssetSettings<TAsset>
@@ -18,8 +19,8 @@ internal sealed class AssetEncoder
         var writer = PipeWriter.Create(output);
         var spy = fileSystem.SpyOn();
 
-        WriteHeader(writer, encoder, settings); // Payload length is written in WritePayload
-
+        WriteHeader(writer, encoder);
+        WriteSettings(writer, encoder, settings);
         await WritePayload(writer, id, settings, encoder, spy);
         WriteDependencies(writer, spy);
 
@@ -27,14 +28,19 @@ internal sealed class AssetEncoder
         await writer.CompleteAsync();
     }
 
-    private static void WriteHeader<TAsset, TSettings>(PipeWriter writer, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings)
-        where TSettings : IAssetSettings<TAsset>
+    private static void WriteHeader(PipeWriter writer, IAssetTranscoder encoder)
     {
         writer.Write(encoder.Id);
         writer.Write(encoder.Version);
+    }
 
-        var hash = HashSettings<TAsset, TSettings>(settings);
-        writer.Write(hash);
+    private static void WriteSettings<TAsset, TSettings>(PipeWriter writer, IAssetTranscoder<TAsset, TSettings> transcoder, TSettings settings)
+        where TSettings : IAssetSettings<TAsset>
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        transcoder.WriteSettings(settings, buffer);
+        writer.Write(buffer.WrittenCount);
+        writer.Write(buffer.WrittenSpan);
     }
 
     private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> encoder, VirtualFileSystemSpy spy)

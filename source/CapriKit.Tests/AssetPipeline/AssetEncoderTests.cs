@@ -21,6 +21,8 @@ internal class AssetEncoderTests
         var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(bytes));
         var encoderId = reader.ReadGuid();
         var encoderVersion = reader.ReadInt32();
+        var settingsLength = reader.ReadInt32();
+        reader.Advance(settingsLength);
         var payloadLength = reader.ReadInt32();
         reader.Advance(payloadLength);
         var dependencyCount = reader.ReadInt32();
@@ -29,6 +31,7 @@ internal class AssetEncoderTests
 
         await Assert.That(encoderId).IsEqualTo(transcoder.Id);
         await Assert.That(encoderVersion).IsEqualTo(transcoder.Version);
+        await Assert.That(settingsLength).IsEqualTo(0);
         await Assert.That(dependencyCount).IsEqualTo(1);
         await Assert.That(dependency).IsEqualTo("hello.txt");
         await Assert.That(end).IsTrue();

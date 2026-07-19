@@ -11,10 +11,7 @@ public readonly struct NoSettings<TAsset> : IAssetSettings<TAsset>
     }
 }
 
-public interface IAssetSettings<TAsset>
-{
-    void Write(IBufferWriter<byte> writer);
-}
+public interface IAssetSettings<TAsset> { }
 
 public interface IAssetTranscoder
 {
@@ -32,6 +29,7 @@ public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder
     // in-memory payload. The reader's buffer is only valid for the duration of the call,
     // decoders must copy out anything they want to keep.
     TAsset Decode(AssetId id, TSettings settings, ref SequenceReader<byte> reader);
-
+    TSettings ReadSettings(ref SequenceReader<byte> reader);
+    void WriteSettings(TSettings settings, IBufferWriter<byte> writer);
     void HotSwap(TAsset instance, TAsset replacement);
 }

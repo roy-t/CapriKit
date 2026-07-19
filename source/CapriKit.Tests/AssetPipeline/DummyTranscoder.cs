@@ -19,6 +19,8 @@ internal sealed class DummyTranscoder : IAssetTranscoder<string, NoSettings<stri
         writer.Write(text.ToUpperInvariant());
     }
 
+
+
     public string Decode(AssetId id, NoSettings<string> settings, ref SequenceReader<byte> reader)
     {
         return reader.ReadString();
@@ -27,5 +29,15 @@ internal sealed class DummyTranscoder : IAssetTranscoder<string, NoSettings<stri
     public void HotSwap(string instance, string replacement)
     {
         throw new NotImplementedException();
+    }
+
+    public NoSettings<string> ReadSettings(ref SequenceReader<byte> reader)
+    {
+        return default;
+    }
+
+    public void WriteSettings(NoSettings<string> settings, IBufferWriter<byte> writer)
+    {
+        
     }
 }

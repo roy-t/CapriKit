@@ -1,6 +1,4 @@
 using CapriKit.IO;
-using System.Buffers;
-using System.IO.Hashing;
 
 namespace CapriKit.AssetPipeline;
 
@@ -23,13 +21,5 @@ internal static class AssetUtilities
         {
             throw new FileNotFoundException(null, path);
         }
-    }
-
-    public static ReadOnlySpan<byte> HashSettings<TAsset, TSettings>(TSettings settings)
-        where TSettings : IAssetSettings<TAsset>
-    {
-        var payload = new ArrayBufferWriter<byte>();
-        settings.Write(payload);
-        return XxHash128.Hash(payload.WrittenSpan);
     }
 }

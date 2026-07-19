@@ -5,7 +5,9 @@ namespace CapriKit.AssetPipeline;
 public class AssetManager
 {
     private readonly IVirtualFileSystem FileSystem;
-    private readonly Dictionary<Type, IAssetTranscoder> Transcoders = [];
+
+    // Values are IRegisteredTranscoder<TAsset> instances, keyed by typeof(TAsset)
+    private readonly Dictionary<Type, object> Transcoders = [];
 
     public AssetManager(DirectoryPath rootDirectory)
     {
@@ -20,35 +22,63 @@ public class AssetManager
     public void RegisterTranscoder<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder)
         where TSettings : IAssetSettings<TAsset>
     {
-        var typeKey = typeof(TAsset);
-        Transcoders[typeKey] = transcoder;
+        Transcoders[typeof(TAsset)] = new RegisteredTranscoder<TAsset, TSettings>(transcoder);
     }
 
-    public void Encode<TAsset, TSettings>(AssetId id, TSettings settings)
+    public Task Encode<TAsset>(AssetId id, IAssetSettings<TAsset> settings)
+    {
+        return GetTranscoder<TAsset>().Encode(id, settings, FileSystem);
+    }
+
+    public Task Encode<TAsset>(AssetId id)
+    {
+        return Encode(id, default(NoSettings<TAsset>));
+    }
+
+    public async Task<TAsset> Decode<TAsset>(AssetId id)
+    {
+        var asset = await GetTranscoder<TAsset>().Decode(id, FileSystem);
+        return asset.Value;
+    }
+
+    private IRegisteredTranscoder<TAsset> GetTranscoder<TAsset>()
+    {
+        if (!Transcoders.TryGetValue(typeof(TAsset), out var transcoder))
+        {
+            throw new InvalidOperationException($"No transcoder registered for asset type {typeof(TAsset).Name}");
+        }
+
+        return (IRegisteredTranscoder<TAsset>)transcoder;
+    }
+
+    private interface IRegisteredTranscoder<TAsset>
+    {
+        Task Encode(AssetId id, IAssetSettings<TAsset> settings, IVirtualFileSystem fileSystem);
+        Task<Asset<TAsset>> Decode(AssetId id, IVirtualFileSystem fileSystem);
+    }
+
+    // Bridges the public API, which only knows IAssetSettings<TAsset>, to the transcoder's
+    // concrete TSettings. This lets callers omit TSettings, C# cannot infer it: type inference
+    // never flows through generic constraints, only through parameter types.
+    private sealed class RegisteredTranscoder<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder)
+        : IRegisteredTranscoder<TAsset>
         where TSettings : IAssetSettings<TAsset>
     {
-        var typeKey = typeof(TAsset);
-        var transcoder = Transcoders[typeKey];
+        public Task Encode(AssetId id, IAssetSettings<TAsset> settings, IVirtualFileSystem fileSystem)
+        {
+            if (settings is not TSettings typedSettings)
+            {
+                throw new ArgumentException(
+                    $"Transcoder for {typeof(TAsset).Name} expects settings of type {typeof(TSettings).Name} but got {settings.GetType().Name}",
+                    nameof(settings));
+            }
 
-        throw new NotImplementedException();
+            return AssetEncoder.Encode(id, typedSettings, transcoder, fileSystem);
+        }
+
+        public Task<Asset<TAsset>> Decode(AssetId id, IVirtualFileSystem fileSystem)
+        {
+            return AssetDecoder.Decode(id, transcoder, fileSystem);
+        }
     }
-
-    public TAsset Decode<TAsset, TSettings>(AssetId id, TSettings settings)
-        where TSettings : IAssetSettings<TAsset>
-    {
-        var typeKey = typeof(TAsset);
-        var transcoder = Transcoders[typeKey];
-
-        throw new NotImplementedException();
-    }
-
-    // TODO: the current typing and generic constraints are neat for writing transcoders but encoding/decoding requires all
-    // type parameters as type inference doesn't pick up that TAsset can be derived from that kind of IAssetSettings<X> TSettings is.
-    /*
-        AssetManager m;
-        var settings = new NoSettings<string>();
-        m.RegisterTranscoder(transcoder);
-        m.Encode<string, NoSettings<string>>(id, settings);
-        m.Decode<string, NoSettings<string>>(id, settings);
-    */
 }

@@ -28,4 +28,14 @@ public sealed class VertexShaderTranscoder(Device device) : IAssetTranscoder<IVe
     {
         instance.HotSwap(replacement);
     }
+
+    public void WriteSettings(NoSettings<IVertexShader> settings, IBufferWriter<byte> writer)
+    {
+        // no-op
+    }
+
+    public NoSettings<IVertexShader> ReadSettings(ref SequenceReader<byte> reader)
+    {
+        return default;
+    }
 }
