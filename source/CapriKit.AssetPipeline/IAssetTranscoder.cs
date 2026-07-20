@@ -24,6 +24,11 @@ public interface IAssetTranscoder<TAsset> : IAssetTranscoder
     internal IAssetSettings<TAsset> ReadSettings(ref SequenceReader<byte> reader);
     internal void WriteSettings(IAssetSettings<TAsset> settings, IBufferWriter<byte> writer);
 
+    /// <summary>
+    /// Called when the transcoder must replace the old instance with the replacement.
+    /// The transcoder is responsible for cleaning-up the old instance and passing
+    /// ownership of the replacement.
+    /// </summary>
     void HotSwap(TAsset instance, TAsset replacement);
 }
 

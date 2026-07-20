@@ -1,5 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
   </ItemGroup>
 </Project>
