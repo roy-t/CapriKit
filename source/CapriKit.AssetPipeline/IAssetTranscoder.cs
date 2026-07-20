@@ -14,10 +14,9 @@ public interface IAssetTranscoder
 }
 
 // The pipeline consumes transcoders through this settings-erased view so that AssetManager,
-// AssetEncoder and AssetDecoder never need a TSettings type parameter. Callers could not have
-// supplied it: type inference never flows through generic constraints, only through parameter
-// types. The erased members are internal because only the pipeline should call them; transcoder
-// authors implement IAssetTranscoder<TAsset, TSettings>, which bridges them.
+// AssetEncoder and AssetDecoder never need a TSettings type parameter. The erased members are
+// internal because only the pipeline should call them; transcoder authors implement
+// IAssetTranscoder<TAsset, TSettings>, which bridges them.
 public interface IAssetTranscoder<TAsset> : IAssetTranscoder
 {
     internal Task Encode(AssetId id, IAssetSettings<TAsset> settings, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer);
@@ -25,7 +24,6 @@ public interface IAssetTranscoder<TAsset> : IAssetTranscoder
     internal IAssetSettings<TAsset> ReadSettings(ref SequenceReader<byte> reader);
     internal void WriteSettings(IAssetSettings<TAsset> settings, IBufferWriter<byte> writer);
 
-    // Public and without a bridge, implementations must provide it themselves
     void HotSwap(TAsset instance, TAsset replacement);
 }
 

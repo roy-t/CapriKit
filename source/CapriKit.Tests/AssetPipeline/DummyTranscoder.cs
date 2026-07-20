@@ -1,6 +1,6 @@
 using CapriKit.AssetPipeline;
 using CapriKit.IO;
-using CapriKit.IO.Buffers;
+using CapriKit.IO.Streams;
 using System.Buffers;
 
 namespace CapriKit.Tests.AssetPipeline;

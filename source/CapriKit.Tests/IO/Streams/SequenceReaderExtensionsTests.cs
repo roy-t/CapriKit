@@ -1,13 +1,33 @@
-using CapriKit.IO.Buffers;
+using CapriKit.IO.Streams;
 using System.Buffers;
 using System.Text;
 
-namespace CapriKit.Tests.IO.Buffers;
+namespace CapriKit.Tests.IO.Streams;
 
 internal class SequenceReaderExtensionsTests
 {
     // SequenceReader<byte> is a ref struct, so all reading happens before the first
     // await and only plain locals cross into the assertions
+
+    [Test]
+    public async Task SliceUnread()
+    {
+        var writer = new ArrayBufferWriter<byte>();
+        writer.Write(111);
+        writer.Write(222);
+
+        var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(writer.WrittenMemory));
+        var slice = reader.SliceUnread(sizeof(int));
+        var sliced = slice.ReadInt32();
+        var sliceEnd = slice.End;
+        var remaining = reader.ReadInt32();
+        var end = reader.End;
+
+        await Assert.That(sliced).IsEqualTo(111);
+        await Assert.That(sliceEnd).IsTrue(); // the slice cannot see beyond its own section
+        await Assert.That(remaining).IsEqualTo(222); // the original reader skipped the sliced section
+        await Assert.That(end).IsTrue();
+    }
 
     [Test]
     public async Task ReadInt32()

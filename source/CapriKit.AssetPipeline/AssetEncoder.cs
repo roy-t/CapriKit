@@ -1,5 +1,5 @@
 using CapriKit.IO;
-using CapriKit.IO.Buffers;
+using CapriKit.IO.Streams;
 using System.Buffers;
 using System.IO.Pipelines;
 using static CapriKit.AssetPipeline.AssetUtilities;
@@ -7,6 +7,10 @@ using static CapriKit.AssetPipeline.AssetUtilities;
 namespace CapriKit.AssetPipeline;
 
 // File format: [encoder id][encoder version][settings length][settings][payload length][payload][dependency count][dependencies]
+
+/// <summary>
+/// Encodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself
+/// </summary>
 internal static class AssetEncoder
 {
     public static async Task Encode<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> encoder, IVirtualFileSystem fileSystem)
@@ -33,7 +37,6 @@ internal static class AssetEncoder
         writer.Write(encoder.Version);
     }
 
-    // Settings are stored in full so that decoding does not require the caller to supply them again
     private static void WriteSettings<TAsset>(PipeWriter writer, IAssetTranscoder<TAsset> transcoder, IAssetSettings<TAsset> settings)
     {
         var buffer = new ArrayBufferWriter<byte>();
@@ -55,6 +58,8 @@ internal static class AssetEncoder
         writer.Write(spy.OpenedFiles.Count);
         foreach (var dependency in spy.OpenedFiles)
         {
+            var lastWrite = spy.LastWriteTime(dependency);
+            writer.Write(lastWrite.Ticks);
             writer.Write(dependency);
         }
     }

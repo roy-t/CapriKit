@@ -1,9 +1,9 @@
-using CapriKit.IO.Buffers;
+using CapriKit.IO.Streams;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Text;
 
-namespace CapriKit.Tests.IO.Buffers;
+namespace CapriKit.Tests.IO.Streams;
 
 internal class IBufferWriterExtensionsTests
 {

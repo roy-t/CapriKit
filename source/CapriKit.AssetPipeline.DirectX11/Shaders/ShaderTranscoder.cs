@@ -1,5 +1,5 @@
 using CapriKit.DirectX11.Resources.Shaders;
-using CapriKit.IO.Buffers;
+using CapriKit.IO.Streams;
 using System.Buffers;
 
 namespace CapriKit.AssetPipeline.DirectX11.Shaders;

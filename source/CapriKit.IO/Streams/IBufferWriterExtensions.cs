@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace CapriKit.IO.Buffers;
+namespace CapriKit.IO.Streams;
 
 public static class BufferWriterExtensions
 {
@@ -48,6 +48,13 @@ public static class BufferWriterExtensions
     {
         var span = writer.GetSpan(sizeof(int));
         BinaryPrimitives.WriteInt32LittleEndian(span, value);
+        writer.Advance(sizeof(int));
+    }
+
+    public static void Write(this IBufferWriter<byte> writer, long value)
+    {
+        var span = writer.GetSpan(sizeof(int));
+        BinaryPrimitives.WriteInt64LittleEndian(span, value);
         writer.Advance(sizeof(int));
     }
 

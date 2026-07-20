@@ -2,7 +2,7 @@ using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-namespace CapriKit.IO.Buffers;
+namespace CapriKit.IO.Streams;
 
 public static class SequenceReaders
 {
@@ -15,7 +15,20 @@ public static class SequenceReaders
 
 public static class SequenceReaderExtensions
 {
+    /// <summary>
+    /// Creates a new reader to read a slice of the unread sequence. Advances the original reader.
+    /// Use this method when you want to delegate reading a part of the sequence to another method
+    /// without giving it access to the entire sequence.
+    /// </summary>
+    public static SequenceReader<byte> SliceUnread(ref this SequenceReader<byte> reader, int length)
+    {
+        if (!reader.TryReadExact(length, out var slice))
+        {
+            throw new EndOfStreamException();
+        }
 
+        return new SequenceReader<byte>(slice);
+    }
 
     /// <summary>
     /// Reads a length prefixed string written by
@@ -71,6 +84,16 @@ public static class SequenceReaderExtensions
     public static int ReadInt32(this ref SequenceReader<byte> reader)
     {
         if (!reader.TryReadLittleEndian(out int value))
+        {
+            throw new EndOfStreamException();
+        }
+
+        return value;
+    }
+
+    public static long ReadInt64(this ref SequenceReader<byte> reader)
+    {
+        if (!reader.TryReadLittleEndian(out long value))
         {
             throw new EndOfStreamException();
         }
