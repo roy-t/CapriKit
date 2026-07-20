@@ -73,8 +73,10 @@ internal static class AssetDecoder
         for (var i = 0; i < count; i++)
         {
             var lastWriteTicks = reader.ReadInt64();
-            var filePath = reader.ReadString();
-            dependencies.Add(new Dependency(filePath, new DateTime(lastWriteTicks)));
+            var lastWrite = new DateTime(lastWriteTicks);
+            var filePathString = reader.ReadString();
+            var filePath = new FilePath(filePathString);
+            dependencies.Add(new Dependency(filePath, lastWrite));
         }
         return dependencies;
     }

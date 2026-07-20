@@ -18,8 +18,11 @@ internal class AssetDecoderTests
         var envelope = await AssetDecoder.Decode(id, transcoder, fileSystem);
 
         FilePath expectedDependency = "hello.txt";
+        DateTime expectedTimeStamp = DateTime.Now;
         await Assert.That(envelope.Value).IsEqualTo("HÉLLO");
         await Assert.That(envelope.Dependencies.Count).IsEqualTo(1);
-        await Assert.That(envelope.Dependencies.First()).IsEqualTo(expectedDependency);
+        await Assert.That(envelope.Dependencies.First().File).IsEqualTo(expectedDependency);
+        await Assert.That(envelope.Dependencies.First().LastWrite)
+            .IsBetween(expectedTimeStamp.AddMinutes(-1), expectedTimeStamp.AddMinutes(1));
     }
 }
