@@ -22,4 +22,23 @@ internal static class AssetUtilities
             throw new FileNotFoundException(null, path);
         }
     }
+
+    public static bool IsUpToDate<T>(Asset<T> asset, IReadOnlyVirtualFileSystem fileSystem)
+    {
+        foreach (var (file, version) in asset.Dependencies)
+        {
+            if (!fileSystem.Exists(file))
+            {
+                return false;
+            }
+
+            var lastWrite = fileSystem.LastWriteTime(file);
+            if (version < lastWrite)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

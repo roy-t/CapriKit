@@ -2,4 +2,4 @@ using CapriKit.IO;
 
 namespace CapriKit.AssetPipeline;
 
-internal sealed record Dependency(FilePath File, DateTime LastWrite);
+public sealed record Dependency(FilePath File, DateTime Version);

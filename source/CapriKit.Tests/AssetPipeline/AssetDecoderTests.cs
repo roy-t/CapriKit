@@ -22,7 +22,7 @@ internal class AssetDecoderTests
         await Assert.That(envelope.Value).IsEqualTo("HÉLLO");
         await Assert.That(envelope.Dependencies.Count).IsEqualTo(1);
         await Assert.That(envelope.Dependencies.First().File).IsEqualTo(expectedDependency);
-        await Assert.That(envelope.Dependencies.First().LastWrite)
+        await Assert.That(envelope.Dependencies.First().Version)
             .IsBetween(expectedTimeStamp.AddMinutes(-1), expectedTimeStamp.AddMinutes(1));
     }
 }
