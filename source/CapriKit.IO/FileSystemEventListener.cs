@@ -7,8 +7,15 @@ public enum FileSystemChangeKind
     Deleted,
 }
 
-public delegate void FileSystemEventHandler(object sender, (FilePath target, FileSystemChangeKind reason) e);
+/// <param name="File">The absolute path to the file affected</param>
+/// <param name="Kind">The kind of change the file underwent</param>
+public record FileSystemEvent(FilePath File, FileSystemChangeKind Kind);
 
+public delegate void FileSystemEventHandler(object sender, FileSystemEvent e);
+
+/// <summary>
+/// Listens for file changes and notifies interested parties via an event
+/// </summary>
 public sealed class FileSystemEventListener : IDisposable
 {
     private readonly FileSystemWatcher Watcher;
@@ -31,9 +38,9 @@ public sealed class FileSystemEventListener : IDisposable
             EnableRaisingEvents = true,
         };
 
-        Watcher.Created += (s, e) => onFileChanged?.Invoke(s, (FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Created));
-        Watcher.Changed += (s, e) => onFileChanged?.Invoke(s, (FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Changed));
-        Watcher.Deleted += (s, e) => onFileChanged?.Invoke(s, (FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Deleted));
+        Watcher.Created += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Created));
+        Watcher.Changed += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Changed));
+        Watcher.Deleted += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Deleted));
     }
 
     public event FileSystemEventHandler? OnFileChanged

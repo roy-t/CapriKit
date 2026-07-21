@@ -35,17 +35,17 @@ internal class FileSystemEventListenerTests
         using var watcher = new FileSystemEventListener(TempDirectory, false);
         watcher.OnFileChanged += (s, e) =>
         {
-            if (e.reason == FileSystemChangeKind.Created && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Created && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 created.TrySetResult();
             }
 
-            if (e.reason == FileSystemChangeKind.Changed && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Changed && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 changed.TrySetResult();
             }
 
-            if (e.reason == FileSystemChangeKind.Deleted && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Deleted && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 deleted.TrySetResult();
             }
