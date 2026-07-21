@@ -12,6 +12,7 @@
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
     <!-- Override version used in SourceGenerators.Testing to test newer source generators. See: https://github.com/dotnet/roslyn-sdk/issues/1241#issuecomment-3730711290 -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.10" />
     <PackageVersion Include="Microsoft.Windows.CsWin32" Version="0.3.287" />
     <PackageVersion Include="Spectre.Console.Cli" Version="0.55.0" />
     <PackageVersion Include="StbImageSharp" Version="2.30.15" />

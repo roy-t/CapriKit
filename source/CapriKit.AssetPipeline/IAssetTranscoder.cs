@@ -25,11 +25,13 @@ public interface IAssetTranscoder<TAsset> : IAssetTranscoder
     internal void WriteSettings(IAssetSettings<TAsset> settings, IBufferWriter<byte> writer);
 
     /// <summary>
-    /// Called when the transcoder must replace the old instance with the replacement.
-    /// The transcoder is responsible for cleaning-up the old instance and passing
-    /// ownership of the replacement.
+    /// Moves the contents of <paramref name="newParts"/> into <paramref name="instance"/>.
+    /// <paramref name="instance"/> keeps its identity and stays the live object that callers
+    /// already hold references to. The transcoder is responsible for cleaning-up any
+    /// orphaned resources. After calling this method <paramref name="newParts"/> must no longer
+    /// be used or referenced.
     /// </summary>
-    void HotSwap(TAsset instance, TAsset replacement);
+    void HotSwap(TAsset instance, TAsset newParts);
 }
 
 public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder<TAsset>

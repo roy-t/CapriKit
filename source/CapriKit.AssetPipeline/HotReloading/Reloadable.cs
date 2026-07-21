@@ -1,10 +1,18 @@
+using System.Collections.Concurrent;
+
 namespace CapriKit.AssetPipeline.HotReloading;
 
+/// <summary>
+/// Represents an asset that can be rebuild and reloaded on demand.
+/// </summary>
 internal abstract class Reloadable
 {
+    protected volatile bool isReloading;
+
     public abstract AssetId Id { get; }
-    public abstract bool IsAlive { get; }
-    public abstract Task Reload(AssetManager manager, HotSwapQueue queue);
+    public abstract Task Reload(AssetManager manager, ConcurrentQueue<HotSwappable> queue);
+
+    public bool IsReloading => isReloading;
 }
 
 internal sealed class Reloadable<TAsset> : Reloadable
@@ -21,16 +29,23 @@ internal sealed class Reloadable<TAsset> : Reloadable
     }
 
     public override AssetId Id { get; }
-    public override bool IsAlive => Instance.TryGetTarget(out _);
 
-    public override async Task Reload(AssetManager manager, HotSwapQueue queue)
+    public override async Task Reload(AssetManager manager, ConcurrentQueue<HotSwappable> queue)
     {
-        if (!Instance.TryGetTarget(out var cold)) { return; }
+        try
+        {
+            isReloading = true;
+            if (!Instance.TryGetTarget(out var cold)) { return; }
 
-        // TODO: technically cold can be alive but disposed here
+            // TODO: technically cold can be alive but disposed here
 
-        await manager.Encode(Id, Settings);
-        var hot = await manager.Decode<TAsset>(Id);
-        queue.Enqueue(cold, hot);
+            await manager.Encode(Id, Settings);
+            var hot = await manager.DecodeInternal<TAsset>(Id);
+            queue.Enqueue(new HotSwappable<TAsset>(cold, hot, Settings));
+        }
+        finally
+        {
+            isReloading = false;
+        }
     }
 }

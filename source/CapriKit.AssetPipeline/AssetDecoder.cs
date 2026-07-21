@@ -30,7 +30,7 @@ internal static class AssetDecoder
             var asset = ReadPayload(ref reader, id, settings, decoder);
             var dependencies = ReadDependencies(ref reader);
 
-            return new Asset<TAsset>(asset, dependencies);
+            return new Asset<TAsset>(id, asset, dependencies);
         }
         finally
         {

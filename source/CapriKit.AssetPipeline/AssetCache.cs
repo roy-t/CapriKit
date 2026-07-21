@@ -31,20 +31,21 @@ public sealed class AssetCache : IDisposable
     /// Adds an asset to the current scope.
     /// </summary>
     /// <exception cref="InvalidOperationException">Adding an item with the same id twice throws</exception>
-    public void Add<T>(AssetId id, Asset<T> asset)
+    public void Add<T>(AssetId id, T asset)
+        where T : class
     {
         if (Cache.ContainsKey(id))
         {
             throw new InvalidOperationException($"Cannot add item with id: {id} a second time");
         }
-        Cache[id] = new CacheItem(scope, asset, asset.Value as IDisposable);
+        Cache[id] = new CacheItem(scope, asset, asset as IDisposable);
     }
 
-    public bool TryGet<T>(AssetId id, [NotNullWhen(true)] out Asset<T>? asset)
+    public bool TryGet<T>(AssetId id, [NotNullWhen(true)] out T? asset)
     {
         if (Cache.TryGetValue(id, out var entry))
         {
-            asset = (Asset<T>)entry.Item;
+            asset = (T)entry.Item;
             return true;
         }
 

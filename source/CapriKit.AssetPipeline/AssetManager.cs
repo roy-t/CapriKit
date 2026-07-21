@@ -40,8 +40,13 @@ public sealed class AssetManager
 
     public async Task<TAsset> Decode<TAsset>(AssetId id)
     {
-        var asset = await AssetDecoder.Decode(id, GetTranscoder<TAsset>(), FileSystem);
+        var asset = await DecodeInternal<TAsset>(id);
         return asset.Value;
+    }
+
+    internal Task<Asset<TAsset>> DecodeInternal<TAsset>(AssetId id)
+    {
+        return AssetDecoder.Decode(id, GetTranscoder<TAsset>(), FileSystem);
     }
 
     /// <summary>
@@ -54,7 +59,7 @@ public sealed class AssetManager
         // Keeping live assets up-to-date is handled by the hot-reloading machinery.
         if (Cache.TryGet<TAsset>(id, out var entry))
         {
-            return entry.Value;
+            return entry;
         }
 
         var asset = await DecodeOrBuild(id, settings);
