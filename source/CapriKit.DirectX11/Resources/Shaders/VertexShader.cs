@@ -9,12 +9,12 @@ public interface IVertexShader : IDisposable
 
     IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements);
 
-    public void HotSwap(IVertexShader replacement)
+    public void HotSwap(IVertexShader newParts)
     {
-        Blob = replacement.Blob;
+        Blob = newParts.Blob;
 
         var oldShader = ID3D11VertexShader;
-        ID3D11VertexShader = replacement.ID3D11VertexShader;
+        ID3D11VertexShader = newParts.ID3D11VertexShader;
         oldShader.Dispose();
     }
 }

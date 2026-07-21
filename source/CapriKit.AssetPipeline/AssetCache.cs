@@ -42,6 +42,7 @@ public sealed class AssetCache : IDisposable
     }
 
     public bool TryGet<T>(AssetId id, [NotNullWhen(true)] out T? asset)
+        where T : class
     {
         if (Cache.TryGetValue(id, out var entry))
         {

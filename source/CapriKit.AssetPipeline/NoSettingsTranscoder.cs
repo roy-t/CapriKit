@@ -10,7 +10,7 @@ public abstract class NoSettingsTranscoder<TAsset>(Guid id, int version) : IAsse
 
     public abstract TAsset Decode(AssetId id, NoSettings<TAsset> settings, ref SequenceReader<byte> reader);
     public abstract Task Encode(AssetId id, NoSettings<TAsset> settings, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer);
-    public abstract void HotSwap(TAsset instance, TAsset replacement);
+    public abstract void HotSwap(TAsset instance, TAsset newParts);
 
     public NoSettings<TAsset> ReadSettings(ref SequenceReader<byte> reader)
     {

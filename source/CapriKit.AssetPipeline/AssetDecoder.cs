@@ -12,6 +12,7 @@ internal static class AssetDecoder
 {
     public static async Task<Asset<TAsset>> Decode<TAsset>(AssetId id,
         IAssetTranscoder<TAsset> decoder, IVirtualFileSystem fileSystem)
+        where TAsset : class
     {
         var inputPath = ToEncodedFilePath(id);
         ThrowOnFileNotFound(inputPath, fileSystem);

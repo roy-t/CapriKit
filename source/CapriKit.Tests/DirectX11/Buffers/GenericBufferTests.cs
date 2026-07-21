@@ -69,7 +69,8 @@ internal class GenericBufferTests
     private static IComputeShader Create(Device device)
     {
         var fileSystem = new InMemoryFileSystem();
-        return ShaderCompiler.CompileComputeShader(fileSystem, string.Empty, device, ShaderSource, "CS", "DeviceTest.cs");
+        var includePath = new DirectoryPath(Path.GetTempPath());
+        return ShaderCompiler.CompileComputeShader(fileSystem, includePath, device, ShaderSource, "CS", "DeviceTest.cs");
     }
 
     private const string ShaderSource = """        

@@ -24,6 +24,7 @@ internal static class AssetUtilities
     }
 
     public static bool IsUpToDate<T>(Asset<T> asset, IReadOnlyVirtualFileSystem fileSystem)
+        where T : class
     {
         foreach (var (file, version) in asset.Dependencies)
         {

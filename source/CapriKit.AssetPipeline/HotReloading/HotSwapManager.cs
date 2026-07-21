@@ -13,7 +13,7 @@ namespace CapriKit.AssetPipeline.HotReloading;
 /// </summary>
 internal sealed partial class HotSwapManager : IDisposable
 {
-    private readonly TimeSpan MinWaitTime = TimeSpan.FromSeconds(0.5);
+    private static readonly TimeSpan MinWaitTime = TimeSpan.FromSeconds(0.5);
 
     private readonly ILogger<HotSwapManager> Logger;
 
@@ -94,8 +94,7 @@ internal sealed partial class HotSwapManager : IDisposable
 
             LogReloadStarted(Logger, id);
             reloadable.Reload(AssetManager, PendingHotSwaps).FireAndForget(
-                ex => LogReloadFailed(Logger, id, ex),
-                () => LogReloadCompleted(Logger, id));
+                ex => LogReloadFailed(Logger, id, ex));
 
             return true;
         });

@@ -22,8 +22,8 @@ public sealed class VertexShaderTranscoder(Device device)
         return ShaderCompiler.CreateVertexShader(new VertexShaderByteCode(common), device);
     }
 
-    public override void HotSwap(IVertexShader instance, IVertexShader replacement)
+    public override void HotSwap(IVertexShader instance, IVertexShader newParts)
     {
-        instance.HotSwap(replacement);
+        instance.HotSwap(newParts);
     }
 }

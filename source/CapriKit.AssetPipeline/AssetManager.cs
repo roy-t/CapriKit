@@ -34,17 +34,20 @@ public sealed class AssetManager
     }
 
     public Task Encode<TAsset>(AssetId id)
+        where TAsset : class
     {
         return Encode(id, default(NoSettings<TAsset>));
     }
 
     public async Task<TAsset> Decode<TAsset>(AssetId id)
+        where TAsset : class
     {
         var asset = await DecodeInternal<TAsset>(id);
         return asset.Value;
     }
 
     internal Task<Asset<TAsset>> DecodeInternal<TAsset>(AssetId id)
+        where TAsset : class
     {
         return AssetDecoder.Decode(id, GetTranscoder<TAsset>(), FileSystem);
     }
@@ -54,6 +57,7 @@ public sealed class AssetManager
     /// out of date. Loaded assets are owned by the current scope, see <see cref="PushScope"/>.
     /// </summary>
     public async Task<TAsset> Load<TAsset>(AssetId id, IAssetSettings<TAsset> settings)
+        where TAsset : class
     {
         // If an asset was already loaded successfully we do not have to do an out-of-date check.
         // Keeping live assets up-to-date is handled by the hot-reloading machinery.
@@ -63,16 +67,18 @@ public sealed class AssetManager
         }
 
         var asset = await DecodeOrBuild(id, settings);
-        Cache.Add(id, asset);
+        Cache.Add<TAsset>(id, asset.Value);
         return asset.Value;
     }
 
     public Task<TAsset> Load<TAsset>(AssetId id)
+        where TAsset : class
     {
         return Load(id, default(NoSettings<TAsset>));
     }
 
     private async Task<Asset<TAsset>> DecodeOrBuild<TAsset>(AssetId id, IAssetSettings<TAsset> settings)
+        where TAsset : class
     {
         var transcoder = GetTranscoder<TAsset>();
         try
