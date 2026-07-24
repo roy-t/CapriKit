@@ -1,0 +1,130 @@
+using CapriKit.Concurrency.Async;
+using CapriKit.IO;
+using CapriKit.IO.Watchers;
+using Microsoft.Extensions.Logging;
+using System.Collections.Concurrent;
+using System.Diagnostics;
+
+namespace CapriKit.AssetPipeline.HotReloading;
+
+/// <summary>
+/// Facilitates hot reloading and hot swapping of assets. Tracks the files used to create an asset
+/// and triggers a rebuild on file changes. Takes care of threading and only performs the final
+/// hot swap when <see cref="ProcessUpdates"/> is called from the main thread.
+/// </summary>
+internal sealed partial class HotSwapManager : IDisposable
+{
+    private static readonly TimeSpan MinWaitTime = TimeSpan.FromSeconds(0.5);
+
+    private readonly ILogger<HotSwapManager> Logger;
+
+    private readonly AssetManager AssetManager;
+    private readonly IReadOnlyVirtualFileSystem FileSystem;
+
+    private readonly Dictionary<AssetId, Reloadable> Tracked;
+    private readonly Dictionary<FilePath, HashSet<AssetId>> Dependents;
+
+    private readonly IVirtualFileSystemWatcher Watcher;
+    private readonly FileSystemEventQueue PendingFileChanges;
+    private readonly HashSet<AssetId> PendingReloads;
+    private readonly ConcurrentQueue<HotSwappable> PendingHotSwaps;
+
+    private long lastFileChange;
+
+    public HotSwapManager(ILoggerFactory logger, AssetManager assetManager, IReadOnlyVirtualFileSystem fileSystem)
+    {
+        Logger = logger.CreateLogger<HotSwapManager>();
+        AssetManager = assetManager;
+        FileSystem = fileSystem;
+        Tracked = [];
+        Dependents = [];
+
+        Watcher = fileSystem.Watch(DirectoryPath.Empty); // Watch for all changes, usually fileSystem is a ScopedVirtualFileSystem 
+        PendingFileChanges = new FileSystemEventQueue(Watcher);
+        PendingReloads = [];
+        PendingHotSwaps = [];
+        lastFileChange = Stopwatch.GetTimestamp();
+    }
+
+    public void Track<TAsset>(Asset<TAsset> asset, IAssetSettings<TAsset> settings)
+        where TAsset : class
+    {
+        Tracked[asset.Id] = new Reloadable<TAsset>(asset.Id, asset.Value, settings);
+        foreach (var dependency in asset.Dependencies)
+        {
+            var file = dependency.File;
+            if (!Dependents.TryGetValue(file, out var ids)) { ids = Dependents[file] = []; }
+            ids.Add(asset.Id);
+        }
+    }
+
+    public void ProcessUpdates()
+    {
+        DrainFileChanges();
+        var elapsed = Stopwatch.GetElapsedTime(lastFileChange);
+        if (elapsed > MinWaitTime)
+        {
+            ReloadAffected();
+        }
+
+        HotSwapCompleted();
+    }
+
+    private void DrainFileChanges()
+    {
+        while (PendingFileChanges.TryDequeue(out var @event))
+        {
+            if (Dependents.TryGetValue(@event.File, out var dependents))
+            {
+                lastFileChange = Stopwatch.GetTimestamp();
+                foreach (var assetId in dependents)
+                {
+                    LogPendingReload(Logger, @event.File, assetId);
+                    PendingReloads.Add(assetId);
+                }
+            }
+        }
+    }
+
+    private void ReloadAffected()
+    {
+        PendingReloads.RemoveWhere(id =>
+        {
+            var reloadable = Tracked[id];
+            // Prevent kicking off a reload while the asset is still being reloaded
+            if (reloadable.IsReloading) { return false; }
+
+            LogReloadStarted(Logger, id);
+            reloadable.Reload(AssetManager, PendingHotSwaps).FireAndForget(
+                ex => LogReloadFailed(Logger, id, ex));
+
+            return true;
+        });
+    }
+
+    private void HotSwapCompleted()
+    {
+        while (PendingHotSwaps.TryDequeue(out var result))
+        {
+            result.HotSwap(AssetManager, this);
+            LogReloadCompleted(Logger, result.Id);
+        }
+    }
+
+    public void Dispose()
+    {
+        Watcher.Stop();
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Detected file change: {path}, affecting asset: {asset}")]
+    private static partial void LogPendingReload(ILogger logger, FilePath path, AssetId asset);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset started: {asset}")]
+    private static partial void LogReloadStarted(ILogger logger, AssetId asset);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset completed: {asset}")]
+    private static partial void LogReloadCompleted(ILogger logger, AssetId asset);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Reloading asset failed: {asset}")]
+    private static partial void LogReloadFailed(ILogger logger, AssetId asset, Exception exception);
+}

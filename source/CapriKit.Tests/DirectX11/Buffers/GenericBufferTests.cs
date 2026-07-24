@@ -11,7 +11,7 @@ internal class GenericBufferTests
 {
     /// <summary>
     /// Tests StructuredBuffer, RWStructuredBuffer and StagingBuffer through a round-trip of data.
-    /// </summary>    
+    /// </summary>
     [Test]
     public async Task Mix_Upload_Modify_Download_Staging()
     {
@@ -69,7 +69,8 @@ internal class GenericBufferTests
     private static IComputeShader Create(Device device)
     {
         var fileSystem = new InMemoryFileSystem();
-        return ShaderCompiler.CompileComputeShader(fileSystem, string.Empty, device, ShaderSource, "CS", "DeviceTest.cs");
+        var includePath = new DirectoryPath(Path.GetTempPath());
+        return ShaderCompiler.CompileComputeShader(fileSystem, includePath, device, ShaderSource, "CS", "DeviceTest.cs");
     }
 
     private const string ShaderSource = """        

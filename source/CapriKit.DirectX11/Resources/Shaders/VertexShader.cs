@@ -4,32 +4,52 @@ namespace CapriKit.DirectX11.Resources.Shaders;
 
 public interface IVertexShader : IDisposable
 {
-    internal ID3D11VertexShader ID3D11VertexShader { get; }
+    internal byte[] Blob { get; set; }
+    internal ID3D11VertexShader ID3D11VertexShader { get; set; }
 
-    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements); // TODO: How to do this without exposing types from Vortice?
+    IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements);
+
+    public void HotSwap(IVertexShader newParts)
+    {
+        Blob = newParts.Blob;
+
+        var oldShader = ID3D11VertexShader;
+        ID3D11VertexShader = newParts.ID3D11VertexShader;
+        oldShader.Dispose();
+    }
 }
 
 internal sealed class VertexShader : IVertexShader
 {
-    private readonly byte[] Blob;
-    private readonly ID3D11VertexShader Shader;
+    private byte[] blob;
+    private ID3D11VertexShader shader;
 
     internal VertexShader(byte[] blob, ID3D11VertexShader shader)
     {
-        Blob = blob;
-        Shader = shader;
+        this.blob = blob;
+        this.shader = shader;
     }
 
-    ID3D11VertexShader IVertexShader.ID3D11VertexShader => Shader;
+    byte[] IVertexShader.Blob
+    {
+        get { return blob; }
+        set { blob = value; }
+    }
+
+    ID3D11VertexShader IVertexShader.ID3D11VertexShader
+    {
+        get { return shader; }
+        set { shader = value; }
+    }
 
     public IInputLayout CreateInputLayout(Device device, InputElementDescription[] elements)
     {
-        var inputLayout = device.ID3D11Device.CreateInputLayout(elements, Blob);
+        var inputLayout = device.ID3D11Device.CreateInputLayout(elements, blob);
         return new InputLayout(inputLayout);
     }
 
     public void Dispose()
     {
-        Shader.Dispose();
+        shader.Dispose();
     }
 }

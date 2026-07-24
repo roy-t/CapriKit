@@ -18,6 +18,7 @@
     <File Path="Directory.Packages.props" />
     <File Path="Generators.Build.props" />
     <File Path="global.json" />
+    <File Path="PLANNING.md" />
     <File Path="README.md" />
     <File Path="RESPONSIBLE_USE_OF_AI.md" />
   </Folder>
@@ -32,6 +33,12 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Project Path="source/CapriKit.AssetPipeline.DirectX11/CapriKit.AssetPipeline.DirectX11.csproj" Id="92b9423f-1a70-4e4d-aa9b-8019383e6947">
+    <Platform Project="x64" />
+  </Project>
+  <Project Path="source/CapriKit.AssetPipeline/CapriKit.AssetPipeline.csproj" Id="e9d7e944-d16d-4598-9ea6-d5de5d0b38c3">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="source/CapriKit.Build/CapriKit.Build.csproj">
     <Platform Project="x64" />
   </Project>

@@ -4,7 +4,22 @@ namespace CapriKit.DirectX11.Resources.Shaders;
 
 public interface IComputeShader : IDisposable
 {
-    internal ID3D11ComputeShader ID3D11ComputeShader { get; }
+    internal uint NumThreadsX { get; set; }
+    internal uint NumThreadsY { get; set; }
+    internal uint NumThreadsZ { get; set; }
+    internal ID3D11ComputeShader ID3D11ComputeShader { get; set; }
+
+
+    public void HotSwap(IComputeShader replacement)
+    {
+        NumThreadsX = replacement.NumThreadsX;
+        NumThreadsY = replacement.NumThreadsY;
+        NumThreadsZ = replacement.NumThreadsZ;
+
+        var oldShader = ID3D11ComputeShader;
+        ID3D11ComputeShader = replacement.ID3D11ComputeShader;
+        oldShader.Dispose();
+    }
 
     /// <summary>
     /// The shader kernel defines how big the groups for each dimension are.
@@ -16,27 +31,49 @@ public interface IComputeShader : IDisposable
 
 internal sealed class ComputeShader : IComputeShader
 {
-    private readonly uint NumThreadsX;
-    private readonly uint NumThreadsY;
-    private readonly uint NumThreadsZ;
-    private readonly ID3D11ComputeShader Shader;
+    private uint numThreadsX;
+    private uint numThreadsY;
+    private uint numThreadsZ;
+    private ID3D11ComputeShader shader;
 
     internal ComputeShader(ID3D11ComputeShader shader, uint numThreadsX, uint numThreadsY, uint numThreadsZ)
     {
-        Shader = shader;
-        NumThreadsX = numThreadsX;
-        NumThreadsY = numThreadsY;
-        NumThreadsZ = numThreadsZ;
+        this.shader = shader;
+        this.numThreadsX = numThreadsX;
+        this.numThreadsY = numThreadsY;
+        this.numThreadsZ = numThreadsZ;
     }
 
-    ID3D11ComputeShader IComputeShader.ID3D11ComputeShader => Shader;
+    ID3D11ComputeShader IComputeShader.ID3D11ComputeShader
+    {
+        get { return shader; }
+        set { shader = value; }
+    }
+
+    uint IComputeShader.NumThreadsX
+    {
+        get { return numThreadsX; }
+        set { numThreadsX = value; }
+    }
+
+    uint IComputeShader.NumThreadsY
+    {
+        get { return numThreadsY; }
+        set { numThreadsY = value; }
+    }
+
+    uint IComputeShader.NumThreadsZ
+    {
+        get { return numThreadsZ; }
+        set { numThreadsZ = value; }
+    }
 
     /// <inheritdoc/>
     public (uint X, uint Y, uint Z) GetDispatchSize(uint dimX, uint dimY, uint dimZ)
     {
-        var x = GetDispatchSize(NumThreadsX, dimX);
-        var y = GetDispatchSize(NumThreadsY, dimY);
-        var z = GetDispatchSize(NumThreadsZ, dimZ);
+        var x = GetDispatchSize(numThreadsX, dimX);
+        var y = GetDispatchSize(numThreadsY, dimY);
+        var z = GetDispatchSize(numThreadsZ, dimZ);
 
         return (x, y, z);
     }
@@ -48,6 +85,6 @@ internal sealed class ComputeShader : IComputeShader
 
     public void Dispose()
     {
-        Shader.Dispose();
+        shader.Dispose();
     }
 }

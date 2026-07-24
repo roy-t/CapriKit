@@ -14,7 +14,7 @@ internal sealed class ShaderIncludeResolver : CallbackBase, Include
 
     private readonly ReadOnlyScopedFileSystem FileSystem;
 
-    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem, string basePath)
+    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath basePath)
     {
         FileSystem = new ReadOnlyScopedFileSystem(fileSystem, basePath);
     }
