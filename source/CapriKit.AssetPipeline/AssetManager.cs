@@ -1,26 +1,34 @@
+using CapriKit.AssetPipeline.HotReloading;
 using CapriKit.IO;
+using Microsoft.Extensions.Logging;
 using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
 
+/// <summary>
+/// Encodes, decodes, loads and tracks assets.
+/// </summary>
 public sealed class AssetManager
 {
     private readonly IVirtualFileSystem FileSystem;
-
-    // Values are IAssetTranscoder<TAsset> instances, keyed by typeof(TAsset)
     private readonly Dictionary<Type, IAssetTranscoder> Transcoders = [];
     private readonly AssetCache Cache;
+    private readonly HotSwapManager HotSwapManager;
 
-    public AssetManager(DirectoryPath rootDirectory)
-        : this(new FileSystem().ScopedTo(rootDirectory)) { }
+    public AssetManager(ILoggerFactory logger, DirectoryPath rootDirectory)
+        : this(logger, new FileSystem().ScopedTo(rootDirectory)) { }
 
-    public AssetManager(IVirtualFileSystem fileSystem)
+    public AssetManager(ILoggerFactory logger, IVirtualFileSystem fileSystem)
     {
         FileSystem = fileSystem;
         Cache = new AssetCache();
+        HotSwapManager = new HotSwapManager(logger, this, fileSystem);
     }
 
+    /// <inheritdoc cref="AssetCache.PushScope"/>
     public void PushScope() => Cache.PushScope();
+
+    /// <inheritdoc cref="AssetCache.PopScope"/>
     public void PopScope() => Cache.PopScope();
 
     public void RegisterTranscoder<TAsset>(IAssetTranscoder<TAsset> transcoder)
@@ -39,6 +47,9 @@ public sealed class AssetManager
         return Encode(id, default(NoSettings<TAsset>));
     }
 
+    /// <summary>
+    /// Immediately decodes an asset, bypasses cache and hot reloading mechanisms.
+    /// </summary>    
     public async Task<TAsset> Decode<TAsset>(AssetId id)
         where TAsset : class
     {
@@ -67,7 +78,7 @@ public sealed class AssetManager
         }
 
         var asset = await DecodeOrBuild(id, settings);
-        Cache.Add<TAsset>(id, asset.Value);
+        Cache.Add(id, asset.Value);
         return asset.Value;
     }
 

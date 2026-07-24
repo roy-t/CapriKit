@@ -1,3 +1,4 @@
+using CapriKit.IO.Watchers;
 using System.Diagnostics;
 
 namespace CapriKit.IO;
@@ -57,7 +58,7 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
 
 
     /// <summary>
-    /// Gets the absolute path of a directory contained in this scoped file system. To be used with IO methods that are
+    /// Gets the full path of a directory contained in this scoped file system. To be used with IO methods that are
     /// not aware of the virtual file system. Throws if the directory points to outside the scoped file system,
     /// </summary>
     public DirectoryPath GetAbsolutePath(DirectoryPath directory) => GetDirectoryPath(directory);
@@ -95,6 +96,12 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
 
     protected DirectoryPath GetDirectoryPath(DirectoryPath path)
     {
+        if (path.IsAbsolute)
+        {
+            ThrowIfPathIsOutsideBasePath(path);
+            return path;
+        }
+
         var fullPath = path.GetPathRelativeTo(BasePath);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
@@ -103,6 +110,12 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
 
     protected FilePath GetFilePath(FilePath path)
     {
+        if (path.IsAbsolute)
+        {
+            ThrowIfPathIsOutsideBasePath(path);
+            return path;
+        }
+
         var fullPath = path.GetPathRelativeTo(BasePath);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
@@ -125,5 +138,19 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
         {
             throw new ForbiddenPathException(path, BasePath);
         }
+    }
+
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        ThrowIfPathIsOutsideBasePath(directory);
+        var fullPath = GetAbsolutePath(directory);
+        var watchers = Source.Watch(fullPath, includeSubDirectories);
+        return new ScopedFileSystemEventListener(watchers, BasePath);
+    }
+
+    public IVirtualFileSystemWatcher Watch(bool includeSubDirectories = true)
+    {
+        var watchers = Source.Watch(BasePath, includeSubDirectories);
+        return new ScopedFileSystemEventListener(watchers, BasePath);
     }
 }

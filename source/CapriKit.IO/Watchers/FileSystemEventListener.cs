@@ -1,26 +1,13 @@
-namespace CapriKit.IO;
-
-public enum FileSystemChangeKind
-{
-    Created,
-    Changed,
-    Deleted,
-}
-
-/// <param name="File">The absolute path to the file affected</param>
-/// <param name="Kind">The kind of change the file underwent</param>
-public record FileSystemEvent(FilePath File, FileSystemChangeKind Kind);
-
-public delegate void FileSystemEventHandler(object sender, FileSystemEvent e);
+namespace CapriKit.IO.Watchers;
 
 /// <summary>
 /// Listens for file changes and notifies interested parties via an event
 /// </summary>
-public sealed class FileSystemEventListener : IDisposable
+public sealed class FileSystemEventListener : IVirtualFileSystemWatcher, IDisposable
 {
     private readonly FileSystemWatcher Watcher;
 
-    private event FileSystemEventHandler? onFileChanged;
+    private event VirtualFileSystemEventHandler? onFileChanged;
 
     public FileSystemEventListener(DirectoryPath directory, bool includeSubDirectories = true)
     {
@@ -38,12 +25,12 @@ public sealed class FileSystemEventListener : IDisposable
             EnableRaisingEvents = true,
         };
 
-        Watcher.Created += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Created));
-        Watcher.Changed += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Changed));
-        Watcher.Deleted += (s, e) => onFileChanged?.Invoke(s, new FileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Deleted));
+        Watcher.Created += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Created));
+        Watcher.Changed += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Changed));
+        Watcher.Deleted += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Deleted));
     }
 
-    public event FileSystemEventHandler? OnFileChanged
+    public event VirtualFileSystemEventHandler? OnFileChanged
     {
         add
         {
@@ -56,6 +43,11 @@ public sealed class FileSystemEventListener : IDisposable
     }
 
     public DirectoryPath Directory { get; }
+
+    public void Stop()
+    {
+        Dispose();
+    }
 
     public void Dispose()
     {

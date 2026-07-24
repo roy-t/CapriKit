@@ -1,3 +1,5 @@
+using CapriKit.IO.Watchers;
+
 namespace CapriKit.IO;
 
 public interface IVirtualFileSystem : IReadOnlyVirtualFileSystem
@@ -44,4 +46,9 @@ public interface IReadOnlyVirtualFileSystem
     /// Lists all files in the given directory. Throws an exception if the directory does not exist.
     /// </summary>
     IReadOnlyList<FilePath> List(DirectoryPath directory);
+
+    /// <summary>
+    /// Watches for changes in the given subdirectory.
+    /// </summary>
+    IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true);
 }

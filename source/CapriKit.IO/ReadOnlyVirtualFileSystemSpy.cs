@@ -1,3 +1,5 @@
+using CapriKit.IO.Watchers;
+
 namespace CapriKit.IO;
 
 /// <summary>
@@ -43,5 +45,10 @@ public sealed class ReadOnlyVirtualFileSystemSpy : IReadOnlyVirtualFileSystem
     public long SizeInBytes(FilePath file)
     {
         return Actual.SizeInBytes(file);
+    }
+
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        return Actual.Watch(directory, includeSubDirectories);
     }
 }

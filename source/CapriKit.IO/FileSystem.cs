@@ -1,3 +1,5 @@
+using CapriKit.IO.Watchers;
+
 namespace CapriKit.IO;
 
 public class FileSystem : IVirtualFileSystem
@@ -83,6 +85,11 @@ public class FileSystem : IVirtualFileSystem
         }
 
         return filePaths;
+    }
+
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        return new FileSystemEventListener(directory, includeSubDirectories);
     }
 
     private FileInfo FindOrThrow(FilePath file)

@@ -1,13 +1,17 @@
+using CapriKit.IO.Watchers;
+
 namespace CapriKit.IO;
 
 public sealed class InMemoryFileSystem : IVirtualFileSystem
 {
     private record InMemoryFile(InMemoryFileStream Stream, DateTime LastWriteTime);
     private readonly Dictionary<FilePath, InMemoryFile> Disk;
+    private readonly List<InMemoryFileSystemWatcher> Watchers;
 
     public InMemoryFileSystem()
     {
-        Disk = new Dictionary<FilePath, InMemoryFile>();
+        Disk = [];
+        Watchers = [];
     }
 
     public Stream AppendWrite(FilePath file)
@@ -17,6 +21,7 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
 
         var stream = inMemoryFile.Stream;
         stream.Position = stream.Length;
+        RaiseChange(file, FileSystemChangeKind.Changed);
         return stream;
     }
 
@@ -27,17 +32,22 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
             Disk[file] = inMemoryFile with { LastWriteTime = DateTime.Now };
             inMemoryFile.Stream.SetLength(0);
             inMemoryFile.Stream.Position = 0;
+            RaiseChange(file, FileSystemChangeKind.Changed);
             return inMemoryFile.Stream;
         }
 
         var newStream = new InMemoryFileStream();
         Disk.Add(file, new InMemoryFile(newStream, DateTime.Now));
+        RaiseChange(file, FileSystemChangeKind.Created);
         return newStream;
     }
 
     public void Delete(FilePath file)
     {
-        Disk.Remove(file);
+        if (Disk.Remove(file))
+        {
+            RaiseChange(file, FileSystemChangeKind.Deleted);
+        }
     }
 
     public bool Exists(FilePath file)
@@ -78,6 +88,13 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
         return files;
     }
 
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        var watcher = new InMemoryFileSystemWatcher(this, directory, includeSubDirectories);
+        Watchers.Add(watcher);
+        return watcher;
+    }
+
     private InMemoryFile FindOrThrow(FilePath file)
     {
         if (Disk.TryGetValue(file, out var value))
@@ -87,22 +104,60 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
         throw new FileNotFoundException(null, file.ToString());
     }
 
+    private void RaiseChange(FilePath file, FileSystemChangeKind kind)
+    {
+        var @event = new VirtualFileSystemEvent(file, kind);
+        foreach (var watcher in Watchers.ToArray())
+        {
+            watcher.Notify(this, @event);
+        }
+    }
+
+    private void RemoveWatcher(InMemoryFileSystemWatcher watcher)
+    {
+        Watchers.Remove(watcher);
+    }
+
     private sealed class InMemoryFileStream : MemoryStream
     {
+        // Prevent disposing of the actual stream, just rewind it
         protected override void Dispose(bool disposing)
         {
             Position = 0;
         }
+    }
 
-        public override ValueTask DisposeAsync()
+    private sealed class InMemoryFileSystemWatcher(
+        InMemoryFileSystem owner, DirectoryPath directory, bool includeSubDirectories)
+        : IVirtualFileSystemWatcher
+    {
+        private event VirtualFileSystemEventHandler? onFileChanged;
+
+        public event VirtualFileSystemEventHandler? OnFileChanged
         {
-            Position = 0;
-            return ValueTask.CompletedTask;
+            add => onFileChanged += value;
+            remove => onFileChanged -= value;
         }
 
-        public override void Close()
+        internal void Notify(object sender, VirtualFileSystemEvent @event)
         {
-            Position = 0;
+            if (Matches(@event.File))
+            {
+                onFileChanged?.Invoke(sender, @event);
+            }
+        }
+
+        private bool Matches(FilePath file)
+        {
+            var fileDirectory = file.Directory;
+            return includeSubDirectories
+                ? fileDirectory.StartsWith(directory)
+                : fileDirectory.Equals(directory);
+        }
+
+        public void Stop()
+        {
+            owner.RemoveWatcher(this);
         }
     }
 }

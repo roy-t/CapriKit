@@ -1,6 +1,8 @@
 using CapriKit.IO;
+using CapriKit.IO.Watchers;
+using CapriKit.Tests.TestUtilities;
 
-namespace CapriKit.Tests.IO;
+namespace CapriKit.Tests.IO.Watchers;
 
 internal class FileSystemEventListenerTests
 {
@@ -9,10 +11,7 @@ internal class FileSystemEventListenerTests
     [Before(Test)]
     public void TestSetup()
     {
-        var id = Path.GetRandomFileName();
-        var path = Path.Combine(Path.GetTempPath(), $"{nameof(FileSystemEventListenerTests)}.{id}");
-        TempDirectory = new DirectoryPath(path);
-        Directory.CreateDirectory(TempDirectory);
+        TempDirectory = FileSystemUtilities.CreateTemporaryDirectory();
     }
 
     [After(Test)]
@@ -32,7 +31,7 @@ internal class FileSystemEventListenerTests
 
         var fileSystem = new FileSystem();
         var scopedFileSystem = new ScopedFileSystem(fileSystem, TempDirectory);
-        using var watcher = new FileSystemEventListener(TempDirectory, false);
+        var watcher = scopedFileSystem.Watch(TempDirectory, false);
         watcher.OnFileChanged += (s, e) =>
         {
             if (e.Kind == FileSystemChangeKind.Created && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
