@@ -106,8 +106,15 @@ internal sealed partial class HotSwapManager : IDisposable
     {
         while (PendingHotSwaps.TryDequeue(out var result))
         {
-            result.HotSwap(AssetManager, this);
-            LogReloadCompleted(Logger, result.Id);
+            try
+            {
+                result.HotSwap(AssetManager, this);
+                LogReloadCompleted(Logger, result.Id);
+            }
+            catch (Exception ex)
+            {
+                LogReloadFailed(Logger, result.Id, ex);
+            }
         }
     }
 

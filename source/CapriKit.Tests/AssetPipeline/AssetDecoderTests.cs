@@ -15,14 +15,18 @@ internal class AssetDecoderTests
         var id = new AssetId("Main", "hello.txt");
 
         await AssetEncoder.Encode(id, new NoSettings<string>(), transcoder, fileSystem);
-        var envelope = await AssetDecoder.Decode(id, transcoder, fileSystem);
+        var job = await AssetDecoder.Decode(id, transcoder, fileSystem);
 
         FilePath expectedDependency = "hello.txt";
         DateTime expectedTimeStamp = DateTime.Now;
-        await Assert.That(envelope.Value).IsEqualTo("HÉLLO");
-        await Assert.That(envelope.Dependencies.Count).IsEqualTo(1);
-        await Assert.That(envelope.Dependencies.First().File).IsEqualTo(expectedDependency);
-        await Assert.That(envelope.Dependencies.First().Version)
+
+        var success = job.OnSuccess(out var asset);
+        await Assert.That(success).IsTrue();
+
+        await Assert.That(asset!.Value).IsEqualTo("HÉLLO");
+        await Assert.That(asset.Dependencies.Count).IsEqualTo(1);
+        await Assert.That(asset.Dependencies.First().File).IsEqualTo(expectedDependency);
+        await Assert.That(asset.Dependencies.First().Version)
             .IsBetween(expectedTimeStamp.AddMinutes(-1), expectedTimeStamp.AddMinutes(1));
     }
 }

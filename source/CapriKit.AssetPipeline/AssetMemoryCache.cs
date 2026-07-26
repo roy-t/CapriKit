@@ -6,14 +6,14 @@ namespace CapriKit.AssetPipeline;
 /// Caches assets in stacked scopes that can be discarded in one go.
 /// Assets are released when the scope they were added in is popped or this class is disposed
 /// </summary>
-public sealed class AssetCache : IDisposable
+public sealed class AssetMemoryCache : IDisposable
 {
     private record CacheItem(int Scope, object Item, IDisposable? Disposable);
 
     private readonly Dictionary<AssetId, CacheItem> Cache;
     private int scope;
 
-    public AssetCache()
+    public AssetMemoryCache()
     {
         scope = 0;
         Cache = [];

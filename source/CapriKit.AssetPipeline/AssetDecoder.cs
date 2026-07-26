@@ -1,6 +1,7 @@
 using CapriKit.IO;
 using CapriKit.IO.Streams;
 using System.Buffers;
+using System.Runtime.ExceptionServices;
 using static CapriKit.AssetPipeline.AssetUtilities;
 
 namespace CapriKit.AssetPipeline;
@@ -10,12 +11,15 @@ namespace CapriKit.AssetPipeline;
 /// </summary>
 internal static class AssetDecoder
 {
-    public static async Task<Asset<TAsset>> Decode<TAsset>(AssetId id,
+    public static async Task<AssetJob<TAsset>> Decode<TAsset>(AssetId id,
         IAssetTranscoder<TAsset> decoder, IVirtualFileSystem fileSystem)
         where TAsset : class
     {
         var inputPath = ToEncodedFilePath(id);
-        ThrowOnFileNotFound(inputPath, fileSystem);
+        if (!fileSystem.Exists(inputPath))
+        {
+            return AssetJob<TAsset>.Missing(id);
+        }
 
         using var input = fileSystem.OpenRead(inputPath);
         var length = checked((int)input.Length);
@@ -31,7 +35,12 @@ internal static class AssetDecoder
             var asset = ReadPayload(ref reader, id, settings, decoder);
             var dependencies = ReadDependencies(ref reader);
 
-            return new Asset<TAsset>(id, asset, dependencies);
+            return AssetJob<TAsset>.Success(id, new Asset<TAsset>(id, asset, settings, dependencies));
+        }
+        catch (Exception ex)
+        {
+            var edi = ExceptionDispatchInfo.Capture(ex);
+            return AssetJob<TAsset>.Failure(id, edi);
         }
         finally
         {

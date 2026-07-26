@@ -40,7 +40,7 @@ internal sealed class Reloadable<TAsset> : Reloadable
             // TODO: technically cold can be alive but disposed here
 
             await manager.Encode(Id, Settings);
-            var hot = await manager.DecodeInternal<TAsset>(Id);
+            var hot = await manager.Decode<TAsset>(Id);
             queue.Enqueue(new HotSwappable<TAsset>(cold, hot, Settings));
         }
         finally
