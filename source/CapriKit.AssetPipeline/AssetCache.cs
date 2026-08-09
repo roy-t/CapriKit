@@ -3,15 +3,15 @@ using System.Diagnostics.CodeAnalysis;
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// Simple cache that uses reference counting to decide when to clean-up a resource. Assets can be leased and returned at any time (though the class requires single-threaded access).
+/// Simple cache that uses reference counting to decide when to clean-up a resource. Assets can be leased and returned at any time.
 /// The actual disposing of objects only happens when the main thread calls <see cref="Collect"/>.
 /// </summary>
 internal sealed class AssetCache : IDisposable
 {
-    private class Line(object Asset, int RefCount)
+    private class Line(object asset, int refCount)
     {
-        public readonly object asset = Asset;
-        public int refCount = RefCount;
+        public object Asset { get; } = asset;
+        public int RefCount { get; set; } = refCount;
     }
 
     private readonly Lock Lock = new();
@@ -39,8 +39,8 @@ internal sealed class AssetCache : IDisposable
         {
             if (Lines.TryGetValue(id, out var entry))
             {
-                entry.refCount = entry.refCount + 1;
-                asset = (TAsset)entry.asset;
+                entry.RefCount = entry.RefCount + 1;
+                asset = (TAsset)entry.Asset;
                 return true;
             }
         }
@@ -54,7 +54,7 @@ internal sealed class AssetCache : IDisposable
         lock (Lock)
         {
             var entry = Lines[id];
-            entry.refCount = entry.refCount - 1;
+            entry.RefCount = entry.RefCount - 1;
         }
     }
 
@@ -62,21 +62,24 @@ internal sealed class AssetCache : IDisposable
     public void Collect()
     {
         List<AssetId>? toCollect = null;
-        foreach (var (key, value) in Lines)
+        lock (Lock)
         {
-            if (value.refCount <= 0)
+            foreach (var (key, value) in Lines)
             {
-                toCollect = toCollect ?? [];
-                toCollect.Add(key);
+                if (value.RefCount <= 0)
+                {
+                    toCollect = toCollect ?? [];
+                    toCollect.Add(key);
+                }
             }
-        }
 
-        if (toCollect == null) { return; }
+            if (toCollect == null) { return; }
 
-        foreach (var key in toCollect)
-        {
-            Lines.Remove(key, out var entry);
-            (entry as IDisposable)?.Dispose();
+            foreach (var key in toCollect)
+            {
+                Lines.Remove(key, out var entry);
+                (entry?.Asset as IDisposable)?.Dispose();
+            }
         }
     }
 
@@ -84,7 +87,7 @@ internal sealed class AssetCache : IDisposable
     {
         foreach (var value in Lines.Values)
         {
-            (value as IDisposable)?.Dispose();
+            (value.Asset as IDisposable)?.Dispose();
         }
         Lines.Clear();
     }

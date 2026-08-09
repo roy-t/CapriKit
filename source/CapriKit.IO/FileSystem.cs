@@ -92,6 +92,10 @@ public class FileSystem : IVirtualFileSystem
         return new FileSystemEventListener(directory, includeSubDirectories);
     }
 
+    public FilePath GetAbsolutePath(FilePath file) => file.ToAbsolute(Environment.CurrentDirectory);
+
+    public DirectoryPath GetAbsolutePath(DirectoryPath directory) => directory.ToAbsolute(Environment.CurrentDirectory);
+
     private FileInfo FindOrThrow(FilePath file)
     {
         var info = GetFileInfo(file);
@@ -110,13 +114,13 @@ public class FileSystem : IVirtualFileSystem
 
     internal static FileInfo GetFileInfo(FilePath file)
     {
-        var absolutePath = file.IsAbsolute ? file : file.ToAbsolute();
+        var absolutePath = file.IsAbsolute ? file : file.ToAbsolute(Environment.CurrentDirectory);
         return new FileInfo(absolutePath.ToString());
     }
 
     internal static DirectoryInfo GetDirectoryInfo(DirectoryPath path)
     {
-        var absolutePath = path.IsAbsolute ? path : path.ToAbsolute();
+        var absolutePath = path.IsAbsolute ? path : path.ToAbsolute(Environment.CurrentDirectory);
         return new DirectoryInfo(absolutePath.ToString());
     }
 }

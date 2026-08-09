@@ -46,7 +46,14 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
     public ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, DirectoryPath basePath)
     {
         Source = source;
-        BasePath = basePath.ToAbsolute();
+        if (basePath.IsAbsolute)
+        {
+            BasePath = basePath;
+        }
+        else
+        {
+            BasePath = source.GetAbsolutePath(basePath);
+        }
     }
 
 
@@ -102,7 +109,7 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
             return path;
         }
 
-        var fullPath = path.GetPathRelativeTo(BasePath);
+        var fullPath = BasePath.Append([path]);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
         return fullPath;
@@ -116,7 +123,7 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
             return path;
         }
 
-        var fullPath = path.GetPathRelativeTo(BasePath);
+        var fullPath = BasePath.Append(path);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
         return fullPath;
@@ -142,8 +149,8 @@ public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
 
     public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
     {
-        ThrowIfPathIsOutsideBasePath(directory);
         var fullPath = GetAbsolutePath(directory);
+        ThrowIfPathIsOutsideBasePath(fullPath);
         var watchers = Source.Watch(fullPath, includeSubDirectories);
         return new ScopedFileSystemEventListener(watchers, BasePath);
     }

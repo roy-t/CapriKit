@@ -51,4 +51,16 @@ public interface IReadOnlyVirtualFileSystem
     /// Watches for changes in the given subdirectory.
     /// </summary>
     IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true);
+
+    /// <summary>
+    /// Determines the absolute path of the given relative path, depending on the file system type
+    /// this can be resolved using the CWD or another method.
+    /// </summary>
+    DirectoryPath GetAbsolutePath(DirectoryPath directory);
+
+    /// <summary>
+    /// Determines the absolute path of the given relative path, depending on the file system type
+    /// this can be resolved using the CWD or another method.
+    /// </summary>
+    FilePath GetAbsolutePath(FilePath filePath);
 }

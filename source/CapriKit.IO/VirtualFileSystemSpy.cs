@@ -71,4 +71,8 @@ public sealed class VirtualFileSystemSpy : IVirtualFileSystem
     {
         return Actual.Watch(directory, includeSubDirectories);
     }
+
+    public FilePath GetAbsolutePath(FilePath file) => Actual.GetAbsolutePath(file);
+
+    public DirectoryPath GetAbsolutePath(DirectoryPath directory) => Actual.GetAbsolutePath(directory);
 }

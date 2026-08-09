@@ -38,17 +38,6 @@ public sealed class DirectoryPath : IEquatable<DirectoryPath>
         }
     }
 
-    public DirectoryPath ToAbsolute()
-    {
-        if (IsAbsolute)
-        {
-            return this;
-        }
-
-        var full = System.IO.Path.GetFullPath(Path);
-        return new DirectoryPath(full);
-    }
-
     public DirectoryPath ToAbsolute(DirectoryPath basePath)
     {
         if (IsAbsolute)

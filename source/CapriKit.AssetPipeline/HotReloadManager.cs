@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
-namespace CapriKit.AssetPipeline.v2;
+namespace CapriKit.AssetPipeline;
 
 /// <summary>
 /// Facilitates hot reloading and hot swapping of assets. Tracks the files used to create an asset
@@ -17,7 +17,7 @@ internal sealed partial class HotReloadManager : IDisposable
     private static readonly TimeSpan MinWaitTime = TimeSpan.FromSeconds(0.5);
     private readonly ILogger<HotReloadManager> Logger;
 
-    private readonly IVirtualFileSystem FileSystem;
+    private readonly ScopedFileSystem FileSystem;
     private readonly IVirtualFileSystemWatcher Watcher;
     private readonly FileSystemEventQueue FileChances;
 
@@ -30,12 +30,12 @@ internal sealed partial class HotReloadManager : IDisposable
     private long lastFileChange;
     private bool isReloading;
 
-    public HotReloadManager(ILoggerFactory logger, IVirtualFileSystem fileSystem)
+    public HotReloadManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
         Logger = logger.CreateLogger<HotReloadManager>();
 
         FileSystem = fileSystem;
-        Watcher = fileSystem.Watch(DirectoryPath.Empty); // Watch for all changed, usually fileSystem is a ScopedVirtualFileSystem
+        Watcher = fileSystem.Watch();
         FileChances = new FileSystemEventQueue(Watcher);
 
         Tracked = [];

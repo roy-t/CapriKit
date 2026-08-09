@@ -12,8 +12,7 @@ public sealed partial class AssetManager : IDisposable
     private readonly AssetCache Cache;
     private readonly HotReloadManager HotReloadManager;
 
-
-    public AssetManager(ILoggerFactory logger, IVirtualFileSystem fileSystem)
+    public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
         Logger = logger.CreateLogger<AssetManager>();
         FileSystem = fileSystem;
@@ -98,7 +97,7 @@ public sealed partial class AssetManager : IDisposable
             }
 
             var lastWrite = FileSystem.LastWriteTime(file);
-            if (version < lastWrite)
+            if (version != lastWrite)
             {
                 return false;
             }
