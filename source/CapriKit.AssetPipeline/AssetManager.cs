@@ -1,4 +1,3 @@
-using CapriKit.AssetPipeline.v2;
 using CapriKit.IO;
 using Microsoft.Extensions.Logging;
 using System.Buffers;

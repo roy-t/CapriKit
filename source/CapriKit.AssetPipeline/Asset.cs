@@ -12,6 +12,6 @@ public record AssetId(string Key, FilePath Path);
 internal record Asset<TAsset, TSettings>(AssetId Id, TAsset Value, AssetBuildMetaData<TSettings> BuildMetaData)
     where TAsset : class;
 
-internal record class AssetBuildMetaData<TSettings>(Guid TranscoderId, int TranscoderVersion, TSettings Settings, IReadOnlyList<Dependency> Dependencies);
+internal record class AssetBuildMetaData<TSettings>(Guid TranscoderId, int TranscoderVersion, TSettings Settings, FilePath OutputFile, IReadOnlyList<Dependency> Dependencies);
 
 internal sealed record Dependency(FilePath File, DateTime Version);
