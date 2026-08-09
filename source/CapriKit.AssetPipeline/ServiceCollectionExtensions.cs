@@ -12,7 +12,8 @@ public static class ServiceCollectionExtensions
         return services.AddSingleton(sp =>
         {
             var logFactory = sp.GetRequiredService<ILoggerFactory>();
-            return new AssetManager(logFactory, assetDirectory);
+            var fileSystem = new FileSystem().ScopedTo(assetDirectory);
+            return new AssetManager(logFactory, fileSystem);
         });
     }
 }

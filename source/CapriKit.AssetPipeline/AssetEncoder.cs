@@ -13,7 +13,8 @@ namespace CapriKit.AssetPipeline;
 /// </summary>
 internal static class AssetEncoder
 {
-    public static async Task Encode<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> encoder, IVirtualFileSystem fileSystem)
+    public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem)
+        where TAsset : class
     {
         ThrowOnFileNotFound(id.Path, fileSystem);
         var outputPath = ToEncodedFilePath(id);
@@ -24,7 +25,7 @@ internal static class AssetEncoder
 
         WriteHeader(writer, encoder);
         WriteSettings(writer, encoder, settings);
-        await WritePayload(writer, id, settings, encoder, spy);
+        await WritePayload(writer, id, encoder, settings, spy);
         WriteDependencies(writer, spy);
 
         await writer.FlushAsync();
@@ -37,15 +38,17 @@ internal static class AssetEncoder
         writer.Write(encoder.Version);
     }
 
-    private static void WriteSettings<TAsset>(PipeWriter writer, IAssetTranscoder<TAsset> transcoder, IAssetSettings<TAsset> settings)
+    private static void WriteSettings<TAsset, TSettings>(PipeWriter writer, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings)
+        where TAsset : class
     {
         var buffer = new ArrayBufferWriter<byte>();
-        transcoder.WriteSettings(settings, buffer);
+        encoder.WriteSettings(settings, buffer);
         writer.Write(buffer.WrittenCount);
         writer.Write(buffer.WrittenSpan);
     }
 
-    private static async Task WritePayload<TAsset>(PipeWriter writer, AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> encoder, VirtualFileSystemSpy spy)
+    private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, VirtualFileSystemSpy spy)
+        where TAsset : class
     {
         var payload = new ArrayBufferWriter<byte>();
         await encoder.Encode(id, settings, spy, payload);

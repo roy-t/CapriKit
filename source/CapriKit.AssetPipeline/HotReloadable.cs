@@ -1,7 +1,7 @@
 using CapriKit.IO;
 using System.Collections.Concurrent;
 
-namespace CapriKit.AssetPipeline.v2;
+namespace CapriKit.AssetPipeline;
 
 internal sealed record HotSwapAction(AssetId Id, Action PerformHotSwap);
 
@@ -14,14 +14,15 @@ internal abstract class HotReloadable(AssetId id)
 internal sealed class HotReloadable<TAsset, TSettings> : HotReloadable
     where TAsset : class
 {
-    private readonly WeakReference<Asset<TAsset, TSettings>> Instance;
+    private readonly WeakReference<TAsset> Instance;
+    private readonly TSettings Settings;
     private readonly IAssetTranscoder<TAsset, TSettings> Transcoder;
-
 
     public HotReloadable(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
         : base(asset.Id)
     {
-        Instance = new WeakReference<Asset<TAsset, TSettings>>(asset);
+        Instance = new WeakReference<TAsset>(asset.Value);
+        Settings = asset.BuildMetaData.Settings;
         Transcoder = transcoder;
     }
 
@@ -29,9 +30,9 @@ internal sealed class HotReloadable<TAsset, TSettings> : HotReloadable
     {
         if (!Instance.TryGetTarget(out var cold)) { return; }
 
-        await AssetEncoder.Encode(cold.Id, Transcoder, cold.BuildMetaData.Settings, fileSystem);
-        var hot = await AssetDecoder.Decode(cold.Id, Transcoder, fileSystem);
+        await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem);
+        var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem);
 
-        hotSwapActionQueue.Enqueue(new HotSwapAction(cold.Id, () => Transcoder.HotSwap(cold.Value, hot.Value)));
+        hotSwapActionQueue.Enqueue(new HotSwapAction(Id, () => Transcoder.HotSwap(cold, hot.Value)));
     }
 }

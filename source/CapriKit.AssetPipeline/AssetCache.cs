@@ -1,7 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace CapriKit.AssetPipeline.v2;
+namespace CapriKit.AssetPipeline;
 
+/// <summary>
+/// Simple cache that uses reference counting to decide when to clean-up a resource. Assets can be leased and returned at any time (though the class requires single-threaded access).
+/// The actual disposing of objects only happens when the main thread calls <see cref="Collect"/>.
+/// </summary>
 internal sealed class AssetCache : IDisposable
 {
     private class Line(object Asset, int RefCount)
@@ -54,6 +58,7 @@ internal sealed class AssetCache : IDisposable
         }
     }
 
+    // TODO: can we dispose objects in the background or would that make the GPU unhappy when assets like textures are disposed at random times?
     public void Collect()
     {
         List<AssetId>? toCollect = null;

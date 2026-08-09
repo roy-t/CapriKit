@@ -18,12 +18,12 @@ internal sealed partial class HotReloadManager : IDisposable
     private readonly ILogger<HotReloadManager> Logger;
 
     private readonly IVirtualFileSystem FileSystem;
+    private readonly IVirtualFileSystemWatcher Watcher;
+    private readonly FileSystemEventQueue FileChances;
 
     private readonly Dictionary<AssetId, HotReloadable> Tracked;
     private readonly Dictionary<FilePath, HashSet<AssetId>> Dependents;
 
-    private readonly IVirtualFileSystemWatcher Watcher;
-    private readonly FileSystemEventQueue FileChances;
     private readonly HashSet<AssetId> PendingRebuilds;
     private readonly ConcurrentQueue<HotSwapAction> PendingReloads;
 
@@ -33,13 +33,14 @@ internal sealed partial class HotReloadManager : IDisposable
     public HotReloadManager(ILoggerFactory logger, IVirtualFileSystem fileSystem)
     {
         Logger = logger.CreateLogger<HotReloadManager>();
+
         FileSystem = fileSystem;
+        Watcher = fileSystem.Watch(DirectoryPath.Empty); // Watch for all changed, usually fileSystem is a ScopedVirtualFileSystem
+        FileChances = new FileSystemEventQueue(Watcher);
 
         Tracked = [];
         Dependents = [];
 
-        Watcher = fileSystem.Watch(DirectoryPath.Empty); // Watch for all changed, usually fileSystem is a ScopedVirtualFileSystem
-        FileChances = new FileSystemEventQueue(Watcher);
         PendingRebuilds = [];
         PendingReloads = [];
 
@@ -98,6 +99,7 @@ internal sealed partial class HotReloadManager : IDisposable
             }
         }
     }
+
     private void ReloadOne()
     {
         if (PendingRebuilds.Count > 0)
@@ -111,10 +113,15 @@ internal sealed partial class HotReloadManager : IDisposable
 
             var reloadable = Tracked[id];
             reloadable.Reload(FileSystem, PendingReloads)
-                .FireAndForget(ex => LogReloadFailed(Logger, id, ex), () =>
+                .FireAndForget(ex =>
                 {
+                    LogReloadFailed(Logger, id, ex);
                     isReloading = false;
+                },
+                () =>
+                {
                     LogReloadCompleted(Logger, id);
+                    isReloading = false;
                 });
         }
     }
@@ -147,7 +154,6 @@ internal sealed partial class HotReloadManager : IDisposable
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Detected file change: {path}, affecting asset: {asset}")]
     private static partial void LogPendingReload(ILogger logger, FilePath path, AssetId asset);
-
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset started: {asset}")]
     private static partial void LogReloadStarted(ILogger logger, AssetId asset);
