@@ -2,30 +2,29 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.AssetPipeline.v2;
 
-internal sealed class AssetCache
+internal sealed class AssetCache : IDisposable
 {
-    private class CacheEntry(object Asset, int RefCount)
+    private class Line(object Asset, int RefCount)
     {
         public readonly object asset = Asset;
         public int refCount = RefCount;
     }
 
     private readonly Lock Lock = new();
-
-    private readonly Dictionary<AssetId, CacheEntry> Entries = [];
+    private readonly Dictionary<AssetId, Line> Lines = [];
 
     public void Put<TAsset>(AssetId id, TAsset asset)
         where TAsset : class
     {
         lock (Lock)
         {
-            if (Entries.ContainsKey(id))
+            if (Lines.ContainsKey(id))
             {
                 throw new Exception($"Cache already contains asset: {id}.");
             }
 
-            var entry = new CacheEntry(asset, 1);
-            Entries.Add(id, entry);
+            var entry = new Line(asset, 1);
+            Lines.Add(id, entry);
         }
     }
 
@@ -34,7 +33,7 @@ internal sealed class AssetCache
     {
         lock (Lock)
         {
-            if (Entries.TryGetValue(id, out var entry))
+            if (Lines.TryGetValue(id, out var entry))
             {
                 entry.refCount = entry.refCount + 1;
                 asset = (TAsset)entry.asset;
@@ -46,23 +45,42 @@ internal sealed class AssetCache
         return false;
     }
 
-    public bool TryRelease<TAsset>(AssetId id, [NotNullWhen(true)] out IDisposable? disposable)
-        where TAsset : class
+    public void Return(AssetId id)
     {
         lock (Lock)
         {
-            if (Entries.TryGetValue(id, out var entry))
+            var entry = Lines[id];
+            entry.refCount = entry.refCount - 1;
+        }
+    }
+
+    public void Collect()
+    {
+        List<AssetId>? toCollect = null;
+        foreach (var (key, value) in Lines)
+        {
+            if (value.refCount <= 0)
             {
-                entry.refCount = entry.refCount - 1;
-                if (entry.refCount == 0 && entry.asset is IDisposable disposableAsset)
-                {
-                    disposable = disposableAsset;
-                    return true;
-                }
+                toCollect = toCollect ?? [];
+                toCollect.Add(key);
             }
         }
 
-        disposable = default;
-        return false;
+        if (toCollect == null) { return; }
+
+        foreach (var key in toCollect)
+        {
+            Lines.Remove(key, out var entry);
+            (entry as IDisposable)?.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        foreach (var value in Lines.Values)
+        {
+            (value as IDisposable)?.Dispose();
+        }
+        Lines.Clear();
     }
 }

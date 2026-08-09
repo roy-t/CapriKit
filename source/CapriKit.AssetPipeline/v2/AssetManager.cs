@@ -1,88 +1,88 @@
 using CapriKit.IO;
-using System.Diagnostics.CodeAnalysis;
+using Microsoft.Extensions.Logging;
+using System.Buffers;
 
 namespace CapriKit.AssetPipeline.v2;
 
-public record class BuildMetaData(AssetId Id, IReadOnlyList<Dependency> Dependencies);
-
-public sealed class AssetManager
+// TODO: Add logging
+public sealed class AssetManager : IDisposable
 {
     private readonly IVirtualFileSystem FileSystem;
-    private readonly TranscoderCollection Transcoders;
+    private readonly AssetCache Cache;
+    private readonly ILogger<AssetManager> Logger;
 
-    /// <inheritdoc cref="TranscoderCollection.Register"/>
-    public void RegisterTranscoder<TAsset>(IAssetTranscoder<TAsset> transcoder)
+    public AssetManager(ILoggerFactory logger, IVirtualFileSystem fileSystem)
     {
-        Transcoders.Register(transcoder);
+        Logger = logger.CreateLogger<AssetManager>();
+        FileSystem = fileSystem;
+        Cache = new AssetCache();
     }
 
-    public async Task<TAsset> Load<TAsset>(AssetId id, IAssetSettings<TAsset> settings)
+    public async Task<TAsset> Load<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> transcoder, TSettings settings)
         where TAsset : class
     {
-        if (LoadFromCache<TAsset>(id, out var cachedAsset))
+        // Check if the asset was loaded before
+        if (Cache.TryLease<TAsset>(id, out var cachedAsset))
         {
             return cachedAsset;
         }
 
-        var transcoder = Transcoders.Get<TAsset>();
-        if (LoadBuildMetadata(id, settings, transcoder, out var build) && IsUpToDate(build))
+        // If not, check if it can be loaded from an up-to-date build
+        var build = await AssetDecoder.TryDecodeBuildMetaData(id, transcoder, FileSystem);
+        if (build != null && IsUpToDate(transcoder, settings, build))
         {
-            return await Decode(id, settings, transcoder);
+            var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
+            RegisterAsset(upToDateAsset, transcoder);
+            return upToDateAsset.Value;
         }
 
-        // The asset was not build or is out of date
-
-        if (!SourceFileExists(id))
+        // If not, try to rebuild and load the asset
+        if (!FileSystem.Exists(id.Path))
         {
             throw new FileNotFoundException("Could not find primary file to build asset from", id.Path);
         }
 
-        await Encode(id, settings, transcoder);
-        var asset = await Decode(id, settings, transcoder);
-        RegisterAsset(id, asset, settings);
+        await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
+        var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
+        RegisterAsset(freshAsset, transcoder);
 
-        return asset;
+        return freshAsset.Value;
     }
 
     public void Unload(AssetId id)
     {
-        // TODO: Decrease the reference count in the cache and if refcount == 0 remove from hot reloading and dispose
-        throw new NotImplementedException();
+        Cache.Return(id);
     }
 
     /// <remarks>Must be called from the main thread.</remarks>
     public void Update()
     {
         // TODO: Perform work that can only be done on the main thread (like hot-reloading)
-        throw new NotImplementedException();
+        Cache.Collect();
     }
 
-    private async Task Encode<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> transcoder) where TAsset : class
-    {
-        throw new NotImplementedException();
-    }
-
-    private async Task<TAsset> Decode<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> transcoder) where TAsset : class
-    {
-        // LOad from file
-        // Add to cache
-        throw new NotImplementedException();
-    }
-
-    private bool LoadFromCache<TAsset>(AssetId id, [NotNullWhen(true)] out TAsset? asset)
+    private bool IsUpToDate<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder, TSettings settings, AssetBuildMetaData<TSettings> build)
         where TAsset : class
     {
-        throw new NotImplementedException();
-    }
+        // Transcoders differ
+        if (transcoder.Id != build.TranscoderId || transcoder.Version != build.TranscoderVersion)
+        {
+            return false;
+        }
 
-    private bool LoadBuildMetadata<TAsset>(AssetId id, IAssetSettings<TAsset> settings, IAssetTranscoder<TAsset> transcoder, [NotNullWhen(true)] out BuildMetaData? build)
-        where TAsset : class
-    {
-        throw new NotImplementedException();
-    }
+        // Settings differ
+        var inUse = new ArrayBufferWriter<byte>();
+        transcoder.WriteSettings(settings, inUse);
 
-    private bool IsUpToDate(BuildMetaData build)
-    {
+        var inFile = new ArrayBufferWriter<byte>();
+        transcoder.WriteSettings(build.Settings, inFile);
+
+        if (!inUse.WrittenSpan.SequenceEqual(inFile.WrittenSpan))
+        {
+            return false;
+        }
+
+        // Dependencies have changed
         foreach (var (file, version) in build.Dependencies)
         {
             if (!FileSystem.Exists(file))
@@ -99,15 +99,16 @@ public sealed class AssetManager
 
         return true;
     }
-    private bool SourceFileExists(AssetId id)
+
+    private void RegisterAsset<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
+        where TAsset : class
     {
-        throw new NotImplementedException();
+        // TODO: Register for hot reloading
+        Cache.Put(asset.Id, asset.Value);
     }
 
-    private void RegisterAsset<TAsset>(AssetId id, TAsset asset, IAssetSettings<TAsset> settings) where TAsset : class
+    public void Dispose()
     {
-        // Add to cache
-        // Register for hot reloading
-        throw new NotImplementedException();
+        Cache.Dispose();
     }
 }
