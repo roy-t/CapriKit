@@ -1,4 +1,4 @@
-using CapriKit.AssetPipeline.v2;
+using CapriKit.AssetPipeline;
 using CapriKit.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 

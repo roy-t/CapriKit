@@ -1,6 +1,8 @@
+using CapriKit.Concurrency.Promises;
+
 namespace CapriKit.AssetPipeline.vNext;
 
-internal sealed partial class AssetManager : IDisposable
+public sealed partial class AssetManager : IDisposable
 {
 
 
@@ -14,8 +16,24 @@ internal sealed partial class AssetManager : IDisposable
     }
 
 
+    public Promise<TAsset> Load<TAsset, TSetting>(AssetId id, IAssetTranscoder<TAsset, TSetting> transcoder, TSetting settings)
+        where TAsset : class
+    {
+        throw new NotImplementedException();
+    }
+
+
     public void Dispose()
     {
         throw new NotImplementedException();
+    }
+
+    internal AssetBundle<TBundle> Bundle<TBundle>(Func<PromiseResolver, TBundle> constructor)
+    {
+        throw new NotImplementedException();
+
+        // TODO: do something so that bundle gets notified when something is done loading
+        // or maybe the actual loading should only start here?
+        return new AssetBundle<TBundle>(1, constructor);
     }
 }
