@@ -1,21 +1,32 @@
+using System.Diagnostics;
+
 namespace CapriKit.AssetPipeline.vNext;
 
-public abstract class Promise
+public abstract class Promise()
 {
-    internal object? Value { get; set; }
+    internal AssetBundle? Owner { get; set; }
+    internal bool IsResolved { get; private set; }
+    internal object? Value { get; private set; }
+
+    internal void Resolve(object value)
+    {
+        Debug.Assert(IsResolved == false);
+
+        Value = value;
+        IsResolved = true;
+    }
 }
 
 public sealed class Promise<TValue> : Promise;
 
-public sealed class PromiseResolver
+public sealed class PromiseResolver(AssetBundle owner)
 {
     public TValue Get<TValue>(Promise<TValue> promise)
     {
-        // TODO: can we somehow double check that this resolver is able to resolve the promise?
-        //if (promise.Owner != Id)
-        //{
-        //    throw new InvalidOperationException($"Attempted to resolve a promise that was not owned by this resolver");
-        //}
+        if (promise.Owner != owner)
+        {
+            throw new InvalidOperationException($"Attempted to resolve a promise that was not owned by the bundle");
+        }
 
         if (promise.Value is TValue value)
         {

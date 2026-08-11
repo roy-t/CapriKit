@@ -1,64 +1,81 @@
-using CapriKit.IO;
-using CapriKit.IO.Streams;
-using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.AssetPipeline.vNext;
 
-// TODO: this and the promises in CapriKit.Concurrency implement the ideas from
-// research\AssetPipelineLoadingGroups.md
+// TODO: this implements the ideas from
+// research\AssetPipelineLoadingGroupsV2.md
 // but there are still a few open questions
-// - I need a blocking one so that all systems can start (Bootstrap), is that await? In CapriKit.Test.Tool I seem to be able to avoid that
-// - I need a non-blocking one for all the other assets for stuff that should happen during loading screens what mechanism to use?
-//   - LightWeightChannel to the rescue and then swapping the entire 'loading scene' with the new scene?
-// - When does the actual loading start and how do we register for it? See AssetManager.Bundle
-// - How/when do we set the owner of the promise for the extra check?
 
-public abstract class AssetBundle(int assets)
+
+public sealed class AssetBundleBuilder(AssetManager assetManager)
 {
-    protected readonly CountdownEvent Outstanding = new(assets);
-    internal void OnRequestCompleted()
+    private readonly List<Promise> Promises = [];
+
+    public Promise<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
+        where TAsset : class
     {
-        Outstanding.Signal();
+        var promise = assetManager.Load<TAsset, TSettings>(id, settings);
+        Promises.Add(promise);
+        return promise;
+    }
+
+    public AssetBundle<TBundle> Build<TBundle>(Func<PromiseResolver, TBundle> factory)
+        where TBundle : notnull
+    {
+        var bundle = new AssetBundle<TBundle>(factory, Promises);
+        foreach (var promise in Promises)
+        {
+            promise.Owner = bundle;
+        }
+
+        return bundle;
     }
 }
 
-public sealed class AssetBundle<T> : AssetBundle
-    where T : notnull
+public abstract class AssetBundle
 {
-    private readonly Func<PromiseResolver, T> Resolver;
 
-    internal AssetBundle(int assets, Func<PromiseResolver, T> resolver)
-        : base(assets)
-    {
-        Resolver = resolver;
-    }
+}
 
-    public T Wait(CancellationToken cancellationToken = default)
-    {
-        Outstanding.Wait(cancellationToken);
-        return Resolver(new PromiseResolver());
-    }
+public sealed class AssetBundle<TBundle>(Func<PromiseResolver, TBundle> factory, IReadOnlyList<Promise> promises)
+    : AssetBundle
+    where TBundle : notnull
+{
+    private TBundle? result;
 
-    public bool Check([NotNullWhen(true)] out T? value)
+    // Single threaded!
+    // TODO: can we reduce the number of things we need to check each frame?
+    public bool IsReady([NotNullWhen(true)] out TBundle? value)
     {
-        if (Outstanding.IsSet)
+        if (result == null)
         {
-            value = Wait();
-            return true;
+            foreach (var promise in promises)
+            {
+                if (!promise.IsResolved)
+                {
+                    value = default;
+                    return false;
+                }
+            }
+
+            result = factory(new PromiseResolver(this));
         }
-        value = default;
-        return false;
+
+        value = result;
+        return true;
     }
+
+    // TODO: how do we block and wait?
 }
 
 public sealed record ExampleAssets(object A, string B)
 {
     public static AssetBundle<ExampleAssets> Define(AssetManager assetManager)
     {
-        var a = assetManager.Load<string, NoSettings>(new AssetId("key", "path"), default);
-        var b = assetManager.Load<string, NoSettings>(new AssetId("key", "path"), default);
+        var builder = new AssetBundleBuilder(assetManager);
+        var a = builder.Load<string, NoSettings>(new AssetId("key", "path"), default);
+        var b = builder.Load<string, NoSettings>(new AssetId("key", "path"), default);
 
-        return assetManager.Bundle(r => new ExampleAssets(r.Get(a), r.Get(b)));
+        return builder.Build(r => new ExampleAssets(r.Get(a), r.Get(b)));
     }
 }
