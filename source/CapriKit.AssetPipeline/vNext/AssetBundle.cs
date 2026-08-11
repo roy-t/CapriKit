@@ -1,8 +1,7 @@
-using CapriKit.Concurrency.Primitives;
-using CapriKit.Concurrency.Promises;
 using CapriKit.IO;
 using CapriKit.IO.Streams;
 using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.AssetPipeline.vNext;
 
@@ -15,76 +14,51 @@ namespace CapriKit.AssetPipeline.vNext;
 // - When does the actual loading start and how do we register for it? See AssetManager.Bundle
 // - How/when do we set the owner of the promise for the extra check?
 
-public abstract class AssetBundle
+public abstract class AssetBundle(int assets)
 {
-    private int outstanding;
-
-    internal void OnRequestCompleted(LightweightChannel<AssetBundle> ready)
+    protected readonly CountdownEvent Outstanding = new(assets);
+    internal void OnRequestCompleted()
     {
-        if (Interlocked.Decrement(ref outstanding) == 0)
-        {
-            ready.Write(this);
-        }
+        Outstanding.Signal();
     }
-
-    internal abstract void Materialize();
 }
 
 public sealed class AssetBundle<T> : AssetBundle
+    where T : notnull
 {
-    private readonly int Id;
     private readonly Func<PromiseResolver, T> Resolver;
-    private readonly TaskCompletionSource<T> Source = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    internal AssetBundle(int id, Func<PromiseResolver, T> resolver)
+    internal AssetBundle(int assets, Func<PromiseResolver, T> resolver)
+        : base(assets)
     {
-        Id = id;
         Resolver = resolver;
     }
 
-    internal override void Materialize()
+    public T Wait(CancellationToken cancellationToken = default)
     {
-        Source.SetResult(Resolver(new PromiseResolver(Id)));
+        Outstanding.Wait(cancellationToken);
+        return Resolver(new PromiseResolver());
     }
 
-    public Task<T> Completion => Source.Task;
+    public bool Check([NotNullWhen(true)] out T? value)
+    {
+        if (Outstanding.IsSet)
+        {
+            value = Wait();
+            return true;
+        }
+        value = default;
+        return false;
+    }
 }
-
 
 public sealed record ExampleAssets(object A, string B)
 {
     public static AssetBundle<ExampleAssets> Define(AssetManager assetManager)
     {
-        var transcoder = new ExampleTranscoder();
-
-        var a = assetManager.Load(new AssetId("key", "path"), transcoder, default);
-        var b = assetManager.Load(new AssetId("key", "path"), transcoder, default);
+        var a = assetManager.Load<string, NoSettings>(new AssetId("key", "path"), default);
+        var b = assetManager.Load<string, NoSettings>(new AssetId("key", "path"), default);
 
         return assetManager.Bundle(r => new ExampleAssets(r.Get(a), r.Get(b)));
-    }
-
-    public static async Task Foo(AssetBundle<ExampleAssets> bundle)
-    {
-        ExampleAssets assets = await bundle.Completion;
-    }
-}
-
-
-public sealed class ExampleTranscoder() : NoSettingsTranscoder<string>(Guid.NewGuid(), 1)
-{
-    public override Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
-    {
-        writer.Write("Hello World");
-        return Task.CompletedTask;
-    }
-
-    public override string Decode(AssetId id, ref SequenceReader<byte> reader)
-    {
-        return reader.ReadString();
-    }
-
-    public override void HotSwap(string instance, string newParts)
-    {
-        throw new NotImplementedException();
     }
 }
