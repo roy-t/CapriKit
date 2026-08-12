@@ -9,36 +9,36 @@ namespace CapriKit.AssetPipeline.vNext;
 
 public sealed class AssetBundleBuilder(AssetManager assetManager)
 {
-    private readonly List<Promise> Promises = [];
+    private readonly List<AssetHandle> Handles = [];
 
-    public Promise<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
+    public AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
-        var promise = assetManager.Load<TAsset, TSettings>(id, settings);
-        Promises.Add(promise);
-        return promise;
+        var handle = assetManager.Load<TAsset, TSettings>(id, settings);
+        Handles.Add(handle);
+        return handle;
     }
 
-    public AssetBundle<TBundle> Build<TBundle>(Func<PromiseResolver, TBundle> factory)
+    public AssetBundleLoader<TBundle> Build<TBundle>(Func<AssetHandleResolver, TBundle> factory)
         where TBundle : notnull
     {
-        var bundle = new AssetBundle<TBundle>(factory, Promises);
-        foreach (var promise in Promises)
+        var bundle = new AssetBundleLoader<TBundle>(factory, Handles);
+        foreach (var handle in Handles)
         {
-            promise.Owner = bundle;
+            handle.Owner = bundle;
         }
 
         return bundle;
     }
 }
 
-public abstract class AssetBundle
+public abstract class AssetBundleLoader
 {
 
 }
 
-public sealed class AssetBundle<TBundle>(Func<PromiseResolver, TBundle> factory, IReadOnlyList<Promise> promises)
-    : AssetBundle
+public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle> factory, IReadOnlyList<AssetHandle> handles)
+    : AssetBundleLoader
     where TBundle : notnull
 {
     private TBundle? result;
@@ -49,16 +49,16 @@ public sealed class AssetBundle<TBundle>(Func<PromiseResolver, TBundle> factory,
     {
         if (result == null)
         {
-            foreach (var promise in promises)
+            foreach (var handle in handles)
             {
-                if (!promise.IsResolved)
+                if (!handle.IsResolved)
                 {
                     value = default;
                     return false;
                 }
             }
 
-            result = factory(new PromiseResolver(this));
+            result = factory(new AssetHandleResolver(this));
         }
 
         value = result;
@@ -70,7 +70,7 @@ public sealed class AssetBundle<TBundle>(Func<PromiseResolver, TBundle> factory,
 
 public sealed record ExampleAssets(object A, string B)
 {
-    public static AssetBundle<ExampleAssets> Define(AssetManager assetManager)
+    public static AssetBundleLoader<ExampleAssets> Load(AssetManager assetManager)
     {
         var builder = new AssetBundleBuilder(assetManager);
         var a = builder.Load<string, NoSettings>(new AssetId("key", "path"), default);
