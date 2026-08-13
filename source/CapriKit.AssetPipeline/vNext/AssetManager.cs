@@ -1,4 +1,5 @@
 using CapriKit.Concurrency.Async;
+using CapriKit.Concurrency.Primitives;
 using CapriKit.IO;
 using Microsoft.Extensions.Logging;
 using System.Buffers;
@@ -13,18 +14,25 @@ public sealed partial class AssetManager : IDisposable
     // of in-flight loading? Same for hot-reloading.
 
     private readonly ILogger<AssetManager> Logger;
-    private readonly IVirtualFileSystem FileSystem;
+    private readonly ScopedFileSystem FileSystem;
     private readonly AssetCache Cache;
     private readonly HotReloadManager HotReloadManager;
     private readonly ConcurrentDictionary<Type, IAssetTranscoder> Transcoders;
+
+    private readonly LightweightChannel<(AssetId, Func<object>)> Incoming;
+    private readonly Lock RequestLock;
+    private readonly Dictionary<AssetId, List<AssetHandle>> Outstanding;
 
     public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
         Logger = logger.CreateLogger<AssetManager>();
         FileSystem = fileSystem;
-        Cache = new AssetCache();
-        HotReloadManager = new HotReloadManager(logger, fileSystem);
+        Cache = new();
+        HotReloadManager = new(logger, fileSystem);
         Transcoders = [];
+        Incoming = new();
+        RequestLock = new();
+        Outstanding = [];
     }
 
     // Thread safe
@@ -45,20 +53,34 @@ public sealed partial class AssetManager : IDisposable
     {
         var handle = new AssetHandle<TAsset>();
 
-        // Check if the asset was loaded before
-        if (Cache.TryLease<TAsset>(id, out var cachedAsset))
+        // Ensure we can't miss an asset being done loading or being requested by another.
+        lock (RequestLock)
         {
-            LogLoadedFromCache(Logger, id);
-            handle.Resolve(cachedAsset);
-            return handle;
-        }
+            // Check if the asset was loaded before
+            if (Cache.TryLease<TAsset>(id, out var cachedAsset))
+            {
+                LogLoadedFromCache(Logger, id);
+                handle.Resolve(cachedAsset);
+                return handle;
+            }
 
-        Task.Run(() => BuildAsset(id, settings, handle)).FireAndForget(
+            // Check if the asset was already requested
+            if (Outstanding.TryGetValue(id, out var requestors))
+            {
+                requestors.Add(handle);
+            }
+            else
+            {
+                // Request the asset
+                Outstanding[id] = [handle];
+                Task.Run(() => RequestAsset<TAsset, TSettings>(id, settings)).FireAndForget(
                 ex =>
                 {
                     LogFailed(Logger, id);
-                    handle.Resolve(ex);
+                    Incoming.Write(ex);
                 });
+            }
+        }
 
         return handle;
     }
@@ -67,11 +89,9 @@ public sealed partial class AssetManager : IDisposable
     // TODO: take special care about the file that the asset is output to and when the copying of the file is resolved
     // though that might be more of a thing for the hot reloader to worry about it can happen if the file
     // is loaded twice.
-    // TODO: HIGH! If the same asset is requested multiple times at startup its build or loaded multiple times.
-    private async Task BuildAsset<TAsset, TSettings>(AssetId id, TSettings settings, AssetHandle<TAsset> handle)
+    private async Task RequestAsset<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
-        TAsset asset;
         var transcoder = GetTranscoder<TAsset, TSettings>();
 
         // Check if the asset can be loaded from an up-to-date build
@@ -79,9 +99,7 @@ public sealed partial class AssetManager : IDisposable
         if (build != default && IsUpToDate(transcoder, settings, build, FileSystem))
         {
             var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            asset = RegisterAsset(upToDateAsset, transcoder);
-            handle.Resolve(asset);
-
+            Incoming.Write((id, () => RegisterAsset(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
 
@@ -93,9 +111,7 @@ public sealed partial class AssetManager : IDisposable
 
         await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
         var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-        asset = RegisterAsset(freshAsset, transcoder);
-        handle.Resolve(asset);
-
+        Incoming.Write((id, () => RegisterAsset(freshAsset, transcoder)));
         LogBuildAndLoaded(Logger, id);
     }
 
@@ -105,9 +121,24 @@ public sealed partial class AssetManager : IDisposable
         Cache.Return(id);
     }
 
-    // Should only be called from the main thread, though technically thread safe
+    // Should only be called from the primary thread, though technically thread safe
     public void Update()
     {
+        lock (RequestLock)
+        {
+            while (Incoming.TryRead(out var result))
+            {
+                var (id, retriever) = result;
+                var handles = Outstanding[id];
+                foreach (var handle in handles)
+                {
+                    var asset = retriever();
+                    handle.Resolve(asset);
+                }
+                Outstanding.Remove(id);
+            }
+        }
+
         Cache.Collect();
         HotReloadManager.Update();
     }
@@ -162,8 +193,10 @@ public sealed partial class AssetManager : IDisposable
     private TAsset RegisterAsset<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
     {
-        HotReloadManager.Track(asset, transcoder);
-        return Cache.PutOrLease(asset.Id, asset.Value);
+        var actualObject = Cache.PutOrLease(asset.Id, asset.Value);
+        var actualWrapper = new Asset<TAsset, TSettings>(asset.Id, actualObject, asset.BuildMetaData);
+        HotReloadManager.Track(actualWrapper, transcoder); // TODO: track needs to be thread safe and ignore adding the same thing multiple times!
+        return actualObject;
     }
 
     // Thread safe because Transcoders is thread safe
