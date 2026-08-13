@@ -1,11 +1,11 @@
 using CapriKit.IO;
 using System.Buffers;
 
-namespace CapriKit.AssetPipeline;
+namespace CapriKit.AssetPipeline.vNext;
 
 /// <summary>
 /// Interface for classes that builds assets (such as texture, models and sound effects) and load them
-/// when the program needs them.
+/// when the program needs them. Implementers must ensure that all methods are thread-safe.
 /// </summary>
 public interface IAssetTranscoder
 {

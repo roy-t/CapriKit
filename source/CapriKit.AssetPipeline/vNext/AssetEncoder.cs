@@ -2,15 +2,17 @@ using CapriKit.IO;
 using CapriKit.IO.Streams;
 using System.Buffers;
 using System.IO.Pipelines;
-using static CapriKit.AssetPipeline.AssetUtilities;
+using static CapriKit.AssetPipeline.vNext.AssetUtilities;
 
-namespace CapriKit.AssetPipeline;
+namespace CapriKit.AssetPipeline.vNext;
 
 // File format: [encoder id][encoder version][settings length][settings][payload length][payload][dependency count][dependencies]
 
 /// <summary>
-/// Encodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself
+/// Encodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself.
+/// Threading: thread-safe
 /// </summary>
+// TODO: AssetEncoder it should be possible to override the output path
 internal static class AssetEncoder
 {
     public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem)

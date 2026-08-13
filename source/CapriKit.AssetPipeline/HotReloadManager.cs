@@ -1,3 +1,4 @@
+using CapriKit.AssetPipeline.vNext;
 using CapriKit.Concurrency.Async;
 using CapriKit.IO;
 using CapriKit.IO.Watchers;

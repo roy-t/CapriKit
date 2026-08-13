@@ -23,7 +23,7 @@ internal sealed partial class AssetCache : IDisposable
     /// <summary>
     /// Stores the given asset and then leases it. If another caller already stored the asset
     /// the <paramref name="candidate"/> is disposed and the stored instance is leased instead.
-    /// Thread-safe: loading the same asset twice is wasteful but harmless, after calling this
+    /// Threading, thread-safe: loading the same asset twice is wasteful but harmless, after calling this
     /// method users must stop referencing <paramref name="candidate"/>.
     /// </summary>
     public TAsset PutOrLease<TAsset>(AssetId id, TAsset candidate)
@@ -48,7 +48,8 @@ internal sealed partial class AssetCache : IDisposable
     }
 
     /// <summary>
-    /// Attempts to retrieve the asset with the given id. Thread-safe.
+    /// Attempts to retrieve the asset with the given id.
+    /// Threading: thread-safe.
     /// </summary>
     public bool TryLease<TAsset>(AssetId id, [NotNullWhen(true)] out TAsset? asset)
         where TAsset : class
@@ -70,9 +71,9 @@ internal sealed partial class AssetCache : IDisposable
     }
 
     /// <summary>
-    /// Returns a leased asset. If every user returned their asset it become collectable. Which happens in
+    /// Returns a leased asset. If every user returned their asset it becomes collectable. Which happens in
     /// <see cref="Collect"/>. After calling return the caller must no longer reference the asset instance.
-    /// Thread-safe.
+    /// Threading: thread-safe.
     /// </summary>
     public void Return(AssetId id)
     {
@@ -98,8 +99,8 @@ internal sealed partial class AssetCache : IDisposable
     }
 
     /// <summary>
-    /// Disposes all assets that no longer have users. This method must be called from the primary thread,
-    /// but it is safe for threads to concurrently access other methods in this class.
+    /// Disposes all assets that no longer have users.
+    /// Threading: this method must only be called from the primary thread.
     /// </summary>
     public void Collect()
     {

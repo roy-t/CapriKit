@@ -1,3 +1,4 @@
+using CapriKit.AssetPipeline.vNext;
 using CapriKit.IO;
 using System.Collections.Concurrent;
 
@@ -30,6 +31,7 @@ internal sealed class HotReloadable<TAsset, TSettings> : HotReloadable
     {
         if (!Instance.TryGetTarget(out var cold)) { return; }
 
+        // TODO: this should method should use a random input and output paths
         await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem);
         var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem);
 
