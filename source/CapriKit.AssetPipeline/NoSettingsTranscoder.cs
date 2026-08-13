@@ -1,7 +1,7 @@
 using CapriKit.IO;
 using System.Buffers;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 public readonly struct NoSettings;
 

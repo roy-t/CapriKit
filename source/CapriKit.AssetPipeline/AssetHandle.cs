@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 public abstract class AssetHandle()
 {
@@ -19,10 +19,7 @@ public abstract class AssetHandle()
     }
 }
 
-public sealed class AssetHandle<TValue> : AssetHandle
-{
-
-}
+public sealed class AssetHandle<TValue> : AssetHandle { }
 
 public sealed class AssetHandleResolver(AssetBundleLoader owner)
 {

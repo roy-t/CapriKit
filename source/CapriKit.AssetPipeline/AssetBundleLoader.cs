@@ -1,11 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace CapriKit.AssetPipeline.vNext;
-
-// TODO: this implements the ideas from
-// research\AssetPipelineLoadingGroupsV2.md
-// but there are still a few open questions
-
+namespace CapriKit.AssetPipeline;
 
 public sealed class AssetBundleBuilder(AssetManager assetManager)
 {

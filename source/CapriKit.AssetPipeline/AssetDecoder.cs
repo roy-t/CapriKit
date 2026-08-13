@@ -1,9 +1,9 @@
 using CapriKit.IO;
 using CapriKit.IO.Streams;
 using System.Buffers;
-using static CapriKit.AssetPipeline.vNext.AssetUtilities;
+using static CapriKit.AssetPipeline.AssetUtilities;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 /// <summary>
 /// Decodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself
@@ -12,7 +12,7 @@ namespace CapriKit.AssetPipeline.vNext;
 // TODO: AssetDecoder it should be possible to override the output path
 internal static class AssetDecoder
 {
-    public static async Task<Asset<TAsset, TSettings>> Decode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> decoder, IReadOnlyVirtualFileSystem fileSystem)
+    public static async Task<Asset<TAsset, TSettings>> Decode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> decoder, IReadOnlyVirtualFileSystem fileSystem, Stream? inputStreamOverride = default)
         where TAsset : class
     {
         var inputPath = ToEncodedFilePath(id);
@@ -21,7 +21,7 @@ internal static class AssetDecoder
             throw new FileNotFoundException($"Could not find file: {inputPath} to load asset: {id}", id.Path);
         }
 
-        using var input = fileSystem.OpenRead(inputPath);
+        using var input = inputStreamOverride ?? fileSystem.OpenRead(inputPath);
         var length = checked((int)input.Length);
         var buffer = ArrayPool<byte>.Shared.Rent(length);
 

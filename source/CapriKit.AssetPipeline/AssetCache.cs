@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 /// <summary>
 /// Cache of live assets. Methods are thread-safe and can be accessed concurrently. However,

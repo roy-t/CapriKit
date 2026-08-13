@@ -1,6 +1,6 @@
 using CapriKit.IO;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 internal static class AssetUtilities
 {

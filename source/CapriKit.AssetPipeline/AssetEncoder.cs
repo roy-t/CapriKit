@@ -2,9 +2,9 @@ using CapriKit.IO;
 using CapriKit.IO.Streams;
 using System.Buffers;
 using System.IO.Pipelines;
-using static CapriKit.AssetPipeline.vNext.AssetUtilities;
+using static CapriKit.AssetPipeline.AssetUtilities;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 // File format: [encoder id][encoder version][settings length][settings][payload length][payload][dependency count][dependencies]
 
@@ -15,13 +15,13 @@ namespace CapriKit.AssetPipeline.vNext;
 // TODO: AssetEncoder it should be possible to override the output path
 internal static class AssetEncoder
 {
-    public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem)
+    public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem, Stream? outputStreamOverride = default)
         where TAsset : class
     {
         ThrowOnFileNotFound(id.Path, fileSystem);
         var outputPath = ToEncodedFilePath(id);
 
-        using var output = fileSystem.CreateReadWrite(outputPath);
+        using var output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath);
         var writer = PipeWriter.Create(output);
         var spy = fileSystem.SpyOn();
 

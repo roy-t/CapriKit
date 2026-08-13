@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Collections.Concurrent;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 public sealed partial class AssetManager : IDisposable
 {

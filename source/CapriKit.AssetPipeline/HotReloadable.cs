@@ -1,4 +1,3 @@
-using CapriKit.AssetPipeline.vNext;
 using CapriKit.IO;
 using System.Collections.Concurrent;
 
@@ -9,6 +8,8 @@ internal sealed record HotSwapAction(AssetId Id, Action PerformHotSwap);
 internal abstract class HotReloadable(AssetId id)
 {
     public AssetId Id { get; } = id;
+    public abstract bool IsAlive { get; }
+
     public abstract Task Reload(IVirtualFileSystem fileSystem, ConcurrentQueue<HotSwapAction> hotSwapActionQueue);
 }
 
@@ -27,13 +28,19 @@ internal sealed class HotReloadable<TAsset, TSettings> : HotReloadable
         Transcoder = transcoder;
     }
 
+    public override bool IsAlive => Instance.TryGetTarget(out var _);
+
     public override async Task Reload(IVirtualFileSystem fileSystem, ConcurrentQueue<HotSwapAction> hotSwapActionQueue)
     {
         if (!Instance.TryGetTarget(out var cold)) { return; }
 
-        // TODO: this should method should use a random input and output paths
-        await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem);
-        var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem);
+        // We store the encoded asset in memory instead of on disk to prevent
+        // touching the file while other threads are also working on it.
+        using var stream = new MemoryStream();
+        await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem, stream);
+
+        stream.Seek(0, SeekOrigin.Begin);
+        var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem, stream);
 
         hotSwapActionQueue.Enqueue(new HotSwapAction(Id, () => Transcoder.HotSwap(cold, hot.Value)));
     }

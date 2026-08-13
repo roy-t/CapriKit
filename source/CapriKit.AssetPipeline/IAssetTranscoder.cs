@@ -1,7 +1,7 @@
 using CapriKit.IO;
 using System.Buffers;
 
-namespace CapriKit.AssetPipeline.vNext;
+namespace CapriKit.AssetPipeline;
 
 /// <summary>
 /// Interface for classes that builds assets (such as texture, models and sound effects) and load them
