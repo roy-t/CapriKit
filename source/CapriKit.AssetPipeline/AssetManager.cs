@@ -109,17 +109,18 @@ public sealed partial class AssetManager : IDisposable
             Incoming.Write((id, () => MaterializeAsset(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
-
-        // If not, try to rebuild and load the asset
-        if (!FileSystem.Exists(id.Path))
+        else // If not, try to rebuild and load the asset
         {
-            throw new FileNotFoundException("Could not find primary file to build asset from", id.Path);
-        }
+            if (!FileSystem.Exists(id.Path))
+            {
+                throw new FileNotFoundException("Could not find primary file to build asset from", id.Path);
+            }
 
-        await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
-        var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-        Incoming.Write((id, () => MaterializeAsset(freshAsset, transcoder)));
-        LogBuildAndLoaded(Logger, id);
+            await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
+            var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
+            Incoming.Write((id, () => MaterializeAsset(freshAsset, transcoder)));
+            LogBuildAndLoaded(Logger, id);
+        }
     }
 
     // Thread safe

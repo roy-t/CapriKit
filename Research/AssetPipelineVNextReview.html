@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset Pipeline vNext Review</title>
+<style>
+:root {
+  --paper:#EFF2F3; --surface:#FFFFFF; --surface-2:#E5EAEC; --sunken:#F5F8F8;
+  --ink:#111A1E; --ink-2:#33454C; --muted:#64777F; --rule:#D2DADD; --rule-2:#BCC8CC;
+  --accent:#0B6C75; --accent-soft:#DAEAEC;
+  --crit:#A8281C; --crit-soft:#F6E2DF;
+  --high:#9C560B; --high-soft:#F7E8D8;
+  --med:#6F6212; --med-soft:#F2EEDA;
+  --low:#4E636D; --low-soft:#E4EAED;
+  --ok:#1C6440; --ok-soft:#DDECE4;
+  --shadow:0 1px 2px rgba(17,26,30,.06), 0 4px 14px rgba(17,26,30,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+    --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+    --accent:#57C2CA; --accent-soft:#0F3238;
+    --crit:#FF8272; --crit-soft:#3A1B18;
+    --high:#F0A247; --high-soft:#372516;
+    --med:#D8C55D; --med-soft:#332E14;
+    --low:#95AAB4; --low-soft:#1E2B31;
+    --ok:#5FCB8F; --ok-soft:#12301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+  --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+  --accent:#57C2CA; --accent-soft:#0F3238;
+  --crit:#FF8272; --crit-soft:#3A1B18;
+  --high:#F0A247; --high-soft:#372516;
+  --med:#D8C55D; --med-soft:#332E14;
+  --low:#95AAB4; --low-soft:#1E2B31;
+  --ok:#5FCB8F; --ok-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.62; text-rendering:optimizeLegibility;
+}
+code, kbd, .mono {
+  font-family:"Cascadia Mono","Cascadia Code",ui-monospace,"JetBrains Mono",Consolas,"Liberation Mono",monospace;
+}
+h1,h2,h3,h4 { font-family:"Cascadia Mono","Cascadia Code",ui-monospace,Consolas,monospace; font-weight:600; text-wrap:balance; margin:0; letter-spacing:-.015em; }
+a { color:var(--accent); text-underline-offset:.2em; }
+a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+
+.wrap { max-width:1120px; margin:0 auto; padding:0 24px; }
+
+/* ---------- masthead ---------- */
+.masthead { border-bottom:1px solid var(--rule); background:var(--surface); }
+.masthead .wrap { padding-top:44px; padding-bottom:34px; }
+.eyebrow { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
+h1 { font-size:clamp(28px,4.4vw,44px); line-height:1.12; }
+.standfirst { margin-top:16px; max-width:64ch; color:var(--ink-2); font-size:17px; }
+.meta { margin-top:26px; display:flex; flex-wrap:wrap; gap:10px 28px; font-size:12.5px; color:var(--muted); }
+.meta b { color:var(--ink-2); font-weight:600; }
+
+/* ---------- status tiles ---------- */
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin:34px 0 0; }
+.tile { background:var(--surface); padding:16px 18px; }
+.tile .k { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.tile .v { font-size:27px; line-height:1.15; margin-top:7px; font-variant-numeric:tabular-nums;
+  font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-weight:600; }
+.tile .n { font-size:12px; color:var(--muted); margin-top:3px; }
+.v.crit{color:var(--crit);} .v.high{color:var(--high);} .v.ok{color:var(--ok);} .v.acc{color:var(--accent);}
+
+/* ---------- sections ---------- */
+section { padding:52px 0 8px; }
+section > .wrap > h2 { font-size:23px; padding-bottom:11px; border-bottom:2px solid var(--ink); display:inline-block; }
+.lede { margin:20px 0 4px; max-width:70ch; color:var(--ink-2); }
+p { margin:14px 0; }
+.wrap > p, .lede { max-width:72ch; }
+
+/* ---------- finding cards ---------- */
+.finding { background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--low);
+  border-radius:7px; padding:20px 22px; margin:18px 0; box-shadow:var(--shadow); }
+.finding.crit{border-left-color:var(--crit);} .finding.high{border-left-color:var(--high);}
+.finding.med{border-left-color:var(--med);} .finding.low{border-left-color:var(--low);}
+.fhead { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; }
+.fid { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:12px; font-weight:700;
+  padding:3px 8px; border-radius:4px; background:var(--surface-2); color:var(--ink-2); letter-spacing:.04em; }
+.finding.crit .fid{background:var(--crit-soft);color:var(--crit);}
+.finding.high .fid{background:var(--high-soft);color:var(--high);}
+.finding.med  .fid{background:var(--med-soft); color:var(--med);}
+.finding.low  .fid{background:var(--low-soft); color:var(--low);}
+.ftitle { font-size:17px; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-weight:600; flex:1 1 320px; line-height:1.4; }
+.floc { font-size:12.5px; color:var(--muted); margin-top:9px; }
+.floc code { color:var(--ink-2); background:var(--sunken); padding:1px 5px; border-radius:3px; font-size:12px; }
+.badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.badge { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:10.5px; letter-spacing:.06em;
+  text-transform:uppercase; padding:3px 7px; border-radius:3px; border:1px solid var(--rule-2); color:var(--muted); }
+.badge.repro { border-color:var(--ok); color:var(--ok); background:var(--ok-soft); font-weight:700; }
+.badge.lens { background:var(--surface-2); }
+.finding p { margin:12px 0; }
+.finding p:last-child { margin-bottom:0; }
+.label { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px; }
+
+/* ---------- code ---------- */
+pre { background:var(--sunken); border:1px solid var(--rule); border-radius:6px; padding:14px 16px;
+  overflow-x:auto; margin:12px 0; font-size:13px; line-height:1.58; }
+pre code { color:var(--ink-2); }
+p code, li code, td code { background:var(--sunken); border:1px solid var(--rule); border-radius:3px;
+  padding:.5px 5px; font-size:.875em; color:var(--ink-2); }
+.bad { border-left:3px solid var(--crit); }
+.good { border-left:3px solid var(--ok); }
+
+/* ---------- tables ---------- */
+.tscroll { overflow-x:auto; margin:20px 0; border:1px solid var(--rule); border-radius:7px; background:var(--surface); }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td { border-bottom:none; }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; }
+tfoot td { font-weight:700; background:var(--surface-2); border-top:2px solid var(--rule-2); }
+.sev { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.sev.crit{color:var(--crit);} .sev.high{color:var(--high);} .sev.med{color:var(--med);} .sev.low{color:var(--low);}
+
+/* ---------- callouts / steps ---------- */
+.callout { background:var(--accent-soft); border:1px solid var(--accent); border-radius:7px; padding:16px 20px; margin:22px 0; }
+.callout .label { color:var(--accent); }
+.callout p:last-child { margin-bottom:0; }
+.callout p:first-of-type { margin-top:0; }
+
+ol.steps { list-style:none; counter-reset:s; padding:0; margin:22px 0; }
+ol.steps li { counter-increment:s; position:relative; padding:0 0 0 52px; margin-bottom:20px; }
+ol.steps li::before { content:counter(s,decimal-leading-zero); position:absolute; left:0; top:1px;
+  font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:13px; font-weight:700; color:var(--accent);
+  background:var(--accent-soft); border-radius:5px; padding:4px 9px; }
+ol.steps b { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:14.5px; }
+ol.steps p { margin:5px 0 0; color:var(--ink-2); font-size:14.5px; }
+
+.cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; margin:20px 0; }
+.panel { background:var(--surface); border:1px solid var(--rule); border-radius:7px; padding:18px 20px; }
+.panel h4 { font-size:14px; margin-bottom:8px; }
+.panel pre { margin-bottom:0; }
+
+ul.tight { margin:12px 0; padding-left:20px; }
+ul.tight li { margin:7px 0; }
+
+details { background:var(--surface); border:1px solid var(--rule); border-radius:7px; padding:14px 20px; margin:18px 0; }
+summary { cursor:pointer; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:14px; font-weight:600; }
+details[open] summary { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--rule); }
+
+footer { margin-top:60px; border-top:1px solid var(--rule); background:var(--surface); }
+footer .wrap { padding:28px 24px 44px; }
+footer p { font-size:13px; color:var(--muted); max-width:76ch; }
+
+@media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+@media (max-width:640px) { .wrap{padding:0 16px;} .finding{padding:16px;} }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow mono">CapriKit &middot; feature/asset_pipeline &middot; c9c853b</div>
+    <h1>Asset Pipeline vNext Review</h1>
+    <p class="standfirst">Four independent reviews &mdash; correctness, thread-safety, API ergonomics, implementation size &mdash; of
+      <code>source/CapriKit.AssetPipeline</code> and its DirectX11 consumer. Findings below are merged by defect, so one entry may
+      carry badges from several reviews that hit it independently.</p>
+    <div class="meta mono">
+      <span><b>Reviewed</b> 1,195 lines / 13 files + 3 DX11 files</span>
+      <span><b>Entry point</b> AssetManagerTests.LoadAsset</span>
+      <span><b>Date</b> 2026-08-14</span>
+      <span><b>Repros executed</b> 6 of 8 critical/high claims</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="k">Solution build</div><div class="v crit">FAIL</div><div class="n">DX11 project, CS1061</div></div>
+      <div class="tile"><div class="k">Critical</div><div class="v crit">4</div><div class="n">3 with executed repros</div></div>
+      <div class="tile"><div class="k">High</div><div class="v high">6</div><div class="n">5 in hot reload</div></div>
+      <div class="tile"><div class="k">Medium / Low</div><div class="v">14</div><div class="n">triage after the above</div></div>
+      <div class="tile"><div class="k">Hot reload</div><div class="v crit">0%</div><div class="n">never ran end&#8209;to&#8209;end</div></div>
+      <div class="tile"><div class="k">Removable</div><div class="v acc">47%</div><div class="n">1,195 &rarr; ~630 lines</div></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The headline</h2>
+    <p class="lede">The passing test and the three critical bugs are not in tension &mdash; the test only ever exercises the
+      first-run path, and every critical defect lives on a path it cannot reach.</p>
+
+    <p><code>[Before(Test)]</code> creates a fresh temporary directory for each test, so no <code>.cka</code> build artifact ever
+      exists when the test runs. That means <code>TryDecodeBuildMetaData</code> always returns <code>null</code>, the up-to-date
+      branch is never taken, and the missing <code>return</code> that corrupts it is invisible. The test also loads exactly
+      <em>one</em> asset, of type <code>string</code> &mdash; which is not <code>IDisposable</code>, so the disposal bug cannot
+      manifest &mdash; and it never calls <code>Dispose</code> on the manager, which would throw. One green test, four criticals,
+      no contradiction.</p>
+
+    <div class="callout">
+      <span class="label">What this means for the design</span>
+      <p>None of the four criticals is a flaw in the vNext <em>design</em>. The promise/bundle/pull model from
+        <code>AssetPipelineLoadingGroupsV2.md</code> holds up; two of the criticals are the design's own written requirements
+        (&ldquo;N&minus;1 extra leases&rdquo;, &ldquo;faulted counts as resolved&rdquo;) simply not implemented yet, and one is a
+        missing <code>return</code> statement. The architecture is sound. The wiring is not finished.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Blockers</h2>
+    <p class="lede">Fix these four before anything else. Nothing downstream can be trusted while they stand.</p>
+
+    <div class="finding crit">
+      <div class="fhead"><span class="fid">B1</span><span class="ftitle">The solution does not build &mdash; the only real consumer calls a two-iteration-old API</span></div>
+      <div class="floc"><code>CapriKit.AssetPipeline.DirectX11/AssetManagerExtensions.cs:12</code></div>
+      <div class="badges"><span class="badge repro">verified</span><span class="badge lens">correctness</span><span class="badge lens">threading</span><span class="badge lens">api</span><span class="badge lens">size</span></div>
+      <pre class="bad"><code>error CS1061: 'AssetManager' does not contain a definition for 'Load'
+               and no accessible extension method 'Load' accepting a first
+               argument of type 'AssetManager' could be found</code></pre>
+      <p><code>LoadVertexShader</code> still calls <code>Load(id, transcoder, default)</code> returning <code>Task&lt;IVertexShader&gt;</code>.
+        The current <code>Load</code> is <code>internal</code> and takes <code>(AssetId, TSettings)</code>. Because only
+        <code>CapriKit.Tests</code> has <code>InternalsVisibleTo</code>, the entire D3D11 side of the pipeline is unreachable from
+        outside the assembly &mdash; which is precisely why none of the races below have bitten a real renderer yet.</p>
+      <p><code>dotnet build CapriKit.AssetPipeline.csproj</code> succeeds on its own, so this is invisible unless you build the
+        solution. Downstream convenience extensions can no longer hang off <code>AssetManager</code> at all; the public entry
+        point is now <code>AssetBundleBuilder</code>.</p>
+      <span class="label">Fix</span>
+      <pre class="good"><code>public static AssetHandle&lt;IVertexShader&gt; LoadVertexShader(this AssetBundleBuilder builder, AssetId id)
+    =&gt; builder.Load&lt;IVertexShader, NoSettings&gt;(id, default);</code></pre>
+      <p>The per-call <code>new VertexShaderTranscoder(device)</code> must also move to a one-time registration &mdash;
+        <code>RegisterTranscoder</code> throws on the second call for the same asset type.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="fhead"><span class="fid">B2</span><span class="ftitle">Missing <code>return</code>: every asset is rebuilt on every boot, then crashes <code>Update()</code></span></div>
+      <div class="floc"><code>AssetManager.cs:106-122</code> &mdash; no <code>return</code> after the up-to-date branch at <code>:111</code></div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span><span class="badge lens">threading</span><span class="badge lens">size</span></div>
+      <p>The <code>if (build != default &amp;&amp; IsUpToDate(...))</code> block writes to <code>Incoming</code> and then
+        <strong>falls through</strong> into the rebuild path, so a current asset is decoded, then re-encoded and decoded again,
+        and published to the channel twice.</p>
+      <span class="label">Failure scenario &mdash; executed</span>
+      <p>Build <code>Hello.txt</code> once so <code>Hello.txt.cka</code> exists. Restart with a fresh <code>AssetManager</code> over
+        the same directory. <code>Update()</code> drains message&nbsp;1, resolves the handles, does
+        <code>Outstanding.Remove(id)</code>. It then drains message&nbsp;2 and hits <code>Outstanding[id]</code>:</p>
+      <pre class="bad"><code>System.Collections.Generic.KeyNotFoundException: The given key
+'AssetId { Key = , Path = Hello.txt }' was not present in the dictionary.
+   at CapriKit.AssetPipeline.AssetManager.Update() in AssetManager.cs:line 145</code></pre>
+      <p>Because the staleness fast path has therefore <em>never once executed</em>, the whole envelope and staleness subsystem is
+        far less load-bearing than its line count suggests &mdash; which lowers the risk of restructuring it (see S2).</p>
+      <span class="label">Fix &mdash; both halves</span>
+      <pre class="good"><code>    LogLoadedFromFile(Logger, id);
+    return;                                  // &lt;-- missing
+
+// and harden the drain so a stray message can never kill the frame loop:
+if (!Outstanding.Remove(id, out var handles)) { continue; }</code></pre>
+    </div>
+
+    <div class="finding crit">
+      <div class="fhead"><span class="fid">B3</span><span class="ftitle">Two handles for one asset id hand out an already-disposed instance</span></div>
+      <div class="floc"><code>AssetManager.cs:145-151</code> (materializer called per handle) &middot; <code>AssetCache.cs:36-43</code></div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+      <pre class="bad"><code>var handles = Outstanding[id];
+foreach (var handle in handles)
+{
+    var asset = materializer();   // &lt;-- called once PER HANDLE
+    handle.Resolve(asset);
+}</code></pre>
+      <p>The materializer closes over a single decoded instance. On the second call <code>PutOrLease</code> finds the entry already
+        present and enqueues <code>new Entry(id, candidate, 0)</code> for disposal &mdash; but <code>candidate</code>
+        <em>is</em> <code>entry.Asset</code>, the live object. <code>Cache.Collect()</code>, three lines later in the same frame,
+        disposes it. Both handles now hold a disposed asset that is still in <code>Entries</code> with refcount&nbsp;2.</p>
+      <span class="label">Failure scenario &mdash; executed</span>
+      <p>Two handles for one id: <code>same instance: True, A.IsDisposed: True, B.IsDisposed: True</code>. Under load &mdash;
+        8&nbsp;threads &times; 100&nbsp;loads over 8&nbsp;ids with a pumping <code>Update()</code> &mdash;
+        <strong>585 of 800 bundles received a disposed asset, with zero exceptions raised</strong>. Nothing signals the corruption.
+        For a <code>VertexShaderTranscoder</code> this is a released <code>ID3D11VertexShader</code> handed to gameplay code.</p>
+      <p>The author's own <code>ExampleAssets</code> sample (<code>AssetBundleLoader.cs:71-72</code>) requests the same
+        <code>AssetId</code> twice, so the shipped usage sketch triggers this directly.</p>
+      <span class="label">Fix &mdash; this is the &ldquo;N&minus;1 extra leases&rdquo; note from the V2 design</span>
+      <pre class="good"><code>if (!Outstanding.Remove(id, out var handles)) { continue; }
+var asset = materializer();                  // exactly once
+Cache.AddLeases(id, handles.Count - 1);      // new: refcount += n under Lock
+foreach (var handle in handles) { handle.Resolve(asset); }</code></pre>
+      <p>Additionally guard <code>PutOrLease</code> with <code>ReferenceEquals(entry.Asset, candidate)</code> and skip the enqueue.
+        Queueing a live object for disposal should be impossible, not merely unreachable.</p>
+    </div>
+
+    <div class="finding crit">
+      <div class="fhead"><span class="fid">B4</span><span class="ftitle">One failed load permanently kills <code>Update()</code> for the rest of the process</span></div>
+      <div class="floc"><code>AssetManager.cs:83-88</code> &middot; <code>LightweightChannel.cs:48</code> &middot; <code>AssetManager.cs:140-153</code></div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+      <p><code>LightweightChannel.Error</code> is set once and <strong>never cleared</strong>; <code>TryRead</code> rethrows it
+        whenever the queue is empty. The worker's failure path writes there, so <code>Update()</code> throws on every subsequent
+        frame &mdash; from inside <code>lock (RequestLock)</code>, before <code>Cache.Collect()</code> and
+        <code>HotReloadManager.Update()</code> are ever reached.</p>
+      <span class="label">Failure scenario &mdash; executed</span>
+      <p>Request one missing file, then pump: <code>Update()</code> threw <strong>199 of 200 times</strong>. Pending disposals
+        accumulate forever, no other asset can ever complete, hot reload stops, and the failed id stays in
+        <code>Outstanding</code> so its handles never resolve &mdash; <code>IsReady</code> returns <code>false</code> forever
+        rather than reporting the error.</p>
+      <span class="label">Fix</span>
+      <p>Reserve the channel's sticky error slot for &ldquo;the pump itself is broken&rdquo;, and give the handle the faulted state
+        the V2 design already specified (<em>&ldquo;faulted counts as resolved&rdquo;</em>):</p>
+      <pre class="good"><code>internal ExceptionDispatchInfo? Error;
+internal bool IsResolved =&gt; Volatile.Read(ref value) is not null || Error is not null;</code></pre>
+      <p>Route the failure per-id so it surfaces from <em>its</em> bundle's <code>IsReady</code>/<code>Wait</code>, once, instead of
+        poisoning the shared pump.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Hot reload has never worked</h2>
+    <p class="lede">Five separate defects compound here. The subsystem is the largest in the pipeline (287 lines, 24%) and the
+      least tested &mdash; its only test constructs the class and asserts nothing.</p>
+
+    <div class="finding high">
+      <div class="fhead"><span class="fid">H1</span><span class="ftitle">Every reload throws: the encoder disposes a stream it does not own</span></div>
+      <div class="floc"><code>AssetEncoder.cs:24</code> &middot; symptom at <code>HotReloadable.cs:39-43</code> &middot; same bug in <code>AssetDecoder.cs:24</code></div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span></div>
+      <p><code>using var output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath)</code> takes ownership of a caller's
+        stream. <code>PipeWriter.Create(stream)</code> defaults to <code>LeaveOpen = false</code>, so
+        <code>CompleteAsync()</code> already disposed it; the <code>using</code> disposes it again.</p>
+      <pre class="bad"><code>REPRO4 caught: ObjectDisposedException: Cannot access a closed Stream.
+   at System.IO.MemoryStream.Seek(Int64, SeekOrigin)</code></pre>
+      <p>So <code>HotReloadable.Reload</code> throws at <code>stream.Seek(0, SeekOrigin.Begin)</code> on <strong>every</strong> hot
+        reload. Combined with H2 below, hot reload has never completed once.</p>
+      <span class="label">Fix</span>
+      <pre class="good"><code>var writer = PipeWriter.Create(output, new StreamPipeWriterOptions(leaveOpen: true));
+try { /* snip: write */ }
+finally { if (outputStreamOverride is null) { output.Dispose(); } }</code></pre>
+    </div>
+
+    <div class="finding high">
+      <div class="fhead"><span class="fid">H2</span><span class="ftitle"><code>isReloading</code> latches <code>true</code> forever, and is read across threads without a barrier</span></div>
+      <div class="floc"><code>HotReloadManager.cs:32, 98, 146, 175-185</code></div>
+      <div class="badges"><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+      <p><code>isReloading = true</code> is set unconditionally at <code>:146</code>, but is only cleared inside the
+        <code>FireAndForget</code> callbacks attached to <code>target?.Reload(...)</code>. When <code>target</code> is
+        <code>null</code> &mdash; the case the code's own comment calls <em>normal</em> &mdash; the null-conditional
+        short-circuits and nothing is ever attached. <code>Update()</code> then returns early on every subsequent frame:
+        no file-change draining, no reloads, and <code>HotSwapPending()</code> never runs again either.</p>
+      <p>Separately, the flag is written from a thread-pool continuation and read on the main thread as a plain
+        <code>bool</code> &mdash; a data race the JIT may resolve by keeping the read in a register.</p>
+      <span class="label">Fix</span>
+      <pre class="good"><code>private volatile bool isReloading;
+// ...
+if (target is null) { isReloading = false; return; }   // before dispatching</code></pre>
+    </div>
+
+    <div class="finding high">
+      <div class="fhead"><span class="fid">H3</span><span class="ftitle">Hot reload can <code>HotSwap</code> an asset that <code>Collect</code> already disposed</span></div>
+      <div class="floc"><code>HotReloadable.cs:19,31,35</code> &middot; <code>AssetCache.cs:88-92</code></div>
+      <div class="badges"><span class="badge lens">threading</span></div>
+      <p><code>WeakReference.IsAlive</code> answers &ldquo;the GC has not collected it&rdquo;, not &ldquo;it has not been
+        disposed&rdquo;. <code>Return</code> moves an entry to <code>PendingDispose</code> (still strongly reachable);
+        <code>Collect</code> disposes it; the object then stays GC-alive for an arbitrary time. <code>ReloadOne</code> sees
+        <code>IsAlive == true</code>, picks it as target, and <code>HotSwap</code> runs against a released COM object.</p>
+      <span class="label">Fix</span>
+      <p>Liveness must mean &ldquo;the cache still holds a lease&rdquo;. Have the cache call
+        <code>HotReloadManager.Untrack(id)</code> on eviction, so <code>IsAlive</code> never depends on GC timing.</p>
+    </div>
+
+    <div class="finding high">
+      <div class="fhead"><span class="fid">H4</span><span class="ftitle">Tracking dictionaries are read outside the lock that guards their writes</span></div>
+      <div class="floc"><code>HotReloadManager.cs:155-171</code> (<code>Tracked</code>) &middot; <code>:122-130</code> (<code>Dependents</code>)</div>
+      <div class="badges"><span class="badge lens">threading</span></div>
+      <pre class="bad"><code>lock (TrackingLock) { candidates = Tracked[id]; }   // copies the REFERENCE only
+// ...
+foreach (var candidate in candidates) { ... }        // iterated unlocked</code></pre>
+      <p>The lock covers the dictionary lookup and nothing else, while <code>Track</code> mutates that very list under the lock.
+        <code>DrainFileChanges</code> reads <code>Dependents</code> with no lock at all &mdash; and its XML doc
+        (&ldquo;can only be used by one thread at a time&rdquo;) directly contradicts <code>Track</code>'s doc
+        (&ldquo;thread-safe, multiple threads can call this method&rdquo;).</p>
+      <p><strong>Latent, not live.</strong> <code>Track</code> is currently only reachable from <code>Update()</code>, so
+        everything runs on the main thread today. It breaks the moment materialization moves off it &mdash; and the documentation
+        already promises the guarantee the code does not provide. Resolve the contradiction in <em>one</em> direction and delete
+        the <code>// TODO: ensure that HotReloadManager.Track is thread safe</code> comments either way.</p>
+    </div>
+
+    <div class="finding med">
+      <div class="fhead"><span class="fid">H5</span><span class="ftitle">The dedupe guard compares two different types, so it is always <code>false</code></span></div>
+      <div class="floc"><code>HotReloadManager.cs:68</code></div>
+      <div class="badges"><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+      <pre class="bad"><code>if (assets.Any(a =&gt; object.ReferenceEquals(a, asset))) { return; }
+//                  ^ HotReloadable        ^ Asset&lt;TAsset,TSettings&gt;</code></pre>
+      <p>Different types by construction, never reference-equal. It compiles, and the documented guarantee
+        &ldquo;registering the same asset multiple times is safe&rdquo; does not hold. Compounding it,
+        <code>ReloadOne</code> builds a <code>pruned</code> list at <code>:162-170</code> and then <strong>throws it
+        away</strong> &mdash; so <code>Tracked</code> grows monotonically for the process lifetime, and dead ids keep feeding
+        <code>PendingRebuilds</code>, which is exactly the input that triggers H2's permanent latch.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Remaining findings</h2>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>ID</th><th>Severity</th><th>Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">M1</td><td class="sev high">High</td><td><code>AssetManager.Dispose</code> always throws (nothing ever calls <code>Cache.Return</code>), so <code>HotReloadManager.Dispose</code> never runs and the OS <code>FileSystemWatcher</code> leaks on every shutdown</td><td><code>AssetManager.cs:159</code></td></tr>
+          <tr><td class="mono">M2</td><td class="sev med">Medium</td><td><code>IsReady</code> re-materialises the bundle on every call for <em>struct</em> bundles &mdash; <code>result == null</code> on a <code>notnull</code> type parameter boxes and is always false. Reintroduces the exact defect V2 was written to fix</td><td><code>AssetBundleLoader.cs:45</code></td></tr>
+          <tr><td class="mono">M3</td><td class="sev med">Medium</td><td><code>AssetHandle.value</code>/<code>isResolved</code> are published without a fence the reader participates in. On ARM64 a reader can see <code>isResolved == true</code> with a stale <code>null</code> value</td><td><code>AssetHandle.cs:7-19</code></td></tr>
+          <tr><td class="mono">M4</td><td class="sev med">Medium</td><td><code>ReloadOne</code> starts the rebuild on the calling thread &mdash; unlike <code>Load</code>, it is not wrapped in <code>Task.Run</code>, so a synchronous <code>D3DCompile</code> can run on the main thread</td><td><code>HotReloadManager.cs:175</code></td></tr>
+          <tr><td class="mono">M5</td><td class="sev med">Medium</td><td>Disposal is uncoordinated with in-flight work: <code>HotReloadManager.Dispose</code> clears its dictionaries without the lock; <code>AssetManager.Dispose</code> neither drains the channel nor awaits outstanding requests</td><td><code>AssetManager.cs:159</code>, <code>HotReloadManager.cs:211</code></td></tr>
+          <tr><td class="mono">M6</td><td class="sev med">Medium</td><td><code>Unload</code> bypasses <code>RequestLock</code>: unloading an in-flight asset throws, then the load completes anyway and takes a lease nobody returns. This is V2's open cancellation question, still unanswered</td><td><code>AssetManager.cs:126</code></td></tr>
+          <tr><td class="mono">M7</td><td class="sev med">Medium</td><td>Registering a transcoder <em>after</em> a load of that type throws on the worker &mdash; which via B4 kills the manager permanently. &ldquo;Thread-safe&rdquo; here means &ldquo;won't corrupt the dictionary&rdquo;, not &ldquo;order-independent&rdquo;</td><td><code>AssetManager.cs:39,222</code></td></tr>
+          <tr><td class="mono">M8</td><td class="sev med">Medium</td><td>Hot reload discards <code>hot.BuildMetaData</code> and never re-tracks, so an <code>.hlsl</code> that gains a new <code>#include</code> never registers that file until process restart</td><td><code>HotReloadable.cs:33-46</code></td></tr>
+          <tr><td class="mono">L1</td><td class="sev low">Low</td><td>Successful hot reload is logged at <code>LogLevel.Error</code> (copy-paste from the adjacent failure message)</td><td><code>HotReloadManager.cs:226</code></td></tr>
+          <tr><td class="mono">L2</td><td class="sev low">Low</td><td>A failed encode leaves a truncated <code>.cka</code>. Self-heals via the blanket catch, but write-to-temp-then-move would make &ldquo;a <code>.cka</code> on disk is complete&rdquo; an invariant</td><td><code>AssetEncoder.cs:24-35</code></td></tr>
+          <tr><td class="mono">L3</td><td class="sev low">Low</td><td><code>Debug.Assert</code> is the only double-resolve guard, so in Release a duplicate publish silently overwrites a resolved handle</td><td><code>AssetHandle.cs:16</code></td></tr>
+          <tr><td class="mono">L4</td><td class="sev low">Low</td><td><code>*.cka</code> artifacts are written beside the source files and are <strong>not</strong> in <code>.gitignore</code>, so a first run fills the art folder and dirties <code>git status</code></td><td><code>AssetUtilities.cs:7</code>, <code>.gitignore</code></td></tr>
+          <tr><td class="mono">L5</td><td class="sev low">Low</td><td>No <code>ConfigureAwait(false)</code> anywhere, though <code>CapriKit.IO</code> uses it on all of its awaits. Harmless only while no <code>SynchronizationContext</code> exists &mdash; and not harmless for M4</td><td>12 awaits, 4 files</td></tr>
+          <tr><td class="mono">L6</td><td class="sev low">Low</td><td><code>public sealed record ExampleAssets</code> ships in the NuGet package; <code>AssetHandle</code>'s fields are <code>internal protected</code> with a public constructor, so external code can forge a resolved handle</td><td><code>AssetBundleLoader.cs:66</code>, <code>AssetHandle.cs:7</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <details>
+      <summary>Checked and found clean &mdash; recorded so these are not re-reviewed later</summary>
+      <ul class="tight">
+        <li><strong>Envelope round trip.</strong> Field order in <code>AssetEncoder</code> matches both decode paths exactly;
+          <code>SkipPayload</code> advances by precisely <code>payloadLength</code>; endianness is symmetric;
+          <code>SliceUnread</code> correctly advances the outer reader past a sub-reader that under-reads;
+          <code>ArrayPool.Rent</code> over-allocates but <code>SequenceReaders.Create(buffer, 0, length)</code> bounds it.</li>
+        <li><strong>Lock ordering.</strong> The only nestings are <code>RequestLock &rarr; Cache.Lock</code> and
+          <code>RequestLock &rarr; TrackingLock</code>, consistently. No deadlock exists today &mdash; but the invariant is written
+          down nowhere, and is one careless <code>Unload</code> inside a cache callback away from breaking.</li>
+        <li><strong><code>AssetCache.Collect</code>'s <code>TryEnter</code> fast path.</strong> Correct. The
+          <code>try/finally</code> releases the lock on the early return, <code>PendingDispose</code> is monotone so nothing is
+          lost, and deferring a disposal by one frame is the intent. Worth a comment so nobody &ldquo;fixes&rdquo; it into a
+          blocking <code>lock</code>.</li>
+        <li><strong>Disposing outside the lock.</strong> <code>DisposeDrainedItems</code> running outside <code>Lock</code> is
+          deliberate and correct &mdash; it is what makes an asset whose <code>Dispose</code> calls back into <code>Unload</code>
+          safe.</li>
+        <li><strong>Path scoping.</strong> Watcher events are re-relativised to <code>BasePath</code>, matching the relative paths
+          <code>VirtualFileSystemSpy</code> records, so <code>Dependents</code> lookups hit. The <code>.cka</code> is written
+          through the raw file system, not the spy, so an asset never lists its own build output as a dependency &mdash; no
+          infinite rebuild loop.</li>
+        <li><strong><code>Task.Run</code> / <code>FireAndForget</code> shape.</strong> Binds the unwrapping overload, so
+          <code>FireAndForget</code> awaits the real work rather than a proxy. Correct.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>API: the boilerplate problem</h2>
+    <p class="lede">Loading one asset costs <strong>four mentions of the same thing</strong> &mdash; the <code>AssetId</code>, the
+      <code>Load</code> line, the <code>resolver.Get</code> argument, and the bundle record member. Two of the four are removable
+      today. The third and fourth are inherent to &ldquo;declare N loads, then build one object&rdquo;, and only a source generator
+      collapses them.</p>
+
+    <div class="cols">
+      <div class="panel">
+        <h4>Today</h4>
+        <pre class="bad"><code>var id      = new AssetId(string.Empty, AssetFile);
+var builder = new AssetBundleBuilder(assetManager);
+var handle  = builder.Load&lt;string, NoSettings&gt;(id, default);
+var loader  = builder.Build(r =&gt; new TestBundle(r.Get(handle)));
+
+TestBundle? bundle = null;
+// poll assetManager.Update() until loader.IsReady(out bundle)</code></pre>
+      </div>
+      <div class="panel">
+        <h4>Proposed (P1&ndash;P5, no codegen)</h4>
+        <pre class="good"><code>var bundle = assetManager.CreateBundle();
+var text   = bundle.Load&lt;string&gt;(AssetFile);
+var loader = bundle.Build(text, t =&gt; new TestBundle(t));
+
+using var assets = loader.Wait();   // bootstrap: pumps Update() itself</code></pre>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="label">The honest limit</span>
+      <p>For a realistic renderer &mdash; 3&nbsp;shaders + 4&nbsp;textures &mdash; these changes save about 22 characters per line
+        but <strong>the structure does not shrink</strong>. Worse, the factory is positional across same-typed assets, so the three
+        <code>IVertexShader</code> handles are mutually assignable: <strong>144 wrong orderings compile and render silently
+        wrong</strong>. That is the real argument for the source generator (P8) &mdash; not brevity.</p>
+    </div>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>ID</th><th>Change</th><th>Win</th><th class="num">Cost</th><th>Breaking</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">P1</td><td><code>Load&lt;TAsset&gt;(id)</code> &mdash; erase <code>TSettings</code> at registration</td><td>Biggest per-character win; <code>NoSettings</code> leaves user code entirely</td><td class="num">~20 ln</td><td>yes</td></tr>
+          <tr><td class="mono">P2</td><td><code>AssetId</code>: path first, key optional, implicit from <code>FilePath</code> only</td><td>Kills <code>string.Empty</code> <em>and</em> the silent argument-swap hazard</td><td class="num">~15 ln</td><td>yes, 3 sites</td></tr>
+          <tr><td class="mono">P3</td><td><code>assetManager.CreateBundle()</code> instead of <code>new AssetBundleBuilder(mgr)</code></td><td>Discoverable from the object you already hold; V2 specified it</td><td class="num">3 ln</td><td>trivially</td></tr>
+          <tr><td class="mono">P4</td><td><code>AssetManager(ILoggerFactory, DirectoryPath)</code> overload</td><td>Callers stop writing <code>new FileSystem().ScopedTo(dir)</code></td><td class="num">4 ln</td><td>no</td></tr>
+          <tr><td class="mono">P5</td><td><code>Build</code> overloads for arity 1&ndash;3 taking handles directly</td><td>Resolver disappears; redemption becomes <em>structurally</em> impossible to get wrong</td><td class="num">~12 ln</td><td>additive</td></tr>
+          <tr><td class="mono">P6</td><td><code>Wait()</code> (block/pump) + <code>IDisposable</code> on the bundle</td><td>Closes the two holes the code itself flags; makes the bundle the lifetime unit</td><td class="num">~40 ln</td><td>yes</td></tr>
+          <tr><td class="mono">P7</td><td>Per-bundle faulted state instead of the sticky channel error</td><td>Fixes B4; a bad file stops poisoning every other load</td><td class="num">~15 ln</td><td>no</td></tr>
+          <tr><td class="mono">P8</td><td><code>[AssetBundle]</code> source generator</td><td>Only thing that collapses 4 mentions to 1 and kills the ordering hazard</td><td class="num">~300 ln</td><td>additive</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Stop the handle-passing overloads at arity 3.</strong> At arity 7,
+      <code>Build(a,b,c,d,e,f,g, (a,b,c,d,e,f,g) =&gt; new X(...))</code> mentions each asset <em>three</em> times inside
+      <code>Build</code> versus once for <code>r.Get(a)</code>. Keep both paths; document the crossover.
+      <code>AssetHandleResolver</code> does earn its keep &mdash; it is the capability token that makes redeeming a handle outside
+      materialization unrepresentable.</p>
+
+    <details>
+      <summary>Considered and rejected &mdash; brevity that costs type safety</summary>
+      <ul class="tight">
+        <li><strong><code>AssetHandle&lt;T&gt;.Value</code> / <code>IsLoaded</code>.</strong> Removes one mention per asset.
+          <strong>Reject</strong> &mdash; this is the exact invariant both design docs exist to protect. A readable
+          <code>.Value</code> re-admits &ldquo;not loaded yet&rdquo; into every consumer's types and puts the per-frame check back
+          into every system.</li>
+        <li><strong>Nullable bundle members with placeholder fallback.</strong> <strong>Reject</strong> for shaders &mdash; a
+          shader's interface <em>is</em> its identity, so no valid placeholder exists.</li>
+        <li><strong>Ordered redemption (<code>r.Next&lt;T&gt;()</code>).</strong> <strong>Reject</strong> &mdash; silently couples
+          the factory to <code>Load</code> call order, strictly worse than explicit handle identity.</li>
+        <li><strong>Reflection matching handles to record parameters.</strong> <strong>Reject</strong> &mdash; moves every arity and
+          type error to runtime, defeating the &ldquo;compiler forces the constructor to match&rdquo; payoff that the design docs
+          call the whole point of hardcoding requirements.</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Implementation size</h2>
+    <p class="lede">1,195 lines across 13 files. A recommended set of seven changes projects to <strong>~630 lines in 9
+      files &mdash; a 47% reduction</strong> &mdash; with hot reload no longer in the shipping path.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Subsystem</th><th class="num">Files</th><th class="num">Lines</th><th class="num">Share</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td>Hot reload</td><td class="num">2</td><td class="num">287</td><td class="num">24%</td><td>Largest, least tested, 5 defects &mdash; and dev-only by design</td></tr>
+          <tr><td>Orchestration (<code>AssetManager</code>)</td><td class="num">1</td><td class="num">249</td><td class="num">21%</td><td>Keep; trim with S5/S7</td></tr>
+          <tr><td>Envelope encode/decode</td><td class="num">3</td><td class="num">234</td><td class="num">20%</td><td>Reads every file twice; merge</td></tr>
+          <tr><td>Cache / refcounting</td><td class="num">1</td><td class="num">181</td><td class="num">15%</td><td>Deferred disposal may not be load-bearing</td></tr>
+          <tr><td>Bundles / handles</td><td class="num">2</td><td class="num">116</td><td class="num">10%</td><td>Keep; needs faulted state added back</td></tr>
+          <tr><td>Transcoder abstraction</td><td class="num">2</td><td class="num">92</td><td class="num">8%</td><td>The <code>TSettings</code> arity is the expensive half</td></tr>
+          <tr><td>Model + glue</td><td class="num">2</td><td class="num">36</td><td class="num">3%</td><td>&mdash;</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="num">13</td><td class="num">1,195</td><td class="num">100%</td><td>Projected after: ~630</td></tr></tfoot>
+      </table>
+    </div>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>ID</th><th>Simplification</th><th class="num">Lines</th><th>Risk</th><th>Capability lost</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">S1</td><td>Delete dead weight: <code>ExampleAssets</code>, <code>ServiceCollectionExtensions</code>, <code>Unload</code>, the discarded <code>pruned</code> list, the leak-throw in <code>Cache.Dispose</code></td><td class="num">&minus;51</td><td class="sev ok">none</td><td>none</td></tr>
+          <tr><td class="mono">S2</td><td>One <code>AssetEnvelope</code> over <code>byte[]</code>, not streams. Move dependencies <em>before</em> the payload so staleness reads only the prefix; merge the two decode methods that read the same file twice</td><td class="num">&minus;141</td><td class="sev low">low</td><td>none &mdash; staleness gets faster</td></tr>
+          <tr><td class="mono">S3</td><td>Shrink <code>AssetCache</code>: drop <code>PendingDispose</code>, <code>Collect</code>, and the <code>TryEnter</code> path; dispose on zero, outside the lock</td><td class="num">&minus;106</td><td class="sev med">low&ndash;med</td><td>worker-thread deferred dispose</td></tr>
+          <tr><td class="mono">S4</td><td>Handle/bundle trim &mdash; delete the empty <code>AssetBundleLoader</code> base, collapse two fields to one <code>object?</code>; add ~8 lines back for the faulted state</td><td class="num">&minus;15/+8</td><td class="sev ok">none</td><td>none</td></tr>
+          <tr><td class="mono">S5</td><td>Drop the transcoder registry; pass the transcoder to <code>Load</code>. Keying on <code>typeof(TAsset)</code> silently forbids two transcoders for one type &mdash; negative convenience</td><td class="num">&minus;30</td><td class="sev low">low</td><td>load-by-type-alone</td></tr>
+          <tr><td class="mono">S6</td><td>Hot reload via closures instead of a class hierarchy, and opt-in behind a flag so shipping builds never construct it</td><td class="num">&minus;155</td><td class="sev high">med&ndash;high</td><td>reload throttling, weak pruning</td></tr>
+          <tr><td class="mono">S7</td><td>Delete the <code>TSettings</code> type parameter; fold settings into the transcoder's <code>Version</code></td><td class="num">&minus;83</td><td class="sev med">medium</td><td>per-<em>request</em> settings</td></tr>
+        </tbody>
+        <tfoot><tr><td colspan="2">Tiered: S1+S2+S4 &rarr; 988 &middot; +S3+S5 &rarr; 852 &middot; +S6+S7 &rarr; ~630</td><td class="num">&minus;573</td><td></td><td></td></tr></tfoot>
+      </table>
+    </div>
+
+    <p>On S7, note the per-request settings capability is <em>already</em> largely illusory: <code>Transcoders</code> is keyed by
+      asset type so one type has exactly one transcoder, and <code>ToEncodedFilePath</code> does not include settings &mdash; so
+      loading one id with two different settings already ping-pongs rebuilds against the same <code>.cka</code>.</p>
+
+    <h3 class="mono" style="font-size:15px;margin-top:34px;">Keep as is &mdash; load-bearing despite looking complex</h3>
+    <ul class="tight">
+      <li><strong><code>LightweightChannel</code> + main-thread <code>Update()</code> drain.</strong> The threading model itself, and
+        the only place a transcoder's <code>ID3D11DeviceContext</code> step can legally run.</li>
+      <li><strong><code>Outstanding: Dictionary&lt;AssetId, List&lt;AssetHandle&gt;&gt;</code>.</strong> This is V2's fix for the
+        1:N in-flight relationship. Collapsing it to one handle per id reintroduces the hang V2 was written to fix.</li>
+      <li><strong><code>VirtualFileSystemSpy</code> dependency capture.</strong> Four lines in the encoder buy the entire
+        <code>#include</code> staleness and hot-reload trigger story. This is the reuse model the rest of the pipeline should
+        imitate.</li>
+      <li><strong><code>PutOrLease</code> returning the winner and disposing the loser.</strong> Looks like paranoia; is not.
+        <code>Load</code> only dedupes inside the lock, and hot reload decodes concurrently with normal loads.</li>
+      <li><strong><code>AssetHandle&lt;T&gt;</code> as an empty generic subclass.</strong> A zero-cost compile-time type tag &mdash;
+        what makes &ldquo;not yet loaded&rdquo; unrepresentable. The runtime-<code>Type</code> alternative is longer and weaker.</li>
+      <li><strong><code>HotSwap</code> on the transcoder.</strong> Why no <code>AssetRef&lt;T&gt;</code> indirection layer is needed
+        at all &mdash; game code holds the object directly.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Suggested order</h2>
+    <p class="lede">A genuine sequence &mdash; each step makes the next one safe or cheaper.</p>
+    <ol class="steps">
+      <li><b>B1 &mdash; make the solution build.</b>
+        <p>Nothing else can be verified end-to-end while the only real consumer is uncompilable. Decide here whether
+          <code>AssetManagerExtensions</code> is deleted or reshaped around the builder (P5 answers this).</p></li>
+      <li><b>B2, B3, B4 &mdash; the three criticals.</b>
+        <p>Two <code>return</code>-shaped fixes and one lease-counting fix. All three have executed repros, so each can be turned
+          into a regression test immediately.</p></li>
+      <li><b>Write the tests those repros became.</b>
+        <p>Second-run/up-to-date load, two handles for one id, and a failing load followed by ten <code>Update()</code>s. These are
+          the three paths the current test cannot reach, and they are what turn the rest of this list from review comments into a
+          safety net.</p></li>
+      <li><b>P1&ndash;P5 &mdash; the API shape, while call sites are still nearly zero.</b>
+        <p>At <code>0.1.0-alpha</code> these breaking changes are free today and expensive later. P2 in particular closes a
+          silent-swap hazard that no amount of documentation fixes.</p></li>
+      <li><b>S1, S2, S4 &mdash; the zero-capability-loss deletions.</b>
+        <p>Takes the pipeline to ~988 lines and removes the double file read on every load. S2 is low-risk precisely because
+          B2 proves the staleness path has never run.</p></li>
+      <li><b>Decide hot reload's fate (H1&ndash;H5, S6).</b>
+        <p>It has never worked, so there is no regression to fear and full freedom to redesign. Make it opt-in first &mdash; five
+          lines &mdash; so it leaves the shipping mental model, then fix or rewrite behind that flag.</p></li>
+      <li><b>Settle the threading contract (H4, M3, M5).</b>
+        <p>The table below is the current state, not a specification. Pick one direction, write it in the XML docs, and delete the
+          <code>// TODO</code> comments that promise the other.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>The threading model, as implemented</h2>
+    <p class="lede">Not as documented &mdash; as it actually behaves today. Worth keeping as the module's reference page, since the
+      XML docs and the code currently disagree in three places.</p>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Class</th><th>Field</th><th>Writers</th><th>Readers</th><th>Guard</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td rowspan="3" class="mono">AssetManager</td><td><code>Transcoders</code></td><td>any</td><td>pool</td><td>concurrent type</td><td class="sev ok">safe</td></tr>
+          <tr><td><code>Outstanding</code></td><td>any + main</td><td>same</td><td><code>RequestLock</code></td><td class="sev med">safe, but indexed by a worker-supplied key</td></tr>
+          <tr><td><code>Incoming</code></td><td>pool</td><td>main</td><td>concurrent + volatile</td><td class="sev crit">error slot sticky (B4)</td></tr>
+          <tr><td rowspan="2" class="mono">AssetCache</td><td><code>Entries</code>, <code>RefCount</code></td><td>any</td><td>any</td><td><code>Lock</code> always</td><td class="sev ok">safe</td></tr>
+          <tr><td><code>PendingDispose</code></td><td>any</td><td>main</td><td><code>Lock</code> / <code>TryEnter</code></td><td class="sev crit">can contain a live object (B3)</td></tr>
+          <tr><td rowspan="2" class="mono">AssetHandle</td><td><code>value</code>, <code>isResolved</code></td><td>any, under lock</td><td>main, <strong>unlocked</strong></td><td>none on read</td><td class="sev med">unsynchronised publication (M3)</td></tr>
+          <tr><td><code>Owner</code></td><td>builder thread</td><td>main</td><td>none</td><td class="sev med">same class of issue</td></tr>
+          <tr><td rowspan="4" class="mono">HotReloadManager</td><td><code>Tracked</code></td><td>main in practice</td><td>main</td><td>lookup only</td><td class="sev high">inner list iterated unlocked (H4)</td></tr>
+          <tr><td><code>Dependents</code></td><td>under lock</td><td><strong>no lock</strong></td><td>inconsistent</td><td class="sev high">doc contradicts code (H4)</td></tr>
+          <tr><td><code>isReloading</code></td><td>main sets, <strong>pool</strong> clears</td><td>main</td><td><strong>none</strong></td><td class="sev high">race + latches true (H2)</td></tr>
+          <tr><td><code>PendingReloads</code></td><td>pool</td><td>main</td><td>concurrent type</td><td class="sev ok">safe</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>In one line: <code>Load</code>, <code>Unload</code> and <code>RegisterTranscoder</code> are genuinely callable from any
+      thread; <code>RequestAsset</code>, <code>Encode</code> and <code>Decode</code> run on the pool; and &mdash; despite the
+      documentation &mdash; <code>MaterializeAsset</code>, <code>PutOrLease</code>, <code>Track</code>, <code>IsReady</code> and
+      <code>Get</code> all run on the main thread. <code>HotReloadable.Reload</code>'s synchronous prefix runs on the main thread
+      too, which is not intended (M4).</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Method.</strong> Four independent reviews ran in parallel against commit <code>c9c853b</code>, each reading the full
+      pipeline source plus its <code>CapriKit.IO</code> and <code>CapriKit.Concurrency</code> dependencies. Findings were merged by
+      defect and cross-checked against a manual read; the build failure and the two behaviour-changing claims about it were verified
+      directly. Six of the eight critical and high findings were confirmed by executing a repro; the rest are marked as reasoned from
+      the code. All temporary test files were removed and the working tree left clean.</p>
+    <p style="margin-top:12px"><strong>Prior art.</strong> Supersedes <code>AssetPipelineReview.md</code> and
+      <code>AssetPipelineRewriteReview.md</code>, which reviewed earlier iterations. The design intent reviewed against is
+      <code>AssetPipelineLoadingGroupsV2.md</code>, whose model this code implements and whose open questions &mdash; cancellation,
+      hot-reload re-entry into a live bundle &mdash; remain open.</p>
+  </div>
+</footer>
+
+</body>
+</html>

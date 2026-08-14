@@ -97,7 +97,11 @@ public sealed class InMemoryFileSystem : IVirtualFileSystem
 
     public FilePath GetAbsolutePath(FilePath file) => file.ToAbsolute(Environment.CurrentDirectory);
 
-    public DirectoryPath GetAbsolutePath(DirectoryPath directory) => directory.ToAbsolute(Environment.CurrentDirectory);
+    public DirectoryPath GetAbsolutePath(DirectoryPath directory)
+    {
+        if (directory.IsAbsolute) { return directory; }
+        return directory.ToAbsolute(Environment.CurrentDirectory);
+    }
 
     private InMemoryFile FindOrThrow(FilePath file)
     {
