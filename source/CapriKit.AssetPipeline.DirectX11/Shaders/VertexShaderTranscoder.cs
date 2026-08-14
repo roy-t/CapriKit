@@ -1,4 +1,3 @@
-using CapriKit.AssetPipeline.vNext;
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.IO;

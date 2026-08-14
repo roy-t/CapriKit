@@ -9,10 +9,6 @@ namespace CapriKit.AssetPipeline;
 
 public sealed partial class AssetManager : IDisposable
 {
-    // TODO: ensure that the transcoders and hot-reload manager are thread safe
-    // TODO: what if an asset is requested multiple times? Do we keep track
-    // of in-flight loading? Same for hot-reloading.
-
     private readonly ILogger<AssetManager> Logger;
     private readonly ScopedFileSystem FileSystem;
     private readonly AssetCache Cache;
@@ -58,7 +54,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
     /// is not loaded multiple times concurrently.
     /// </summary>
-    public AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
+    internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
         var handle = new AssetHandle<TAsset>();
