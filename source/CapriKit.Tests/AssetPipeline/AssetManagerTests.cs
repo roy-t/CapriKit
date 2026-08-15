@@ -41,9 +41,9 @@ internal class AssetManagerTests
         var transcoder = new TestTranscoder();
         assetManager.RegisterTranscoder(transcoder);
 
-        var id = new AssetId(string.Empty, AssetFile);
+        var id = new AssetId(AssetFile);
 
-        var builder = new AssetBundleBuilder(assetManager);
+        var builder = assetManager.CreateBundle();
         var handle = builder.Load<string, NoSettings>(id, default);
         var loader = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
 
@@ -57,6 +57,22 @@ internal class AssetManagerTests
 
         await Assert.That(bundle).IsNotNull();
         await Assert.That(bundle.Text).IsEqualTo(TranscoderText);
+
+        // Load again to verify loading the same thing twice gives us the cached value
+        var altBuilder = new AssetBundleBuilder(assetManager);
+        var altHandle = altBuilder.Load<string, NoSettings>(id, default);
+        var altLoader = altBuilder.Build(resolver => new TestBundle(resolver.Get(altHandle)));
+
+        TestBundle? altBundle = null;
+        await Assert.That(() =>
+        {
+            assetManager.Update();
+            return altLoader.IsReady(out altBundle);
+        })
+        .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
+
+        await Assert.That(altBundle).IsNotNull();
+        await Assert.That(altBundle.Text).IsSameReferenceAs(bundle.Text);
     }
 
     private record TestBundle(string Text);

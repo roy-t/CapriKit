@@ -48,8 +48,17 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
+    /// Use to defines a bundle of assets to load
+    /// Threading: thread-safe.
+    /// </summary>
+    public AssetBundleBuilder CreateBundle()
+    {
+        return new AssetBundleBuilder(this);
+    }
+
+    /// <summary>
     /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
-    /// The caller gets a handle to be used in an <see cref="AssetBundleLoader"/> which can be resolved
+    /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
     /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{T}.IsReady"/>
     /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
     /// is not loaded multiple times concurrently.
@@ -57,7 +66,7 @@ public sealed partial class AssetManager : IDisposable
     internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
-        var handle = new AssetHandle<TAsset>();
+        var handle = new AssetHandle<TAsset>(id);
 
         // At this time an asset is either already loaded, already requested or requested for the first time.
         // The lock ensure that this does not change while we check what we should do with the request.
@@ -123,10 +132,29 @@ public sealed partial class AssetManager : IDisposable
         }
     }
 
-    // Thread safe
-    public void Unload(AssetId id)
+    /// <summary>
+    /// Unloads all assets in the bundle.
+    /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
+    /// to unload the same bundle from multiple threads.
+    /// </summary>
+    public void Unload(AssetBundle bundle)
     {
-        Cache.Return(id);
+        try
+        {
+            RequestLock.Enter();
+            if (bundle.IsActive)
+            {
+                foreach (var asset in bundle.Assets)
+                {
+                    Cache.Return(asset);
+                }
+            }
+        }
+        finally
+        {
+            bundle.IsActive = false;
+            RequestLock.Exit();
+        }
     }
 
     /// <summary>
@@ -203,7 +231,6 @@ public sealed partial class AssetManager : IDisposable
         return true;
     }
 
-    // TODO: ensure that HotReloadManager.Track is thread safe
     /// <summary>
     /// Used when an asset is loaded and the handler resolved to register the asset with the cache and hot-reloader.
     /// Thread safe: calling this method from multiple threads, even to materialize the same asset is safe.
@@ -215,7 +242,7 @@ public sealed partial class AssetManager : IDisposable
         var actualObject = Cache.PutOrLease(asset.Id, asset.Value);
 
         var actualWrapper = new Asset<TAsset, TSettings>(asset.Id, actualObject, asset.BuildMetaData);
-        HotReloadManager.Track(actualWrapper, transcoder); // TODO: track needs to be thread safe and ignore adding the same thing multiple times!
+        HotReloadManager.Track(actualWrapper, transcoder);
         return actualObject;
     }
 

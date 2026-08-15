@@ -35,6 +35,13 @@ internal sealed partial class AssetCache : IDisposable
 
             if (Entries.TryGetValue(id, out var entry))
             {
+                // If someone tries to add the same instance twice
+                // just return it, do not schedule it for dispose
+                if (object.ReferenceEquals(candidate, entry))
+                {
+                    return candidate;
+                }
+
                 PendingDispose.Enqueue(new Entry(id, candidate, 0));
 
                 var asset = Cast<TAsset>(entry, id);

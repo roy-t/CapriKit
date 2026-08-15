@@ -12,7 +12,6 @@ namespace CapriKit.AssetPipeline;
 /// Encodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself.
 /// Threading: thread-safe
 /// </summary>
-// TODO: AssetEncoder it should be possible to override the output path
 internal static class AssetEncoder
 {
     public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem, Stream? outputStreamOverride = default)
@@ -20,18 +19,27 @@ internal static class AssetEncoder
     {
         ThrowOnFileNotFound(id.Path, fileSystem);
         var outputPath = ToEncodedFilePath(id);
+        Stream? output = null;
+        try
+        {            
+            output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath);
+            var writer = PipeWriter.Create(output, new StreamPipeWriterOptions(leaveOpen: true));
+            var spy = fileSystem.SpyOn();
 
-        using var output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath);
-        var writer = PipeWriter.Create(output);
-        var spy = fileSystem.SpyOn();
+            WriteHeader(writer, encoder);
+            WriteSettings(writer, encoder, settings);
+            await WritePayload(writer, id, encoder, settings, spy);
+            WriteDependencies(writer, spy);
 
-        WriteHeader(writer, encoder);
-        WriteSettings(writer, encoder, settings);
-        await WritePayload(writer, id, encoder, settings, spy);
-        WriteDependencies(writer, spy);
+            await writer.FlushAsync();
+            await writer.CompleteAsync();
+        }
+        finally
+        {
+            // Only dispose of the stream if we created it.
+            if (outputStreamOverride is null) { output?.Dispose(); }
+        }
 
-        await writer.FlushAsync();
-        await writer.CompleteAsync();
     }
 
     private static void WriteHeader(PipeWriter writer, IAssetTranscoder encoder)

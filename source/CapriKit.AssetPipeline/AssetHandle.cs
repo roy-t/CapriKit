@@ -2,12 +2,15 @@ using System.Diagnostics;
 
 namespace CapriKit.AssetPipeline;
 
-public abstract class AssetHandle()
+public abstract class AssetHandle(AssetId id)
 {
-    internal protected bool isResolved;
-    internal protected object? value;
+    public AssetId Id { get; } = id;
 
-    internal AssetBundleLoader? Owner { get; set; }
+    private object? value;
+    private volatile bool isResolved;
+
+
+    internal AssetBundle? Owner { get; set; }
     internal bool IsResolved => isResolved;
     internal object? Value => value;
 
@@ -19,9 +22,9 @@ public abstract class AssetHandle()
     }
 }
 
-public sealed class AssetHandle<TValue> : AssetHandle { }
+public sealed class AssetHandle<TValue>(AssetId id) : AssetHandle(id) { }
 
-public sealed class AssetHandleResolver(AssetBundleLoader owner)
+public sealed class AssetHandleResolver(AssetBundle owner)
 {
     public TValue Get<TValue>(AssetHandle<TValue> promise)
     {

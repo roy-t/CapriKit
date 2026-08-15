@@ -29,7 +29,7 @@ internal sealed partial class HotReloadManager : IDisposable
     private readonly ConcurrentQueue<HotSwapAction> PendingReloads;
 
     private long lastFileChange;
-    private bool isReloading;
+    private volatile bool isReloading;
 
     public HotReloadManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
@@ -64,6 +64,7 @@ internal sealed partial class HotReloadManager : IDisposable
             var reloadable = new HotReloadable<TAsset, TSettings>(asset, transcoder);
             if (Tracked.TryGetValue(asset.Id, out var assets))
             {
+                // TODO: this is broken!!!!
                 // Prevent adding the exact same instance multiple times
                 if (assets.Any(a => object.ReferenceEquals(a, asset))) { return; }
                 assets.Add(reloadable);
@@ -73,19 +74,20 @@ internal sealed partial class HotReloadManager : IDisposable
                 Tracked[asset.Id] = [reloadable];
             }
 
-            foreach (var dependency in asset.BuildMetaData.Dependencies)
-            {
-                var file = dependency.File;
-                if (Dependents.TryGetValue(file, out var ids))
-                {
-                    ids.Add(asset.Id);
-                }
-                else
-                {
-                    ids = [asset.Id];
-                    Dependents.Add(file, ids);
-                }
-            }
+            RegisterFileDependencies(asset.Id, asset.BuildMetaData.Dependencies);
+        }
+    }
+
+    /// <summary>
+    /// Stops tracking an asset
+    /// </summary>
+    public void UnTrack(AssetId id)
+    {
+        // Do not remove all references from dependents as that would require us to go through the entire collection
+        // but just forgetting it from tracked the asset will no longer be reloaded.
+        lock (TrackingLock)
+        {
+            Tracked.Remove(id);
         }
     }
 
@@ -112,20 +114,23 @@ internal sealed partial class HotReloadManager : IDisposable
 
     /// <summary>
     /// Drains the queue of file events and adds any assets that dependent on this file to PendingRebuilds
-    /// Threading: Unsafe, must be called single threaded because the Dependents dictionary can only
+    /// Threading: Unsafe, must be called single threaded because PendingRebuilds can only
     /// be used by one thread at a time.
     /// </summary>
     private void DrainFileChanges()
     {
-        while (FileChances.TryDequeue(out var @event))
+        lock (TrackingLock)
         {
-            if (Dependents.TryGetValue(@event.File, out var dependents))
+            while (FileChances.TryDequeue(out var @event))
             {
-                lastFileChange = Stopwatch.GetTimestamp();
-                foreach (var id in dependents)
+                if (Dependents.TryGetValue(@event.File, out var dependents))
                 {
-                    PendingRebuilds.Add(id);
-                    LogPendingReload(Logger, @event.File, id);
+                    lastFileChange = Stopwatch.GetTimestamp();
+                    foreach (var id in dependents)
+                    {
+                        PendingRebuilds.Add(id);
+                        LogPendingReload(Logger, @event.File, id);
+                    }
                 }
             }
         }
@@ -143,47 +148,52 @@ internal sealed partial class HotReloadManager : IDisposable
         var id = PendingRebuilds.First();
         PendingRebuilds.Remove(id);
 
-        isReloading = true;
-
-        LogReloadStarted(Logger, id);
-
         HotReloadable? target = null;
-        List<HotReloadable> candidates;
+        List<HotReloadable>? candidates;
 
         // Even though this method is single threaded, other methods that allow parallelism can
         // touch Tracked so we need to put a lock around it.
         lock (TrackingLock)
         {
-            candidates = Tracked[id];
-        }
+            if (!Tracked.TryGetValue(id, out candidates))
+            {
+                return;
+            }
 
-        if (candidates.Count > 0)
-        {
-            var pruned = new List<HotReloadable>(1);
+            // TODO: we allow users to add the same asset-id multiple times but we expect
+            // that (after a while) only one of the asset instances is still used by the engine. The
+            // others will be garbage collected eventually. Still, at this point in time we cannot be sure
+            // that the first (or last, or..) alive candidate is the one that will survive.
+            // How should we deal with that?
             foreach (var candidate in candidates)
             {
                 if (candidate.IsAlive)
                 {
-                    pruned.Add(candidate);
                     target = candidate;
+                    break;
                 }
             }
         }
 
         // Not finding a target is normal, it means a file
         // changed but the asset depending on it is no longer in use.
-        target?.Reload(FileSystem, PendingReloads)
-                .FireAndForget(ex =>
-                {
-                    LogReloadFailed(Logger, id, ex);
-                    isReloading = false;
-                },
-                () =>
-                {
-                    LogReloadCompleted(Logger, id);
-                    isReloading = false;
-                });
+        if (target != null)
+        {
+            LogReloadStarted(Logger, id);
 
+            isReloading = true;
+            Task.Run(() => target.Reload(FileSystem, PendingReloads)
+               .FireAndForget(ex =>
+               {
+                   LogReloadFailed(Logger, id, ex.SourceException);
+                   isReloading = false;
+               },
+               () =>
+               {
+                   LogReloadCompleted(Logger, id);
+                   isReloading = false;
+               }));
+        }
     }
 
     /// <summary>
@@ -199,11 +209,35 @@ internal sealed partial class HotReloadManager : IDisposable
             {
                 LogHotSwapStarted(Logger, action.Id);
                 action.PerformHotSwap();
+
+                RegisterFileDependencies(action.Id, action.Dependencies);
+
                 LogHotSwapCompleted(Logger, action.Id);
             }
             catch (Exception ex)
             {
                 LogHotSwapFailed(Logger, action.Id, ex);
+            }
+        }
+    }
+
+    // Updates the dependents
+    private void RegisterFileDependencies(AssetId id, IReadOnlyList<Dependency> dependencies)
+    {
+        lock (TrackingLock)
+        {
+            foreach (var dependency in dependencies)
+            {
+                var file = dependency.File;
+                if (Dependents.TryGetValue(file, out var ids))
+                {
+                    ids.Add(id);
+                }
+                else
+                {
+                    ids = [id];
+                    Dependents.Add(file, ids);
+                }
             }
         }
     }
@@ -223,7 +257,7 @@ internal sealed partial class HotReloadManager : IDisposable
     [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset pending: {asset}")]
     private static partial void LogReloadStarted(ILogger logger, AssetId asset);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Reloading asset completed: {asset}")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset completed: {asset}")]
     private static partial void LogReloadCompleted(ILogger logger, AssetId asset);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Reloading asset failed: {asset}")]

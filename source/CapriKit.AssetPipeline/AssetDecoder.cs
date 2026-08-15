@@ -9,7 +9,6 @@ namespace CapriKit.AssetPipeline;
 /// Decodes the generic asset envelope and, using a specialized IAssetTranscoder, the asset itself
 /// Threading: thread-safe
 /// </summary>
-// TODO: AssetDecoder it should be possible to override the output path
 internal static class AssetDecoder
 {
     public static async Task<Asset<TAsset, TSettings>> Decode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> decoder, IReadOnlyVirtualFileSystem fileSystem, Stream? inputStreamOverride = default)

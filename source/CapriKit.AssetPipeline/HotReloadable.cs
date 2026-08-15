@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 
 namespace CapriKit.AssetPipeline;
 
-internal sealed record HotSwapAction(AssetId Id, Action PerformHotSwap);
+internal sealed record HotSwapAction(AssetId Id, IReadOnlyList<Dependency> Dependencies, Action PerformHotSwap);
 
 internal abstract class HotReloadable(AssetId id)
 {
@@ -42,6 +42,6 @@ internal sealed class HotReloadable<TAsset, TSettings> : HotReloadable
         stream.Seek(0, SeekOrigin.Begin);
         var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem, stream);
 
-        hotSwapActionQueue.Enqueue(new HotSwapAction(Id, () => Transcoder.HotSwap(cold, hot.Value)));
+        hotSwapActionQueue.Enqueue(new HotSwapAction(Id, hot.BuildMetaData.Dependencies, () => Transcoder.HotSwap(cold, hot.Value)));        
     }
 }

@@ -2,9 +2,15 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.AssetPipeline;
 
-public sealed class AssetBundleBuilder(AssetManager assetManager)
+public sealed class AssetBundleBuilder
 {
     private readonly List<AssetHandle> Handles = [];
+    private readonly AssetManager assetManager;
+
+    internal AssetBundleBuilder(AssetManager assetManager)
+    {
+        this.assetManager = assetManager;
+    }
 
     public AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
@@ -20,6 +26,7 @@ public sealed class AssetBundleBuilder(AssetManager assetManager)
         var bundle = new AssetBundleLoader<TBundle>(factory, Handles);
         foreach (var handle in Handles)
         {
+            bundle.Add(handle.Id);
             handle.Owner = bundle;
         }
 
@@ -27,50 +34,48 @@ public sealed class AssetBundleBuilder(AssetManager assetManager)
     }
 }
 
-public abstract class AssetBundleLoader
+public abstract class AssetBundle
 {
+    private readonly HashSet<AssetId> AssetSet = [];
 
+    internal void Add(AssetId id) => AssetSet.Add(id);
+    internal bool IsActive { get; set; } = true;
+
+    public IReadOnlySet<AssetId> Assets => AssetSet;
 }
 
 public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle> factory, IReadOnlyList<AssetHandle> handles)
-    : AssetBundleLoader
+    : AssetBundle
     where TBundle : notnull
 {
+    private bool isReady;
     private TBundle? result;
 
     // Single threaded!
     // TODO: can we reduce the number of things we need to check each frame?
     public bool IsReady([NotNullWhen(true)] out TBundle? value)
     {
-        if (result == null)
+        if (isReady)
         {
-            foreach (var handle in handles)
-            {
-                if (!handle.IsResolved)
-                {
-                    value = default;
-                    return false;
-                }
-            }
-
-            result = factory(new AssetHandleResolver(this));
+            value = result!;
+            return true;
         }
+
+        foreach (var handle in handles)
+        {
+            if (!handle.IsResolved)
+            {
+                value = default;
+                return false;
+            }
+        }
+
+        result = factory(new AssetHandleResolver(this));
+        isReady = true;
 
         value = result;
         return true;
     }
 
-    // TODO: how do we block and wait?
-}
-
-public sealed record ExampleAssets(object A, string B)
-{
-    public static AssetBundleLoader<ExampleAssets> Load(AssetManager assetManager)
-    {
-        var builder = new AssetBundleBuilder(assetManager);
-        var a = builder.Load<string, NoSettings>(new AssetId("key", "path"), default);
-        var b = builder.Load<string, NoSettings>(new AssetId("key", "path"), default);
-
-        return builder.Build(r => new ExampleAssets(r.Get(a), r.Get(b)));
-    }
+    // TODO: Add a method to block and wait without eating all the CPU.
 }
