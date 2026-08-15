@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hot Reload Without Asset References</title>
+<style>
+:root {
+  --paper:#EFF2F3; --surface:#FFFFFF; --surface-2:#E5EAEC; --sunken:#F5F8F8;
+  --ink:#111A1E; --ink-2:#33454C; --muted:#64777F; --rule:#D2DADD; --rule-2:#BCC8CC;
+  --accent:#0B6C75; --accent-soft:#DAEAEC;
+  --crit:#A8281C; --crit-soft:#F6E2DF;
+  --high:#9C560B; --high-soft:#F7E8D8;
+  --med:#6F6212; --med-soft:#F2EEDA;
+  --low:#4E636D; --low-soft:#E4EAED;
+  --ok:#1C6440; --ok-soft:#DDECE4;
+  --shadow:0 1px 2px rgba(17,26,30,.06), 0 4px 14px rgba(17,26,30,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+    --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+    --accent:#57C2CA; --accent-soft:#0F3238;
+    --crit:#FF8272; --crit-soft:#3A1B18;
+    --high:#F0A247; --high-soft:#372516;
+    --med:#D8C55D; --med-soft:#332E14;
+    --low:#95AAB4; --low-soft:#1E2B31;
+    --ok:#5FCB8F; --ok-soft:#12301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+  --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+  --accent:#57C2CA; --accent-soft:#0F3238;
+  --crit:#FF8272; --crit-soft:#3A1B18;
+  --high:#F0A247; --high-soft:#372516;
+  --med:#D8C55D; --med-soft:#332E14;
+  --low:#95AAB4; --low-soft:#1E2B31;
+  --ok:#5FCB8F; --ok-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.62; text-rendering:optimizeLegibility;
+}
+code, kbd, .mono {
+  font-family:"Cascadia Mono","Cascadia Code",ui-monospace,"JetBrains Mono",Consolas,"Liberation Mono",monospace;
+}
+h1,h2,h3,h4 { font-family:"Cascadia Mono","Cascadia Code",ui-monospace,Consolas,monospace; font-weight:600; text-wrap:balance; margin:0; letter-spacing:-.015em; }
+a { color:var(--accent); text-underline-offset:.2em; }
+a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+
+.wrap { max-width:1120px; margin:0 auto; padding:0 24px; }
+
+.masthead { border-bottom:1px solid var(--rule); background:var(--surface); }
+.masthead .wrap { padding-top:44px; padding-bottom:34px; }
+.eyebrow { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
+h1 { font-size:clamp(28px,4.4vw,44px); line-height:1.12; }
+.standfirst { margin-top:16px; max-width:64ch; color:var(--ink-2); font-size:17px; }
+.meta { margin-top:26px; display:flex; flex-wrap:wrap; gap:10px 28px; font-size:12.5px; color:var(--muted); }
+.meta b { color:var(--ink-2); font-weight:600; }
+
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin:34px 0 0; }
+.tile { background:var(--surface); padding:16px 18px; }
+.tile .k { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.tile .v { font-size:27px; line-height:1.15; margin-top:7px; font-variant-numeric:tabular-nums;
+  font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-weight:600; }
+.tile .n { font-size:12px; color:var(--muted); margin-top:3px; }
+.v.crit{color:var(--crit);} .v.high{color:var(--high);} .v.ok{color:var(--ok);} .v.acc{color:var(--accent);}
+
+section { padding:52px 0 8px; }
+section > .wrap > h2 { font-size:23px; padding-bottom:11px; border-bottom:2px solid var(--ink); display:inline-block; }
+h3.sub { font-size:16px; margin-top:38px; color:var(--ink); }
+.lede { margin:20px 0 4px; max-width:70ch; color:var(--ink-2); }
+p { margin:14px 0; }
+.wrap > p, .lede { max-width:72ch; }
+
+pre { background:var(--sunken); border:1px solid var(--rule); border-radius:6px; padding:14px 16px;
+  overflow-x:auto; margin:12px 0; font-size:13px; line-height:1.58; }
+pre code { color:var(--ink-2); }
+p code, li code, td code { background:var(--sunken); border:1px solid var(--rule); border-radius:3px;
+  padding:.5px 5px; font-size:.875em; color:var(--ink-2); }
+.bad { border-left:3px solid var(--crit); }
+.good { border-left:3px solid var(--ok); }
+.term { border-left:3px solid var(--accent); }
+
+.tscroll { overflow-x:auto; margin:20px 0; border:1px solid var(--rule); border-radius:7px; background:var(--surface); }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td { border-bottom:none; }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; }
+tfoot td { font-weight:700; background:var(--surface-2); border-top:2px solid var(--rule-2); }
+.sev { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.sev.crit{color:var(--crit);} .sev.high{color:var(--high);} .sev.med{color:var(--med);}
+.sev.low{color:var(--low);} .sev.ok{color:var(--ok);}
+td.gone { color:var(--ok); font-weight:700; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; white-space:nowrap; }
+
+.callout { background:var(--accent-soft); border:1px solid var(--accent); border-radius:7px; padding:16px 20px; margin:22px 0; }
+.callout .label { color:var(--accent); }
+.callout p:last-child { margin-bottom:0; }
+.callout p:first-of-type { margin-top:0; }
+.callout.win { background:var(--ok-soft); border-color:var(--ok); }
+.callout.win .label { color:var(--ok); }
+.callout.warn { background:var(--high-soft); border-color:var(--high); }
+.callout.warn .label { color:var(--high); }
+.label { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px; }
+
+.cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:20px; margin:20px 0; }
+.panel { background:var(--surface); border:1px solid var(--rule); border-radius:7px; padding:18px 20px; }
+.panel h4 { font-size:13.5px; margin-bottom:8px; }
+.panel.before h4 { color:var(--crit); }
+.panel.after h4 { color:var(--ok); }
+.panel pre { margin-bottom:0; }
+
+ul.tight { margin:12px 0; padding-left:20px; }
+ul.tight li { margin:7px 0; }
+
+details { background:var(--surface); border:1px solid var(--rule); border-radius:7px; padding:14px 20px; margin:18px 0; }
+summary { cursor:pointer; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:14px; font-weight:600; }
+details[open] summary { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--rule); }
+
+.verdict { background:var(--surface); border:1px solid var(--rule-2); border-left:5px solid var(--accent);
+  border-radius:7px; padding:22px 24px; margin:26px 0; box-shadow:var(--shadow); }
+.verdict h3 { font-size:17px; margin-bottom:6px; }
+
+footer { margin-top:60px; border-top:1px solid var(--rule); background:var(--surface); }
+footer .wrap { padding:28px 24px 44px; }
+footer p { font-size:13px; color:var(--muted); max-width:76ch; }
+
+@media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+@media (max-width:640px) { .wrap{padding:0 16px;} }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow mono">CapriKit &middot; feature/asset_pipeline &middot; design exploration</div>
+    <h1>Hot Reload Without Asset References</h1>
+    <p class="standfirst">What happens to the code, and to the number of things you have to keep in your head, if
+      <code>HotReloadManager</code> stops holding assets entirely &mdash; and instead asks <code>AssetCache</code> for a
+      lease whenever a file changes.</p>
+    <div class="meta mono">
+      <span><b>Baseline</b> 321 lines &mdash; HotReloadManager.cs + HotReloadable.cs</span>
+      <span><b>Status</b> exploration, nothing implemented</span>
+      <span><b>Date</b> 2026-08-15</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="k">Concepts removed</div><div class="v ok">7</div><div class="n">two added</div></div>
+      <div class="tile"><div class="k">Findings closed</div><div class="v ok">H3 H5</div><div class="n">by construction, not by fix</div></div>
+      <div class="tile"><div class="k">Lines</div><div class="v acc">&minus;27</div><div class="n">321 &rarr; ~294, only &minus;8%</div></div>
+      <div class="tile"><div class="k">New locks</div><div class="v ok">0</div><div class="n">all cache calls main-thread</div></div>
+      <div class="tile"><div class="k">Gets harder</div><div class="v high">M5</div><div class="n">shutdown with a live lease</div></div>
+      <div class="tile"><div class="k">Verdict</div><div class="v acc">Do it</div><div class="n">certainty, not size</div></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The idea, and why it works</h2>
+
+    <p class="lede">The contract changes from a sentence with a hedge in it to a sentence without one.</p>
+
+    <div class="cols">
+      <div class="panel before">
+        <h4>Today</h4>
+        <p style="margin:0;font-size:14.5px">&ldquo;<code>HotReloadManager</code> keeps weak references to the assets it has
+          seen, and when a file changes it picks the first one the GC has not collected yet and hopes that is the one the
+          engine is actually using.&rdquo;</p>
+      </div>
+      <div class="panel after">
+        <h4>Proposed</h4>
+        <p style="margin:0;font-size:14.5px">&ldquo;<code>HotReloadManager</code> knows <em>how</em> to rebuild an asset.
+          <code>AssetCache</code> knows <em>whether anyone still wants it</em>. When a file changes, the manager asks the
+          cache for a lease; if it gets one, it rebuilds.&rdquo;</p>
+      </div>
+    </div>
+
+    <p>The whole design rests on one property that is already true in the cache you have written, and it is worth being
+      precise about it because everything else follows:</p>
+
+    <pre class="good"><code>// AssetCache.Return, line 93-99
+entry.RefCount--;
+// Evict items immediately, but only dispose of them in Collect
+if (entry.RefCount &lt;= 0)
+{
+    Entries.Remove(id);          // &lt;-- gone from Entries the instant the last user lets go
+    PendingDispose.Enqueue(entry);
+}</code></pre>
+
+    <p>Eviction from <code>Entries</code> is <strong>immediate and deterministic</strong>; only the <code>Dispose</code> call
+      is deferred to <code>Collect()</code>. So <code>TryLease</code> returning <code>false</code> means exactly
+      &ldquo;no live user holds this asset&rdquo; &mdash; not &ldquo;the GC happens to have got round to it&rdquo;. That is
+      the question <code>HotReloadable.IsAlive</code> has been trying and failing to answer since it was written, and the
+      cache has been answering it correctly all along. Nobody was asking.</p>
+
+    <div class="callout win">
+      <span class="label">The two guarantees a lease buys you</span>
+      <p><strong>1. Liveness.</strong> <code>TryLease</code> succeeds &rArr; at least one real user holds this asset. Entries
+        at refcount&nbsp;0 are not in <code>Entries</code>, so they cannot be leased. H3 &mdash; hot-swapping an asset
+        <code>Collect</code> already disposed &mdash; becomes unrepresentable rather than merely unlikely.</p>
+      <p><strong>2. Identity stability.</strong> While you hold the lease the entry cannot be evicted, and
+        <code>PutOrLease</code> only ever inserts when an entry is <em>absent</em>. So the instance you leased is still the
+        instance the cache holds when your rebuild lands one frame later. That is a proof, not a hope &mdash; and it deletes
+        the whole stale-swap detection layer (<code>IsCurrent</code>, <code>HotSwapAction.Target</code>,
+        <code>DiscardNewParts</code>) that the previous report proposed for exactly this window.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What the manager still has to hold</h2>
+
+    <p class="lede">This is where the idea meets the type system, and it is the one place where the result is less tidy than
+      the sentence above suggests.</p>
+
+    <p>You cannot delete the per-asset object. On a file-change event the manager has an <code>AssetId</code> and nothing
+      else &mdash; no <code>TAsset</code>, no <code>TSettings</code>. But <code>Cache.TryLease&lt;TAsset&gt;</code> is
+      generic, and <code>AssetEncoder.Encode</code> needs both type parameters. Something has to carry those types from
+      registration time to reload time, and in C# that something is an object with an abstract base:</p>
+
+    <pre class="good"><code>internal abstract class ReloadRecipe(AssetId id)
+{
+    public AssetId Id { get; } = id;
+    public IReadOnlyList&lt;Dependency&gt; Dependencies { get; set; } = [];
+
+    /// &lt;summary&gt;
+    /// Leases the live instance from the cache and starts a rebuild on the thread pool.
+    /// Returns false when no live instance exists, which means this recipe is dead and can be forgotten.
+    /// The lease is released in HotSwapPending, exactly once, whether the rebuild succeeds or fails.
+    /// &lt;/summary&gt;
+    public abstract bool TryStartReload(AssetCache cache, IVirtualFileSystem fileSystem,
+        ConcurrentQueue&lt;ReloadResult&gt; results, out Task reload);
+}</code></pre>
+
+    <p>So the class hierarchy survives. What changes is <em>what it holds</em>, and that is the entire point:</p>
+
+    <div class="cols">
+      <div class="panel before">
+        <h4>HotReloadable&lt;TAsset, TSettings&gt; &mdash; today</h4>
+        <pre class="bad"><code>private readonly WeakReference&lt;TAsset&gt; Instance;   // &lt;-- an asset
+private readonly TSettings Settings;
+private readonly IAssetTranscoder&lt;TAsset, TSettings&gt; Transcoder;
+
+public override bool IsAlive =&gt; Instance.TryGetTarget(out var _);</code></pre>
+      </div>
+      <div class="panel after">
+        <h4>ReloadRecipe&lt;TAsset, TSettings&gt; &mdash; proposed</h4>
+        <pre class="good"><code>private readonly TSettings Settings;
+private readonly IAssetTranscoder&lt;TAsset, TSettings&gt; Transcoder;
+
+// no asset field, so no IsAlive, and nothing to keep alive</code></pre>
+      </div>
+    </div>
+
+    <p>One field goes. Everything that field's ambiguity <em>forced</em> goes with it, and that is a much longer list than
+      one field: <code>IsAlive</code> on the base and the override, the candidate-selection loop and its five-line TODO in
+      <code>ReloadOne</code>, the <code>List&lt;HotReloadable&gt;</code> that only existed because the manager could not tell
+      the instances apart, the broken dedupe guard (H5), the <code>pruned</code> list that gets built and discarded, and
+      <code>UnTrack</code>, which has no caller today and now never needs one.</p>
+
+    <div class="callout">
+      <span class="label">Make it structural, not documentary</span>
+      <p>&ldquo;Holds no asset references&rdquo; should be visible in the signature rather than true by inspection. Today
+        <code>Track</code> takes the whole <code>Asset&lt;TAsset, TSettings&gt;</code> and simply chooses not to keep
+        <code>.Value</code>. Narrow the parameters instead, and the property becomes something the compiler enforces:</p>
+      <pre class="good"><code>// before: the asset is right there, one careless line away from being captured
+public void Track&lt;TAsset, TSettings&gt;(Asset&lt;TAsset, TSettings&gt; asset, IAssetTranscoder&lt;TAsset, TSettings&gt; transcoder)
+
+// after: there is nothing to capture
+public void Track&lt;TAsset, TSettings&gt;(AssetId id, TSettings settings,
+    IReadOnlyList&lt;Dependency&gt; dependencies, IAssetTranscoder&lt;TAsset, TSettings&gt; transcoder)</code></pre>
+      <p>Same reasoning as <code>AssetHandle</code> having no <code>.Value</code> accessor: the invariant that survives is
+        the one the type system carries.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>The code, before and after</h2>
+
+    <h3 class="sub">Track &mdash; 22 lines to 6</h3>
+    <div class="cols">
+      <div class="panel before">
+        <h4>HotReloadManager.cs:58-79</h4>
+        <pre class="bad"><code>lock (TrackingLock)
+{
+    var reloadable = new HotReloadable&lt;TAsset, TSettings&gt;(asset, transcoder);
+    if (Tracked.TryGetValue(asset.Id, out var assets))
+    {
+        // TODO: this is broken!!!!
+        // Prevent adding the exact same instance multiple times
+        if (assets.Any(a =&gt; object.ReferenceEquals(a, asset))) { return; }
+        assets.Add(reloadable);
+    }
+    else
+    {
+        Tracked[asset.Id] = [reloadable];
+    }
+
+    RegisterFileDependencies(asset.Id, asset.BuildMetaData.Dependencies);
+}</code></pre>
+      </div>
+      <div class="panel after">
+        <h4>proposed</h4>
+        <pre class="good"><code>// One live instance per id is the cache's guarantee,
+// so one recipe per id is all we can ever need.
+Tracked[id] = new ReloadRecipe&lt;TAsset, TSettings&gt;(id, settings, transcoder)
+{
+    Dependencies = dependencies
+};
+
+ReplaceFileDependencies(id, dependencies);</code></pre>
+      </div>
+    </div>
+    <p>The dedupe question that H5 got wrong does not get a correct answer here &mdash; it stops being asked. There is one
+      entry per id because the cache guarantees one instance per id, and re-tracking is an overwrite of a recipe that was
+      equal anyway.</p>
+
+    <h3 class="sub">ReloadOne &mdash; 54 lines to 24, and the TODO goes</h3>
+    <div class="cols">
+      <div class="panel before">
+        <h4>HotReloadManager.cs:144-197</h4>
+        <pre class="bad"><code>lock (TrackingLock)
+{
+    if (!Tracked.TryGetValue(id, out candidates)) { return; }
+
+    // TODO: we allow users to add the same asset-id multiple times but we expect
+    // that (after a while) only one of the asset instances is still used by the engine. The
+    // others will be garbage collected eventually. Still, at this point in time we cannot be sure
+    // that the first (or last, or..) alive candidate is the one that will survive.
+    // How should we deal with that?
+    foreach (var candidate in candidates)
+    {
+        if (candidate.IsAlive) { target = candidate; break; }
+    }
+}
+
+// Not finding a target is normal, it means a file
+// changed but the asset depending on it is no longer in use.
+if (target != null) { /* snip: dispatch */ }</code></pre>
+      </div>
+      <div class="panel after">
+        <h4>proposed</h4>
+        <pre class="good"><code>if (!Tracked.TryGetValue(id, out var recipe)) { return; }
+
+// The cache is the authority. A successful lease answers
+// "is anyone still using this?" and guarantees the instance
+// survives until the swap lands.
+if (!recipe.TryStartReload(Cache, FileSystem, PendingReloads, out var reload))
+{
+    Forget(id);   // nobody holds it: drop the recipe and its file edges
+    return;
+}
+
+LogReloadStarted(Logger, id);
+isReloading = true;
+reload.FireAndForget(
+    ex =&gt; { LogReloadFailed(Logger, id, ex.SourceException); isReloading = false; },
+    () =&gt; { isReloading = false; });</code></pre>
+      </div>
+    </div>
+
+    <h3 class="sub">The recipe &mdash; where the lease is taken</h3>
+    <pre class="good"><code>public override bool TryStartReload(AssetCache cache, IVirtualFileSystem fileSystem,
+    ConcurrentQueue&lt;ReloadResult&gt; results, out Task reload)
+{
+    // Main thread. Fails when the last bundle already returned the asset,
+    // which is exactly the case where reloading would be pointless or unsafe.
+    if (!cache.TryLease&lt;TAsset&gt;(Id, out var cold))
+    {
+        reload = Task.CompletedTask;
+        return false;
+    }
+
+    reload = Task.Run(async () =&gt;
+    {
+        try
+        {
+            using var stream = new MemoryStream();
+            await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem, stream).ConfigureAwait(false);
+
+            stream.Seek(0, SeekOrigin.Begin);
+            var hot = await AssetDecoder.Decode(Id, Transcoder, fileSystem, stream).ConfigureAwait(false);
+
+            results.Enqueue(new ReloadResult(Id, hot.BuildMetaData.Dependencies,
+                () =&gt; Transcoder.HotSwap(cold, hot.Value)));
+        }
+        catch
+        {
+            // Always enqueue: HotSwapPending is the single place the lease is released.
+            results.Enqueue(ReloadResult.Failed(Id));
+            throw;
+        }
+    });
+
+    return true;
+}</code></pre>
+
+    <h3 class="sub">HotSwapPending &mdash; the single release point</h3>
+    <pre class="good"><code>private void HotSwapPending()
+{
+    while (PendingReloads.TryDequeue(out var result))
+    {
+        try
+        {
+            if (result.PerformHotSwap is not null)
+            {
+                LogHotSwapStarted(Logger, result.Id);
+                result.PerformHotSwap();
+                ReplaceFileDependencies(result.Id, result.Dependencies!);
+                LogHotSwapCompleted(Logger, result.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            LogHotSwapFailed(Logger, result.Id, ex);
+        }
+        finally
+        {
+            Cache.Return(result.Id);   // the lease from TryStartReload, released exactly once
+        }
+    }
+}</code></pre>
+    <p>One <code>finally</code>, one release point, on the same thread that took the lease. That is the whole lifetime story
+      and it fits on a screen &mdash; which is the property to protect if you build this.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>The clarity ledger</h2>
+    <p class="lede">The honest measure of this change is not lines. It is how many uncertain questions the code stops
+      containing.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Question the code has to answer</th><th>Today</th><th>After</th></tr></thead>
+        <tbody>
+          <tr><td>Is this asset still in use?</td><td><code>WeakReference.IsAlive</code> &mdash; GC timing, wrong answer possible (H3)</td><td class="gone"><code>TryLease</code> &mdash; deterministic, by definition</td></tr>
+          <tr><td>Which of N tracked instances is the live one?</td><td>unanswerable; a 5-line TODO picks the first</td><td class="gone">question deleted &mdash; there is one</td></tr>
+          <tr><td>Is this asset already tracked?</td><td>broken <code>ReferenceEquals</code> across two types (H5)</td><td class="gone">question deleted &mdash; one entry per id</td></tr>
+          <tr><td>Will the instance survive until the swap?</td><td>hope</td><td class="gone">the lease guarantees it</td></tr>
+          <tr><td>Who tells hot reload that an asset died?</td><td>nobody &mdash; <code>UnTrack</code> has no caller</td><td class="gone">nobody needs to; the next lease just fails</td></tr>
+          <tr><td>Is the tracking table still accurate?</td><td>grows forever; <code>pruned</code> is computed and discarded</td><td class="gone">pruned on the failed lease</td></tr>
+          <tr><td>Could the swap target be stale?</td><td>yes &mdash; needs <code>IsCurrent</code> + <code>Target</code> + <code>DiscardNewParts</code></td><td class="gone">no &mdash; the lease makes it impossible</td></tr>
+          <tr><td>Who owns the lease, and when is it released?</td><td class="gone">&mdash; no lease exists</td><td><strong>new:</strong> the recipe takes it, <code>HotSwapPending</code> releases it</td></tr>
+          <tr><td>Does hot reload know about the cache?</td><td class="gone">no &mdash; independent objects</td><td><strong>new:</strong> yes, a constructor dependency</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>Seven uncertain things out, two certain things in.</strong> The two that come in are both of the kind you can
+      point at in a code review: an ownership rule with one release point, and an edge in the object graph. The seven that
+      go out are the kind you can only find by reasoning about GC timing, and one of them (H3) is a confirmed defect that
+      was reproduced last week.</p>
+
+    <div class="callout">
+      <span class="label">A structural note about the file-change map</span>
+      <p><code>Dependents</code> stays &mdash; a file&rarr;ids map is build-graph data, not an asset reference, and this
+        design does not touch it. But it gains a property it does not have today: <strong>it becomes self-pruning</strong>.
+        When <code>TryLease</code> fails, the manager has learned something definite ("this asset is gone") and can drop the
+        recipe and its file edges on the spot. That is what <code>Forget(id)</code> does above, and it is why the
+        <code>pruned</code> list can finally be deleted instead of fixed &mdash; the code never had a trustworthy signal to
+        prune <em>on</em> before.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>What this costs</h2>
+
+    <div class="callout warn">
+      <span class="label">The real trade</span>
+      <p>You are exchanging <em>GC ambiguity</em> for an <em>explicit lifetime obligation that crosses a thread boundary and
+        a queue</em>. A <code>WeakReference</code> has no obligations: forget about it and nothing bad happens. A lease has
+        exactly one, and forgetting it is silent until shutdown. That is a good trade &mdash; the obligation is local,
+        checkable, and lives in one <code>finally</code> &mdash; but it is a real one and it is worth naming before you start.</p>
+    </div>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>New obligation</th><th>Where it lives</th><th>If you get it wrong</th></tr></thead>
+        <tbody>
+          <tr><td>Release the lease exactly once</td><td><code>HotSwapPending</code>'s <code>finally</code></td><td>Refcount never reaches 0; the asset is never disposed; <code>Cache.Dispose</code> throws &ldquo;will leak N entries&rdquo;</td></tr>
+          <tr><td>Enqueue a result even when the rebuild throws</td><td>the recipe's <code>catch { enqueue; throw; }</code></td><td>Same leak, and only on the error path &mdash; the one you will not exercise by hand</td></tr>
+          <tr><td>Drain <code>PendingReloads</code> at shutdown</td><td><code>HotReloadManager.Dispose</code></td><td>M5 gets worse: a reload in flight at shutdown holds a lease no one will release</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub">Two other things get slightly harder</h3>
+    <ul class="tight">
+      <li><strong>M5 moves from "undefined" to "actively broken".</strong> Today, disposing with a reload in flight is merely
+        unspecified. With leases, an in-flight reload holds a refcount, so <code>AssetCache.Dispose</code> will report a leak
+        that is not a real leak. If you build this, M5 stops being a "later" item &mdash; at minimum
+        <code>HotReloadManager.Dispose</code> must drain <code>PendingReloads</code> and return those leases before
+        <code>Cache.Dispose</code> runs.</li>
+      <li><strong>The refcount invariant grows a second kind of holder.</strong> The invariant proposed for B3/M1 was
+        <em>&ldquo;<code>RefCount(id)</code> equals the number of active bundles holding <code>id</code>&rdquo;</em>. It
+        becomes <em>&ldquo;&hellip; plus at most one in-flight reload&rdquo;</em>. Arguably that is cleaner phrased the other
+        way round &mdash; a refcount counts <em>claims</em>, and a reload is a claim &mdash; but you have to restate it, and
+        the XML docs on <code>Return</code> and <code>PutOrLease</code> should say so.</li>
+    </ul>
+
+    <h3 class="sub">And one thing that looks like a cost but is not</h3>
+    <p>A reload can now finish for an asset the game unloaded halfway through: the lease keeps the entry alive, the swap
+      runs, then the lease is returned and the asset is evicted and disposed. That is wasted work &mdash; one rebuild of
+      something nobody wants &mdash; but it is <em>correct</em>, and it replaces today's behaviour, which is a hot swap onto
+      an object <code>Collect</code> has already disposed. Wasted work in a dev-only code path on a debounced file change is
+      not worth engineering away.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Size, honestly</h2>
+    <p class="lede">This is not a size win. Report it to yourself as a certainty win and you will not be disappointed.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Piece</th><th class="num">Now</th><th class="num">After</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><code>Track</code></td><td class="num">22</td><td class="num">8</td><td>no list, no dedupe, no TODO</td></tr>
+          <tr><td><code>ReloadOne</code></td><td class="num">54</td><td class="num">24</td><td>candidate loop and its TODO deleted</td></tr>
+          <tr><td><code>UnTrack</code> &rarr; <code>Forget</code></td><td class="num">9</td><td class="num">8</td><td>same size, finally has a caller</td></tr>
+          <tr><td><code>HotSwapPending</code></td><td class="num">19</td><td class="num">21</td><td>+ the release <code>finally</code></td></tr>
+          <tr><td>dependency map</td><td class="num">19</td><td class="num">28</td><td>only if you take the exact-replacement upgrade</td></tr>
+          <tr><td><code>HotReloadable</code> &rarr; <code>ReloadRecipe</code></td><td class="num">47</td><td class="num">51</td><td>&minus;weak ref, &minus;<code>IsAlive</code>, +lease and failure enqueue</td></tr>
+          <tr><td>cache field + ctor</td><td class="num">0</td><td class="num">3</td><td>the new edge</td></tr>
+        </tbody>
+        <tfoot><tr><td>Total</td><td class="num">321</td><td class="num">~294</td><td>&minus;27 lines, &minus;8%</td></tr></tfoot>
+      </table>
+    </div>
+
+    <p>For comparison, S6 from the first review &mdash; hot reload via closures, opt-in behind a flag so shipping builds
+      never construct it &mdash; was &minus;155 lines. These are orthogonal, and this one makes S6 <em>easier</em>: once the
+      recipe has no asset field it is pure behaviour, which is exactly what a closure is good at. A closure that captures a
+      transcoder and settings is fine; a closure that captures an asset is the bug you are removing. Do this first, and S6
+      becomes a mechanical rewrite instead of a redesign.</p>
+
+    <div class="callout">
+      <span class="label">Zero new locking</span>
+      <p>Both cache calls happen on the main thread &mdash; <code>TryLease</code> in <code>ReloadOne</code>,
+        <code>Return</code> in <code>HotSwapPending</code>, both reached from <code>AssetManager.Update()</code> and, notably,
+        <em>outside</em> <code>RequestLock</code> (<code>AssetManager.cs:184-185</code>). So hot reload takes
+        <code>Cache.Lock</code> and nothing else, no nesting, and the existing
+        <code>RequestLock</code>&nbsp;&rarr;&nbsp;<code>Cache.Lock</code> ordering is untouched. The recommendation from the
+        previous report to delete <code>TrackingLock</code> and replace it with a debug <code>AssertMainThread</code> is
+        independent of this change and composes with it &mdash; after both, there is very little left for a lock to protect.</p>
+    </div>
+
+    <p>One invariant also <em>relaxes</em>: the previous report asked you to comment that <code>Cache.Collect()</code> must
+      run before <code>HotReloadManager.Update()</code>, because evict-then-swap was what made a stale swap detectable. With
+      leases a stale swap cannot happen at all, so that ordering stops being load-bearing. One fewer thing that breaks
+      silently if someone reorders two lines.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>A bonus that falls out</h2>
+    <p class="lede">Your phrasing &mdash; a file that an asset <em>might</em> depend on &mdash; is precise, and this design
+      is what makes the &ldquo;might&rdquo; cheap to remove.</p>
+
+    <p><code>Dependents</code> is an over-approximation today because <code>RegisterFileDependencies</code> only ever
+      <em>adds</em>. An <code>.hlsl</code> that drops an <code>#include</code> keeps that stale edge until process restart,
+      so touching the removed file triggers a full rebuild forever. With consultation the false positive is cheap when the
+      asset is dead &mdash; one failed <code>TryLease</code> &mdash; but it still costs a real rebuild when the asset is
+      live.</p>
+
+    <p>The fix is available now and was not before: a rebuild produces the <em>complete</em> fresh dependency set, and the
+      recipe can hold the previous one (it is a list of paths, not an asset). So the add becomes a replace:</p>
+
+    <pre class="good"><code>private void ReplaceFileDependencies(AssetId id, IReadOnlyList&lt;Dependency&gt; fresh)
+{
+    if (Tracked.TryGetValue(id, out var recipe))
+    {
+        foreach (var old in recipe.Dependencies)
+        {
+            if (Dependents.TryGetValue(old.File, out var ids) &amp;&amp; ids.Remove(id) &amp;&amp; ids.Count == 0)
+            {
+                Dependents.Remove(old.File);
+            }
+        }
+
+        recipe.Dependencies = fresh;
+    }
+
+    foreach (var dependency in fresh)
+    {
+        // snip: existing add
+    }
+}</code></pre>
+
+    <p>About nine extra lines, and <code>Dependents</code> becomes exact instead of monotone. That also closes the residual
+      noted against M8 in the follow-up report. It is optional &mdash; the design works without it &mdash; but it is the
+      cheapest it will ever be, because the recipe already exists and already has nowhere dangerous to point.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Roads not taken</h2>
+
+    <details open>
+      <summary>Put the recipe inside <code>AssetCache.Entry</code> &mdash; rejected</summary>
+      <p>The maximal version of the idea: if the cache holds the recipe too, <code>HotReloadManager</code> keeps only
+        <code>Dependents</code> and its two queues. Tempting, and it would delete <code>Tracked</code> entirely.</p>
+      <p><strong>Rejected</strong> because it destroys the thing that makes the cache useful as an authority in the first
+        place: it is dumb, and it is about lifetime only. Give it transcoder references and it becomes a registry of
+        everything known about an asset, which means every future question ("what settings? what dependencies? what
+        version?") has an obvious wrong home. The <code>object? Tag</code> variant is worse still &mdash; untyped and
+        spooky-at-a-distance. Keep the cache answering exactly one question: <em>does anyone still hold this?</em></p>
+    </details>
+
+    <details>
+      <summary>Derive the transcoder from the cached instance's runtime type &mdash; does not work</summary>
+      <p>It would be neat if the manager could skip recipes entirely: take <code>entry.Asset.GetType()</code> and look up the
+        transcoder in <code>AssetManager.Transcoders</code>. Two reasons it fails, both worth knowing so it does not get
+        re-proposed. <code>Transcoders</code> is keyed on the <em>declared</em> type parameter (<code>IVertexShader</code>),
+        not the runtime type (<code>VertexShader</code>), so the lookup misses. And settings are per-request and typed, so
+        even a successful lookup would not tell you what to rebuild <em>with</em>. The recipe object is doing real work; it
+        is the existential that carries <code>&lt;TAsset, TSettings&gt;</code> across an untyped event.</p>
+    </details>
+
+    <details>
+      <summary>Keep weak references, add an eviction callback &mdash; strictly worse</summary>
+      <p>This was the previous report's H3 recommendation: have the cache call <code>UnTrack(id)</code> on eviction, keep the
+        weak reference, and guard the swap with <code>IsCurrent</code>. It works, and it is roughly the same number of lines
+        (&minus;35 versus &minus;27). But it keeps all three uncertain concepts alive &mdash; GC timing, candidate selection,
+        stale-swap detection &mdash; and adds callback plumbing on top. The lease approach removes the questions instead of
+        answering them. <strong>Prefer this design; treat the earlier H3 advice as superseded.</strong></p>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Verdict</h2>
+
+    <div class="verdict">
+      <h3>Build it &mdash; but for the right reason</h3>
+      <p>At &minus;27 lines this will not feel like a simplification while you are typing it. It is worth doing because of
+        what it deletes from the <em>problem</em> rather than from the file: seven questions the current code either answers
+        wrongly or cannot answer at all, replaced by two it answers by construction. H3 and H5 stop being findings to fix and
+        become states that cannot be reached, and the two TODOs in <code>HotReloadManager</code> &mdash; including the one
+        that just says <code>this is broken!!!!</code> &mdash; are deleted rather than resolved.</p>
+      <p>It also lands at the right time. Hot reload works end to end as of this week, so for the first time there is a
+        working baseline to compare against: build it, then re-run the two-consecutive-reloads check and the
+        swap-after-unload check. The second one should flip from <code>swapped=True</code> (today's bug) to
+        <code>swapped=False</code>, and that single assertion is the whole design in one line.</p>
+      <p><strong>Order:</strong> finish B3 + M1 first &mdash; the lease arithmetic has to be right before you add a second
+        kind of lease holder. Then this. Then M5, which this change promotes from "later" to "required". Then M8's
+        <code>TrackingLock</code> deletion, which by that point is nearly free.</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Scope.</strong> A design exploration, not a review &mdash; nothing here is implemented and no code was
+      changed. Line counts are estimates against the current <code>HotReloadManager.cs</code> (274 lines) and
+      <code>HotReloadable.cs</code> (47 lines) at <code>c7517e7</code>. The one load-bearing claim &mdash; that
+      <code>TryLease</code> fails deterministically once the last user returns an asset &mdash; is read directly from
+      <code>AssetCache.Return</code> at lines 93&ndash;99, where <code>Entries.Remove</code> happens immediately and only the
+      <code>Dispose</code> is deferred to <code>Collect</code>.</p>
+    <p style="margin-top:12px"><strong>Relationship to the other reports.</strong> Supersedes the H3 recommendation in
+      <code>AssetPipelineVNextReviewContinued.html</code> (cache-as-authority via eviction callback), which reached a similar
+      place by a worse route. Independent of, and compatible with, the B3/M1 lease-accounting fix and the M8
+      <code>TrackingLock</code> deletion in that same report, and it makes S6 from
+      <code>AssetPipelineVNextReview.html</code> easier rather than harder.</p>
+  </div>
+</footer>
+
+</body>
+</html>
