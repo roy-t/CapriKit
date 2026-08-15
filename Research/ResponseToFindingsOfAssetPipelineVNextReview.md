@@ -1,3 +1,9 @@
+I have worked through the findings you reported in C:\projects\csharp\CapriKit\research\AssetPipelineVNextReview.html. Read that first so that you are familiar with the issues and issue numbering. I have made substational changes to CapriKit.AssetPipelile and few changes to some tests and CapriKit.Concurrency to address most of the issues.
+
+Below are what I worked on and the questions I have for you. Write a new report html report (call it continued or something like that) and answer my questions. In your new report only give a short one line answer if the problem was fixed satisfactory. If the problem still exists or has created a new problem, report it as normal.
+
+---
+
 I made changes to fix issues B1-B4, please verify. Note that for B4 I do not mind if one failed load kills the game, but I now added a way to handle that so that the game can at least throw a complete error message.
 
 I made changes to fix issues H1, H2 and H4, please verify
@@ -16,3 +22,8 @@ M7: Ignore that for now, users are supposed to initialize the asset manager with
 
 
 M8: I think I fxed this, but there is now a lot of locking going on in HotReloadManager, can we make this simpler or at least more explicit. Hot reloading is very rare so maybe its better to use the concurrent collection types more often?
+
+
+L5: in which places am I missing `ConfigureAwait(false)` not that .FireAndForget sets `ConfigureAwait(false)`
+
+I have not looked at S0 to S7

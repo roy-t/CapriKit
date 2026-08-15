@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asset Pipeline vNext &mdash; Follow-up</title>
+<style>
+:root {
+  --paper:#EFF2F3; --surface:#FFFFFF; --surface-2:#E5EAEC; --sunken:#F5F8F8;
+  --ink:#111A1E; --ink-2:#33454C; --muted:#64777F; --rule:#D2DADD; --rule-2:#BCC8CC;
+  --accent:#0B6C75; --accent-soft:#DAEAEC;
+  --crit:#A8281C; --crit-soft:#F6E2DF;
+  --high:#9C560B; --high-soft:#F7E8D8;
+  --med:#6F6212; --med-soft:#F2EEDA;
+  --low:#4E636D; --low-soft:#E4EAED;
+  --ok:#1C6440; --ok-soft:#DDECE4;
+  --shadow:0 1px 2px rgba(17,26,30,.06), 0 4px 14px rgba(17,26,30,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+    --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+    --accent:#57C2CA; --accent-soft:#0F3238;
+    --crit:#FF8272; --crit-soft:#3A1B18;
+    --high:#F0A247; --high-soft:#372516;
+    --med:#D8C55D; --med-soft:#332E14;
+    --low:#95AAB4; --low-soft:#1E2B31;
+    --ok:#5FCB8F; --ok-soft:#12301F;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"] {
+  --paper:#0E1417; --surface:#151E22; --surface-2:#1E292E; --sunken:#101A1E;
+  --ink:#E6EEF0; --ink-2:#B4C5CB; --muted:#7F949C; --rule:#26343A; --rule-2:#35474E;
+  --accent:#57C2CA; --accent-soft:#0F3238;
+  --crit:#FF8272; --crit-soft:#3A1B18;
+  --high:#F0A247; --high-soft:#372516;
+  --med:#D8C55D; --med-soft:#332E14;
+  --low:#95AAB4; --low-soft:#1E2B31;
+  --ok:#5FCB8F; --ok-soft:#12301F;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
+
+* { box-sizing:border-box; }
+html { -webkit-text-size-adjust:100%; }
+body {
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  font-size:16px; line-height:1.62; text-rendering:optimizeLegibility;
+}
+code, kbd, .mono {
+  font-family:"Cascadia Mono","Cascadia Code",ui-monospace,"JetBrains Mono",Consolas,"Liberation Mono",monospace;
+}
+h1,h2,h3,h4 { font-family:"Cascadia Mono","Cascadia Code",ui-monospace,Consolas,monospace; font-weight:600; text-wrap:balance; margin:0; letter-spacing:-.015em; }
+a { color:var(--accent); text-underline-offset:.2em; }
+a:focus-visible, summary:focus-visible { outline:2px solid var(--accent); outline-offset:3px; border-radius:3px; }
+
+.wrap { max-width:1120px; margin:0 auto; padding:0 24px; }
+
+/* ---------- masthead ---------- */
+.masthead { border-bottom:1px solid var(--rule); background:var(--surface); }
+.masthead .wrap { padding-top:44px; padding-bottom:34px; }
+.eyebrow { font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); margin-bottom:16px; }
+h1 { font-size:clamp(28px,4.4vw,44px); line-height:1.12; }
+.standfirst { margin-top:16px; max-width:64ch; color:var(--ink-2); font-size:17px; }
+.meta { margin-top:26px; display:flex; flex-wrap:wrap; gap:10px 28px; font-size:12.5px; color:var(--muted); }
+.meta b { color:var(--ink-2); font-weight:600; }
+
+/* ---------- status tiles ---------- */
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(158px,1fr)); gap:1px;
+  background:var(--rule); border:1px solid var(--rule); border-radius:8px; overflow:hidden; margin:34px 0 0; }
+.tile { background:var(--surface); padding:16px 18px; }
+.tile .k { font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+.tile .v { font-size:27px; line-height:1.15; margin-top:7px; font-variant-numeric:tabular-nums;
+  font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-weight:600; }
+.tile .n { font-size:12px; color:var(--muted); margin-top:3px; }
+.v.crit{color:var(--crit);} .v.high{color:var(--high);} .v.ok{color:var(--ok);} .v.acc{color:var(--accent);}
+
+/* ---------- sections ---------- */
+section { padding:52px 0 8px; }
+section > .wrap > h2 { font-size:23px; padding-bottom:11px; border-bottom:2px solid var(--ink); display:inline-block; }
+h3.sub { font-size:16px; margin-top:38px; color:var(--ink); }
+.lede { margin:20px 0 4px; max-width:70ch; color:var(--ink-2); }
+p { margin:14px 0; }
+.wrap > p, .lede { max-width:72ch; }
+
+/* ---------- finding cards ---------- */
+.finding { background:var(--surface); border:1px solid var(--rule); border-left:5px solid var(--low);
+  border-radius:7px; padding:20px 22px; margin:18px 0; box-shadow:var(--shadow); }
+.finding.crit{border-left-color:var(--crit);} .finding.high{border-left-color:var(--high);}
+.finding.med{border-left-color:var(--med);} .finding.low{border-left-color:var(--low);}
+.finding.ok{border-left-color:var(--ok);}
+.fhead { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px; }
+.fid { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:12px; font-weight:700;
+  padding:3px 8px; border-radius:4px; background:var(--surface-2); color:var(--ink-2); letter-spacing:.04em; }
+.finding.crit .fid{background:var(--crit-soft);color:var(--crit);}
+.finding.high .fid{background:var(--high-soft);color:var(--high);}
+.finding.med  .fid{background:var(--med-soft); color:var(--med);}
+.finding.low  .fid{background:var(--low-soft); color:var(--low);}
+.finding.ok   .fid{background:var(--ok-soft);  color:var(--ok);}
+.ftitle { font-size:17px; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-weight:600; flex:1 1 320px; line-height:1.4; }
+.floc { font-size:12.5px; color:var(--muted); margin-top:9px; }
+.floc code { color:var(--ink-2); background:var(--sunken); padding:1px 5px; border-radius:3px; font-size:12px; }
+.badges { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.badge { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:10.5px; letter-spacing:.06em;
+  text-transform:uppercase; padding:3px 7px; border-radius:3px; border:1px solid var(--rule-2); color:var(--muted); }
+.badge.repro { border-color:var(--ok); color:var(--ok); background:var(--ok-soft); font-weight:700; }
+.badge.lens { background:var(--surface-2); }
+.finding p { margin:12px 0; }
+.finding p:last-child { margin-bottom:0; }
+.label { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--muted); display:block; margin-bottom:5px; }
+
+/* ---------- code ---------- */
+pre { background:var(--sunken); border:1px solid var(--rule); border-radius:6px; padding:14px 16px;
+  overflow-x:auto; margin:12px 0; font-size:13px; line-height:1.58; }
+pre code { color:var(--ink-2); }
+p code, li code, td code { background:var(--sunken); border:1px solid var(--rule); border-radius:3px;
+  padding:.5px 5px; font-size:.875em; color:var(--ink-2); }
+.bad { border-left:3px solid var(--crit); }
+.good { border-left:3px solid var(--ok); }
+.term { border-left:3px solid var(--accent); }
+
+/* ---------- tables ---------- */
+.tscroll { overflow-x:auto; margin:20px 0; border:1px solid var(--rule); border-radius:7px; background:var(--surface); }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th, td { text-align:left; padding:10px 14px; border-bottom:1px solid var(--rule); vertical-align:top; }
+th { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; letter-spacing:.09em;
+  text-transform:uppercase; color:var(--muted); background:var(--surface-2); white-space:nowrap; }
+tbody tr:last-child td { border-bottom:none; }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; }
+tfoot td { font-weight:700; background:var(--surface-2); border-top:2px solid var(--rule-2); }
+.sev { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:11px; font-weight:700;
+  letter-spacing:.05em; text-transform:uppercase; white-space:nowrap; }
+.sev.crit{color:var(--crit);} .sev.high{color:var(--high);} .sev.med{color:var(--med);}
+.sev.low{color:var(--low);} .sev.ok{color:var(--ok);}
+td.tick { color:var(--ok); font-weight:700; white-space:nowrap; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; }
+
+/* ---------- callouts ---------- */
+.callout { background:var(--accent-soft); border:1px solid var(--accent); border-radius:7px; padding:16px 20px; margin:22px 0; }
+.callout .label { color:var(--accent); }
+.callout p:last-child { margin-bottom:0; }
+.callout p:first-of-type { margin-top:0; }
+.callout.win { background:var(--ok-soft); border-color:var(--ok); }
+.callout.win .label { color:var(--ok); }
+
+ol.steps { list-style:none; counter-reset:s; padding:0; margin:22px 0; }
+ol.steps li { counter-increment:s; position:relative; padding:0 0 0 52px; margin-bottom:20px; }
+ol.steps li::before { content:counter(s,decimal-leading-zero); position:absolute; left:0; top:1px;
+  font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:13px; font-weight:700; color:var(--accent);
+  background:var(--accent-soft); border-radius:5px; padding:4px 9px; }
+ol.steps b { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:14.5px; }
+ol.steps p { margin:5px 0 0; color:var(--ink-2); font-size:14.5px; }
+
+ul.tight { margin:12px 0; padding-left:20px; }
+ul.tight li { margin:7px 0; }
+
+details { background:var(--surface); border:1px solid var(--rule); border-radius:7px; padding:14px 20px; margin:18px 0; }
+summary { cursor:pointer; font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:14px; font-weight:600; }
+details[open] summary { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--rule); }
+
+.qbox { background:var(--surface); border:1px solid var(--rule-2); border-radius:7px; padding:20px 22px;
+  margin:26px 0; box-shadow:var(--shadow); }
+.qbox > .q { font-family:"Cascadia Mono",ui-monospace,Consolas,monospace; font-size:15px; font-weight:600;
+  color:var(--ink); margin:0 0 4px; }
+.qbox > .q::before { content:"Q "; color:var(--accent); }
+.answer { border-left:3px solid var(--accent); padding-left:16px; margin-top:14px; }
+.answer > p:first-child { margin-top:0; }
+
+footer { margin-top:60px; border-top:1px solid var(--rule); background:var(--surface); }
+footer .wrap { padding:28px 24px 44px; }
+footer p { font-size:13px; color:var(--muted); max-width:76ch; }
+
+@media (prefers-reduced-motion:reduce) { * { animation:none !important; transition:none !important; } }
+@media (max-width:640px) { .wrap{padding:0 16px;} .finding{padding:16px;} }
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow mono">CapriKit &middot; feature/asset_pipeline &middot; c7517e7</div>
+    <h1>Asset Pipeline vNext &mdash; Follow-up</h1>
+    <p class="standfirst">Verification of the fixes made in response to
+      <code>AssetPipelineVNextReview.html</code>, plus answers to the four design questions in
+      <code>ResponseToFindingsOfAssetPipelineVNextReview.md</code>. Items that are fixed get one line;
+      everything else is reported in full.</p>
+    <div class="meta mono">
+      <span><b>Verified against</b> 11 findings closed, 3 still open</span>
+      <span><b>Method</b> read + 7 executed repros</span>
+      <span><b>Date</b> 2026-08-15</span>
+      <span><b>Working tree</b> left clean, no source modified</span>
+    </div>
+
+    <div class="tiles">
+      <div class="tile"><div class="k">Solution build</div><div class="v ok">PASS</div><div class="n">0 warnings, 0 errors</div></div>
+      <div class="tile"><div class="k">Hot reload</div><div class="v ok">WORKS</div><div class="n">first time, end&#8209;to&#8209;end</div></div>
+      <div class="tile"><div class="k">Closed</div><div class="v ok">11</div><div class="n">B1 B2 B4 H1 H2 H4 M2 M3 M4 M8 + L1 L4</div></div>
+      <div class="tile"><div class="k">Still open</div><div class="v crit">3</div><div class="n">B3 critical, M1+M6 high</div></div>
+      <div class="tile"><div class="k">New</div><div class="v high">4</div><div class="n">N1&ndash;N4, all small</div></div>
+      <div class="tile"><div class="k">Answered</div><div class="v acc">4</div><div class="n">H3+H5, M1, M8, L5</div></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <h2>The headline</h2>
+    <p class="lede">The two things the last report said had <em>never</em> run &mdash; the staleness fast path and
+      hot reload &mdash; both now run. That is the big result, and it changes what the rest of the plan should look like.</p>
+
+    <div class="callout win">
+      <span class="label">Executed, not inferred</span>
+      <pre class="term"><code>[B2] first run  ready=True  encodes=1
+[B2] second run ready=True  SECOND-RUN ENCODES = 0   <-- loaded from the .cka
+
+[H]  initial load ready=True  text='Hello World'
+[H]  hot reload #1 swapped=True after 517ms  text='Goodbye World'
+[H]  hot reload #2 swapped=True after 532ms  text='Third Text'</code></pre>
+      <p>Two consecutive reloads is the important half of the second result: it proves the <code>isReloading</code>
+        latch really clears, which is what H2 was about. 517&nbsp;ms is the 500&nbsp;ms debounce plus one frame.</p>
+    </div>
+
+    <p>Against that, one critical survives. <strong>B3 is not fixed</strong> &mdash; the asset handed to a bundle is still
+      disposed on the very frame it resolves, and the guard added to prevent it contains the same type-confusion typo as H5.
+      The new per-bundle <code>Unload</code> is a good idea whose lease accounting does not balance, which is the M1 answer.</p>
+
+    <div class="callout">
+      <span class="label">One consequence worth flagging</span>
+      <p>The previous report argued that restructuring the envelope (S2) was low-risk <em>because</em> B2 proved the staleness
+        path had never executed. That argument is now void &mdash; the path is live and load-bearing. If you still want S2,
+        it now needs the second-run test to exist first.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Closed &mdash; one line each</h2>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>ID</th><th>Verified</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">B1</td><td class="tick">&#10003; fixed</td><td><code>AssetManagerExtensions.cs</code> was deleted rather than reshaped; <code>dotnet build CapriKit.slnx</code> now succeeds with 0 warnings and 0 errors across all 16 projects.</td></tr>
+          <tr><td class="mono">B2</td><td class="tick">&#10003; fixed</td><td>The <code>else</code> at <code>AssetManager.cs:121</code> closes the fall-through; a second manager over a directory that already has an up-to-date <code>.cka</code> performs <strong>0 encodes</strong> and no longer throws <code>KeyNotFoundException</code>.</td></tr>
+          <tr><td class="mono">B4</td><td class="tick">&#10003; fixed</td><td><code>LightweightChannel</code>'s sticky error slot became a <code>ConcurrentQueue&lt;ExceptionDispatchInfo&gt;</code> drained one per read: a missing file makes <code>Update()</code> throw exactly <strong>1 of 40</strong> frames with the real <code>FileNotFoundException</code>, and healthy assets still load afterwards. Matches your intent of "fail loudly once". See N4 for a small hazard the new overload pair introduces.</td></tr>
+          <tr><td class="mono">H1</td><td class="tick">&#10003; fixed</td><td><code>StreamPipeWriterOptions(leaveOpen: true)</code> plus the conditional dispose in <code>finally</code>; the encode&rarr;seek&rarr;decode round trip in <code>HotReloadable.Reload</code> completes. The mirror-image bug in <code>AssetDecoder</code> is still there &mdash; N3.</td></tr>
+          <tr><td class="mono">H2</td><td class="tick">&#10003; fixed</td><td><code>isReloading</code> is <code>volatile</code>, and the assignment moved inside <code>if (target != null)</code> so the null-target case cannot latch. Two consecutive edits both hot-swapped, ~520&nbsp;ms each.</td></tr>
+          <tr><td class="mono">H4</td><td class="tick">&#10003; fixed</td><td>The candidate iteration in <code>ReloadOne</code> and the whole of <code>DrainFileChanges</code> now sit inside <code>TrackingLock</code>. One residual: <code>PendingRebuilds</code> is mutated inside the lock at <code>:131</code> and outside it at <code>:148&ndash;149</code>. Harmless while both are main-thread &mdash; and the M8 answer below deletes the lock entirely, which resolves it.</td></tr>
+          <tr><td class="mono">M2</td><td class="tick">&#10003; fixed</td><td>A dedicated <code>bool isReady</code> replaces the <code>result == null</code> test, so struct bundles are materialised once.</td></tr>
+          <tr><td class="mono">M3</td><td class="tick">&#10003; fixed</td><td><code>volatile bool isResolved</code> written after <code>value</code> and read before <code>Value</code> gives a correct release/acquire pair. Reader side is <code>IsReady</code> &rarr; <code>resolver.Get</code>, which respects that order.</td></tr>
+          <tr><td class="mono">M4</td><td class="tick">&#10003; fixed</td><td><code>ReloadOne</code> wraps the reload in <code>Task.Run</code>, so the synchronous prefix of <code>Reload</code> (and any <code>D3DCompile</code>) is off the main thread.</td></tr>
+          <tr><td class="mono">M8</td><td class="tick">&#10003; fixed</td><td><code>HotSwapAction</code> now carries <code>hot.BuildMetaData.Dependencies</code> and <code>HotSwapPending</code> calls <code>RegisterFileDependencies</code>, so a new <code>#include</code> is registered without a restart. Note it only ever <em>adds</em> &mdash; a removed <code>#include</code> keeps triggering rebuilds until restart. Cosmetic; mentioning it so it is not rediscovered.</td></tr>
+          <tr><td class="mono">L1</td><td class="tick">&#10003; fixed</td><td>Successful reload logs at <code>Information</code>.</td></tr>
+          <tr><td class="mono">L4</td><td class="tick">&#10003; fixed</td><td><code>*.cka</code> is in <code>.gitignore</code>.</td></tr>
+          <tr><td class="mono">L6</td><td class="tick">&#10003; part</td><td><code>ExampleAssets</code> is gone from the shipped surface. <code>AssetHandle</code>'s public constructor still lets external code forge a handle; low priority, listed for completeness.</td></tr>
+          <tr><td class="mono">M7</td><td class="sev low">waived</td><td>Per your note: transcoders are registered at start-up. Worth one sentence of XML doc on <code>RegisterTranscoder</code> saying so, since the failure mode is a worker-thread throw.</td></tr>
+          <tr><td class="mono">M5</td><td class="sev med">carried</td><td><strong>Still open, as you asked.</strong> <code>HotReloadManager.Dispose</code> clears its four collections without <code>TrackingLock</code> and does not wait for an in-flight reload; <code>AssetManager.Dispose</code> drains neither <code>Incoming</code> nor the outstanding requests. Disposing while a load is in flight is undefined today.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Still open</h2>
+
+    <div class="finding crit">
+      <div class="fhead"><span class="fid">B3</span><span class="ftitle">Not fixed &mdash; the bundle still receives an asset that was disposed on the same frame</span></div>
+      <div class="floc"><code>AssetManager.cs:171-181</code> (materializer still called per handle) &middot; <code>AssetCache.cs:40</code> (the new guard compares the wrong operands)</div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+
+      <p>Two things had to change and neither landed. The drain still materialises once <em>per handle</em>:</p>
+      <pre class="bad"><code>var handles = Outstanding[id];
+foreach (var handle in handles)
+{
+    var asset = materializer();   // still once PER HANDLE
+    handle.Resolve(asset);
+}</code></pre>
+
+      <p>and the guard that was added to <code>PutOrLease</code> to make the second call harmless compares a
+        <code>TAsset</code> against an <code>Entry</code> wrapper &mdash; two unrelated types, so it is always
+        <code>false</code>, exactly like the H5 guard it was modelled on:</p>
+      <pre class="bad"><code>if (object.ReferenceEquals(candidate, entry))   // TAsset  vs  Entry
+{
+    return candidate;
+}
+//                                  entry.Asset is what you meant</code></pre>
+
+      <span class="label">Failure scenario &mdash; executed</span>
+      <pre class="term"><code>[B3-one-bundle]  ready=True same=True A.IsDisposed=True B.IsDisposed=True
+[B3-two-bundles] ready=True same=True IsDisposed=True</code></pre>
+      <p>Both handles resolve to the same instance and that instance is already disposed when the bundle is handed over,
+        because <code>PutOrLease</code> queued the live object into <code>PendingDispose</code> and <code>Cache.Collect()</code>
+        &mdash; three lines later in the same <code>Update()</code> &mdash; disposed it. No exception is raised. For a
+        <code>VertexShaderTranscoder</code> that is a released <code>ID3D11VertexShader</code> handed to gameplay code.</p>
+
+      <span class="label">Fix &mdash; four small edits, and they also settle M1</span>
+      <pre class="good"><code>// 1. AssetCache.PutOrLease: compare against the stored instance
+if (ReferenceEquals(candidate, entry.Asset)) { return candidate; }
+
+// 2. AssetCache: one place to add the leases for the other bundles
+public void AddLeases(AssetId id, int count)
+{
+    if (count &lt;= 0) { return; }
+    lock (Lock)
+    {
+        ObjectDisposedException.ThrowIf(isDisposed, this);
+        if (Entries.TryGetValue(id, out var entry)) { entry.RefCount += count; }
+    }
+}
+
+// 3. AssetBundleBuilder: one handle per id per bundle
+private readonly Dictionary&lt;AssetId, AssetHandle&gt; Handles = [];
+
+public AssetHandle&lt;TAsset&gt; Load&lt;TAsset, TSettings&gt;(AssetId id, TSettings settings)
+    where TAsset : class
+{
+    if (Handles.TryGetValue(id, out var existing))
+    {
+        return existing as AssetHandle&lt;TAsset&gt;
+            ?? throw new InvalidOperationException($"{id} is already claimed in this bundle as another type");
+    }
+
+    var handle = assetManager.Load&lt;TAsset, TSettings&gt;(id, settings);
+    Handles.Add(id, handle);
+    return handle;
+}
+
+// 4. AssetManager.Update: materialise once, lease once per waiting bundle
+if (!Outstanding.Remove(id, out var handles)) { continue; }
+
+var asset = materializer();                 // exactly once
+Cache.AddLeases(id, handles.Count - 1);     // step 3 makes this the bundle count
+foreach (var handle in handles) { handle.Resolve(asset); }</code></pre>
+      <p>Step 3 is what makes step 4 correct rather than approximately correct: once a builder can only produce one handle per
+        id, every handle in <code>Outstanding[id]</code> necessarily belongs to a <em>different</em> bundle, so
+        <code>handles.Count</code> <em>is</em> the number of bundles that will each call <code>Return</code> once.</p>
+    </div>
+
+    <div class="finding high">
+      <div class="fhead"><span class="fid">M1<span style="opacity:.5">+</span>M6</span><span class="ftitle">The per-bundle <code>Unload</code> is the right unit, but the accounting does not balance and an in-flight unload corrupts the bundle</span></div>
+      <div class="floc"><code>AssetManager.cs:140-158</code> &middot; <code>AssetBundle.cs:39-44</code> &middot; <code>AssetCache.cs:103</code></div>
+      <div class="badges"><span class="badge repro">repro executed</span><span class="badge lens">correctness</span><span class="badge lens">threading</span></div>
+
+      <p>This is the direct answer to <em>"is this mechanism sound and thread-safe?"</em> &mdash; the mutual exclusion is fine,
+        the arithmetic is not. Three separate problems.</p>
+
+      <span class="label">1 &mdash; leases are counted per handle, returns per distinct id</span>
+      <p><code>AssetBundle.Assets</code> is a <code>HashSet&lt;AssetId&gt;</code>, so <code>Unload</code> calls
+        <code>Return</code> <strong>once per distinct id</strong>. But leases are taken <strong>once per handle</strong> &mdash;
+        by <code>Cache.TryLease</code> on the cache-hit path and by the repeated <code>PutOrLease</code> on the load path.
+        The two only agree when every bundle holds exactly one handle per id:</p>
+      <pre class="term"><code>[B3-one-bundle] Unload ok
+  Dispose threw Exception: Cache will leak 1 entries that have not
+  been returned before the cache was disposed.</code></pre>
+      <p>The invariant you want, and it is worth writing it into the XML doc of both <code>Return</code> and
+        <code>PutOrLease</code>, is: <strong><code>RefCount(id)</code> equals the number of active bundles that contain
+        <code>id</code></strong>. B3's steps 3 and 4 above establish exactly that on the load path; the cache-hit path in
+        <code>Load</code> gets it for free from step 3.</p>
+
+      <span class="label">2 &mdash; unloading an in-flight bundle throws, and then poisons the bundle</span>
+      <pre class="term"><code>[M6] Unload while in flight threw InvalidOperationException:
+     Returned AssetId { Path = Hello.txt, Key =  } which was not found in the cache.
+[M6] after load completes: ready=True IsDisposed=False
+[M6] second Unload: ok            <-- silently did nothing
+[M6] Dispose threw Exception: Cache will leak 1 entries ...</code></pre>
+      <p>One unhandled case produces four compounding failures: <code>Return</code> throws for an id that has not been
+        materialised yet; the loop aborts so the <em>remaining</em> ids are never returned either; the <code>finally</code>
+        sets <code>IsActive = false</code> anyway (N1), so the second <code>Unload</code> is a no-op and the leak is now
+        permanent; and the load completes afterwards and takes a lease nobody can ever return.</p>
+      <p>This is V2's open cancellation question arriving in code. There are two honest answers:</p>
+      <ul class="tight">
+        <li><strong>Minimal &mdash; refuse it.</strong> Check <code>Outstanding</code> first and throw
+          <em>before</em> mutating anything, leaving <code>IsActive</code> true so a later <code>Unload</code> still works.
+          Three lines, no corruption, decision deferred.
+          <pre class="good"><code>lock (RequestLock)
+{
+    if (!bundle.IsActive) { return; }
+    foreach (var id in bundle.Assets)
+    {
+        if (Outstanding.ContainsKey(id))
+        {
+            throw new InvalidOperationException(
+                $"Cannot unload a bundle while {id} is still loading. Unload after IsReady.");
+        }
+    }
+    // ... only now mutate
+}</code></pre></li>
+        <li><strong>Proper &mdash; let a dead owner cancel its own lease.</strong> <code>Unload</code> marks the bundle
+          inactive and skips ids that are still in <code>Outstanding</code>; the drain then counts only the handles whose
+          owner is still active, and if that count is zero it returns the single lease <code>PutOrLease</code> just took.
+          This needs <code>handle.Owner</code> to be known at <code>Load</code> time, which it is not today &mdash;
+          <code>Owner</code> is assigned in <code>Build()</code>. The structural fix is to let
+          <code>CreateBundle()</code> hand out the object that <em>is</em> the bundle identity, with
+          <code>Build&lt;TBundle&gt;</code> attaching the factory and returning a typed view over it. That also makes
+          "unload before Build" legal, which it currently is not.</li>
+      </ul>
+
+      <span class="label">3 &mdash; two small mechanical issues in the method itself (N1, N2)</span>
+      <p>See the next section.</p>
+
+      <p><strong>Thread-safety, separately:</strong> holding <code>RequestLock</code> across the whole of <code>Unload</code>
+        is correct &mdash; it makes <code>Unload</code> mutually exclusive with <code>Load</code> and with the
+        <code>Update()</code> drain, which is the guarantee you need. The lock ordering stays consistent
+        (<code>RequestLock</code>&nbsp;&rarr;&nbsp;<code>Cache.Lock</code>, never the reverse). Two things are unguarded but
+        benign today: <code>AssetBundle.AssetSet</code> is written by <code>Build</code> on one thread and read by
+        <code>Unload</code> on another with no barrier, and <code>IsReady</code> keeps handing out its cached
+        <code>result</code> after the bundle has been unloaded, so gameplay code can still reach disposed assets through a
+        loader it kept.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>New issues</h2>
+    <p class="lede">All four are small. N1 and N2 are inside the new <code>Unload</code>; N3 and N4 came in with the H1 and
+      B4 fixes.</p>
+
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>ID</th><th>Severity</th><th>Finding</th><th>Location</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">N1</td><td class="sev high">High</td><td><code>Unload</code>'s <code>finally</code> sets <code>bundle.IsActive = false</code> even when the loop threw partway through, so a bundle that failed to return its leases can never be unloaded again. Set it inside the body, after the returns succeed.</td><td><code>AssetManager.cs:155</code></td></tr>
+          <tr><td class="mono">N2</td><td class="sev low">Low</td><td><code>RequestLock.Enter()</code> is inside the <code>try</code>, so if <code>Enter</code> ever throws, the <code>finally</code> calls <code>Exit()</code> without holding the lock and a <code>SynchronizationLockException</code> masks the real error. Either move <code>Enter()</code> above the <code>try</code>, or just use <code>lock (RequestLock) { ... }</code> &mdash; the whole method fits.</td><td><code>AssetManager.cs:142-157</code></td></tr>
+          <tr><td class="mono">N3</td><td class="sev low">Low</td><td>H1 was fixed in <code>AssetEncoder</code> but not in its mirror: <code>using var input = inputStreamOverride ?? fileSystem.OpenRead(...)</code> still disposes a stream the caller owns. Benign today only because <code>HotReloadable</code> passes a <code>MemoryStream</code>, whose <code>Dispose</code> is idempotent. Apply the same <code>finally</code> shape so the two sides stay symmetric.</td><td><code>AssetDecoder.cs:23</code></td></tr>
+          <tr><td class="mono">N4</td><td class="sev low">Low</td><td>The new <code>Write(T)</code> / <code>Write(ExceptionDispatchInfo)</code> overload pair silently misroutes when <code>T</code> <em>is</em> <code>ExceptionDispatchInfo</code>: the non-generic overload wins, so a value written as a payload lands in the error queue and is rethrown at the reader. Verified: <code>Ch&lt;EDI&gt;.Write(edi) -&gt; queue=0, errors=1</code>. Renaming one side to <code>WriteError</code> removes the whole class of confusion and reads better at the call site in <code>AssetManager.Load</code>.</td><td><code>LightweightChannel.cs:27,32</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <details>
+      <summary>Adjacent, outside this review's scope &mdash; <code>JobResult&lt;T&gt;.Match</code> is broken for value types</summary>
+      <p>Not part of the asset pipeline (only <code>CapriKit.Tests.Tool</code> uses it), but it sits next to the code you
+        changed for B4, so: for a value-type <code>T</code>, <code>Result</code> is <code>default(T)</code> rather than
+        <code>null</code>, so a <em>failed</em> result calls <strong>both</strong> callbacks:</p>
+      <pre class="term"><code>JobResult&lt;int&gt;.Failure("job", edi).Match(onSuccess, onFailure)
+  onSuccess called with 0   &lt;-- should not happen
+  onFailure called</code></pre>
+      <p>The <code>Debug.Assert(Result == null ^ Exception == null)</code> in the constructor fires for the same reason, so in
+        a Debug build this trips before it misbehaves. The usual fix is to store the discriminator explicitly
+        (<code>private readonly bool isSuccess;</code>) rather than inferring it from nullness, and make <code>Match</code> an
+        <code>if/else</code> so the two arms are exclusive by construction.</p>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Your questions</h2>
+
+    <!-- ===== H3 + H5 ===== -->
+    <div class="qbox">
+      <p class="q">H3 / H5 &mdash; how should <code>HotReloadManager</code> and <code>AssetCache</code> work together?
+        Can the cache be the authority?</p>
+      <div class="answer">
+        <p><strong>Yes, and it collapses both findings into one change.</strong> The bug underneath H3 and H5 is the same:
+          <code>HotReloadManager</code> is trying to answer a question it does not own. <code>WeakReference.IsAlive</code>
+          answers <em>"has the GC collected this?"</em>, and the dedupe guard tries to answer <em>"is this the instance we
+          already track?"</em>. The cache already answers both, exactly and without GC timing: it holds one entry per
+          <code>AssetId</code>, it knows the winning instance, and it knows the moment the last lease goes away.</p>
+
+        <p>H3 is confirmed live, by the way &mdash; a hot swap runs happily against an unloaded, disposed asset:</p>
+        <pre class="term"><code>[H3] after Unload: IsDisposed=True text='Hello World'
+[H3] hot swapped a DISPOSED/unloaded asset = True (IsDisposed=True)</code></pre>
+
+        <span class="label">Step 1 &mdash; the cache reports eviction; it already knows</span>
+        <pre class="good"><code>// AssetCache: true when the last lease went away
+public bool Return(AssetId id)
+{
+    lock (Lock)
+    {
+        ObjectDisposedException.ThrowIf(isDisposed, this);
+        if (!Entries.TryGetValue(id, out var entry)) { return false; }
+
+        entry.RefCount--;
+        if (entry.RefCount &gt; 0) { return false; }
+
+        Entries.Remove(id);
+        PendingDispose.Enqueue(entry);
+        return true;
+    }
+}
+
+// AssetManager.Unload: eviction is now the one place tracking ends
+if (Cache.Return(id)) { HotReloadManager.UnTrack(id); }</code></pre>
+        <p>You already wrote <code>UnTrack</code> &mdash; nothing calls it. This is its caller.</p>
+
+        <span class="label">Step 2 &mdash; <code>HotReloadable</code> holds a strong reference, and <code>Tracked</code> stops being a list</span>
+        <pre class="good"><code>private readonly TAsset Instance;   // was WeakReference&lt;TAsset&gt;
+// IsAlive, the candidate loop and both TODOs are deleted
+
+private readonly Dictionary&lt;AssetId, HotReloadable&gt; Tracked = [];
+
+public void Track&lt;TAsset, TSettings&gt;(Asset&lt;TAsset, TSettings&gt; asset, IAssetTranscoder&lt;TAsset, TSettings&gt; transcoder)
+    where TAsset : class
+    =&gt; Tracked[asset.Id] = new HotReloadable&lt;TAsset, TSettings&gt;(asset, transcoder);</code></pre>
+        <p><strong>H5 does not need fixing &mdash; it stops existing.</strong> The list was only there because the manager
+          could not tell which of several instances was the live one. The cache guarantees there is exactly one:
+          <code>PutOrLease</code> returns the winner and the loser is discarded. With one entry per id there is nothing to
+          dedupe, no candidate to choose, and no <code>pruned</code> list to forget to assign. The lifetime of the strong
+          reference is now bounded by <code>UnTrack</code> instead of by the GC, which is the whole point.</p>
+
+        <span class="label">Step 3 &mdash; close the last-mile race</span>
+        <p>One window remains: a rebuild is already on the pool when the bundle is unloaded. The swap must be validated on the
+          main thread, at the moment it is applied. Carry the target on the action so it can be compared:</p>
+        <pre class="good"><code>internal sealed record HotSwapAction(
+    AssetId Id, object Target, IReadOnlyList&lt;Dependency&gt; Dependencies,
+    Action PerformHotSwap, Action DiscardNewParts);
+
+// AssetCache
+public bool IsCurrent(AssetId id, object instance)
+{
+    lock (Lock) { return Entries.TryGetValue(id, out var e) &amp;&amp; ReferenceEquals(e.Asset, instance); }
+}
+
+// HotSwapPending, main thread
+if (!Cache.IsCurrent(action.Id, action.Target))
+{
+    action.DiscardNewParts();   // nothing installed it; do not leak the rebuilt asset
+    continue;
+}</code></pre>
+        <p><code>DiscardNewParts</code> matters: <code>HotSwap</code> is what normally absorbs or frees
+          <code>newParts</code>, so a skipped swap leaks it otherwise.</p>
+
+        <p>This depends on an ordering that is <em>already</em> correct in <code>Update()</code> &mdash;
+          <code>Cache.Collect()</code> at <code>AssetManager.cs:184</code> runs before
+          <code>HotReloadManager.Update()</code> at <code>:185</code>. Evict-then-swap is what makes a stale swap detectable
+          rather than a race. Worth a one-line comment saying so, because reordering those two lines would silently reopen H3.</p>
+
+        <div class="tscroll">
+          <table>
+            <thead><tr><th></th><th>Today</th><th>With the cache as authority</th></tr></thead>
+            <tbody>
+              <tr><td>liveness means</td><td><code>WeakReference.IsAlive</code> &mdash; GC timing</td><td>the cache still holds a lease &mdash; deterministic</td></tr>
+              <tr><td><code>Tracked</code> value</td><td><code>List&lt;HotReloadable&gt;</code> + candidate loop + 2 TODOs</td><td>one <code>HotReloadable</code></td></tr>
+              <tr><td>H5 dedupe</td><td>broken <code>ReferenceEquals</code> across two types</td><td>not needed</td></tr>
+              <tr><td>swap onto a dead asset</td><td>happens (repro'd above)</td><td>rejected by <code>IsCurrent</code></td></tr>
+              <tr><td>size</td><td>&mdash;</td><td>roughly &minus;35 lines</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== M8 / locking ===== -->
+    <div class="qbox">
+      <p class="q">M8 &mdash; there is a lot of locking in <code>HotReloadManager</code>. Can it be simpler or more explicit?
+        Hot reload is rare, so should it use concurrent collections more?</p>
+      <div class="answer">
+        <p><strong>Go the other way: delete the lock, do not add concurrent collections.</strong> Map the state first &mdash;
+          once you do, the reason the locking feels heavy is that it is guarding against a caller that does not exist.</p>
+
+        <div class="tscroll">
+          <table>
+            <thead><tr><th>State</th><th>Written by</th><th>Read by</th><th>Guard actually needed</th></tr></thead>
+            <tbody>
+              <tr><td><code>Tracked</code></td><td>main &mdash; <code>Track</code> &larr; <code>MaterializeAsset</code> &larr; <code>Update()</code></td><td>main</td><td class="sev ok">none</td></tr>
+              <tr><td><code>Dependents</code></td><td>main &mdash; <code>Track</code> and <code>HotSwapPending</code></td><td>main</td><td class="sev ok">none</td></tr>
+              <tr><td><code>PendingRebuilds</code></td><td>main</td><td>main</td><td class="sev ok">none</td></tr>
+              <tr><td><code>lastFileChange</code></td><td>main</td><td>main</td><td class="sev ok">none</td></tr>
+              <tr><td><code>FileChances</code></td><td>watcher thread</td><td>main</td><td class="sev low">already a concurrent queue</td></tr>
+              <tr><td><code>PendingReloads</code></td><td>pool</td><td>main</td><td class="sev low"><code>ConcurrentQueue</code> &#10003;</td></tr>
+              <tr><td><code>isReloading</code></td><td>main sets, pool clears</td><td>main</td><td class="sev low"><code>volatile</code> &#10003;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Only the last three rows are genuinely cross-thread, and all three are already handled. <code>TrackingLock</code>
+          guards the first four &mdash; which never leave the main thread, because <code>Track</code> is reached only from
+          <code>MaterializeAsset</code>, which is reached only from the <code>Update()</code> drain. And that is not an
+          accident of the current code: materialisation <em>has</em> to happen on the main thread, because that is the only
+          place a transcoder's <code>ID3D11DeviceContext</code> work can legally run. It is a structural constraint, so it is
+          safe to lean on.</p>
+
+        <p>So delete <code>TrackingLock</code> &mdash; four <code>lock</code> blocks &mdash; and replace it with something
+          that states the constraint instead of defending against its opposite:</p>
+        <pre class="good"><code>// AssetManager captures this once, in its constructor
+private readonly int MainThreadId = Environment.CurrentManagedThreadId;
+
+[Conditional("DEBUG")]
+private void AssertMainThread([CallerMemberName] string caller = "")
+    =&gt; Debug.Assert(Environment.CurrentManagedThreadId == MainThreadId,
+        $"{caller} must run on the thread that created the AssetManager.");</code></pre>
+        <p>Call it at the top of <code>Update</code>, <code>Collect</code>, <code>Track</code>, <code>UnTrack</code> and
+          <code>IsReady</code>. It costs nothing in Release, it fires immediately and by name if the assumption ever breaks,
+          and it removes the contradiction the last report flagged &mdash; <code>Track</code> documented as
+          "thread-safe, multiple threads" while <code>DrainFileChanges</code> two methods later says "must be called single
+          threaded". This is also step 7 of the previous report's suggested order, done cheaply.</p>
+
+        <div class="callout">
+          <span class="label">Why not concurrent collections</span>
+          <p>Because they would be <em>less</em> safe while looking safer, and this class has already been bitten by exactly
+            that. <code>ConcurrentDictionary&lt;AssetId, List&lt;HotReloadable&gt;&gt;</code> makes the dictionary thread-safe
+            and leaves the inner <code>List</code> unguarded &mdash; that is H4's original shape, verbatim. And
+            <code>Track</code> needs lookup, mutate and <code>RegisterFileDependencies</code> to be atomic <em>together</em>;
+            concurrent collections give per-operation atomicity, never multi-step. Rarity is an argument for a plain lock over
+            a clever one, not for a lock-free type.</p>
+        </div>
+
+        <p>Two side effects worth having: the H4 residual disappears (<code>PendingRebuilds</code> stops being inside the lock
+          in one place and outside it in another), and so does the current reliance on <code>System.Threading.Lock</code>
+          being reentrant &mdash; <code>Track</code> holds <code>TrackingLock</code> and calls
+          <code>RegisterFileDependencies</code>, which takes it again. That works, but it is a subtlety you no longer have to
+          know about. Do the H3 change first: with <code>Tracked</code> holding one entry instead of a list, there is barely
+          anything left for a lock to protect.</p>
+      </div>
+    </div>
+
+    <!-- ===== L5 ===== -->
+    <div class="qbox">
+      <p class="q">L5 &mdash; where am I missing <code>ConfigureAwait(false)</code>, given that
+        <code>FireAndForget</code> already sets it?</p>
+      <div class="answer">
+        <p><strong>All twelve awaits in the pipeline, in four files.</strong> <code>FireAndForget</code>'s
+          <code>ConfigureAwait(false)</code> applies only to <em>its own</em> await of the outer task &mdash; it does not
+          propagate into the awaits inside <code>RequestAsset</code> or anything it calls. Each of these captures the ambient
+          <code>SynchronizationContext</code> independently.</p>
+
+        <div class="tscroll">
+          <table>
+            <thead><tr><th>File</th><th>Lines</th><th>What is awaited</th></tr></thead>
+            <tbody>
+              <tr><td><code>AssetManager.cs</code></td><td class="mono">114, 117, 128, 129</td><td><code>TryDecodeBuildMetaData</code>, <code>Decode</code> &times;2, <code>Encode</code></td></tr>
+              <tr><td><code>AssetEncoder.cs</code></td><td class="mono">31, 34, 35, 64</td><td><code>WritePayload</code>, <code>FlushAsync</code>, <code>CompleteAsync</code>, <code>encoder.Encode</code></td></tr>
+              <tr><td><code>AssetDecoder.cs</code></td><td class="mono">29, 65</td><td><code>input.ReadExactlyAsync</code> &times;2</td></tr>
+              <tr><td><code>HotReloadable.cs</code></td><td class="mono">40, 43</td><td><code>AssetEncoder.Encode</code>, <code>AssetDecoder.Decode</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><strong>None of them is a live bug today</strong>, and it is worth being clear about why, because it also tells you
+          when it stops being true. Every one of these paths is entered through <code>Task.Run</code> &mdash;
+          <code>Load</code> at <code>AssetManager.cs:92</code> and, since the M4 fix, <code>ReloadOne</code> at
+          <code>HotReloadManager.cs:185</code>. On a pool thread <code>SynchronizationContext.Current</code> is
+          <code>null</code>, so every continuation already resumes on the pool. The M4 fix is what removed the one path that
+          could have hit this.</p>
+
+        <p>It becomes load-bearing the moment any of these methods is awaited directly from a thread that <em>has</em> a
+          context &mdash; a WinForms or WPF host, or a custom game-loop synchronisation context. Since these ship as a NuGet
+          package you do not get to know the host. So: add it to all twelve, and rather than maintaining it by hand, turn on
+          <code>CA2007</code> for the library projects so the compiler keeps it honest. <code>CapriKit.IO</code> already does
+          this by hand, which is exactly the sort of consistency that decays silently.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <h2>Suggested order from here</h2>
+    <p class="lede">Much shorter than last time. Steps 1 and 2 are the same edit set, which is the main reason to do them together.</p>
+    <ol class="steps">
+      <li><b>B3 + M1 &mdash; the four edits.</b>
+        <p>Fix the <code>PutOrLease</code> operand, add <code>AddLeases</code>, dedupe in the builder, materialise once. This
+          is one coherent change that establishes a single invariant: <code>RefCount(id)</code> is the number of active
+          bundles holding <code>id</code>. Write that invariant in the XML docs while it is fresh.</p></li>
+      <li><b>M6 &mdash; pick minimal or proper, then N1 and N2.</b>
+        <p>If you take the minimal route, N1 becomes moot because nothing throws mid-loop any more. If you take the proper
+          route, do the <code>CreateBundle()</code> restructure first, since that is what makes <code>Owner</code> known at
+          <code>Load</code> time.</p></li>
+      <li><b>H3 + H5 &mdash; make the cache the authority.</b>
+        <p><code>Return</code> returns <code>bool</code>, <code>Unload</code> calls <code>UnTrack</code>, strong reference,
+          <code>Tracked</code> becomes a single entry, <code>IsCurrent</code> guards the swap. Net negative lines, and it
+          deletes both TODOs in <code>HotReloadManager</code>.</p></li>
+      <li><b>M8 &mdash; delete <code>TrackingLock</code>, add <code>AssertMainThread</code>.</b>
+        <p>Cheapest after step 3, because there is much less state left to reason about.</p></li>
+      <li><b>Turn the repros into tests.</b>
+        <p>The seven listed at the bottom of this report are the paths <code>AssetManagerTests</code> still cannot reach.
+          The second-run test in particular is now protecting real behaviour rather than dead code.</p></li>
+      <li><b>Then N3, N4, L5, M5 &mdash; and only then revisit S1&ndash;S7.</b>
+        <p>Re-read S2's risk note before starting it: its justification was that the staleness path had never executed,
+          which is no longer true.</p></li>
+    </ol>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p><strong>Method.</strong> Read of the full pipeline at <code>c7517e7</code> plus the changed
+      <code>CapriKit.Concurrency</code> files, a full-solution build, and seven repros executed as temporary TUnit tests
+      against the real <code>AssetManager</code>: second-run staleness (B2), two handles in one bundle and in two bundles
+      (B3), unload-in-flight (M6), failed load followed by 40 frames (B4), hot reload twice in a row (H1/H2), and hot swap
+      after unload (H3). Terminal output quoted above is verbatim. The temporary test file and a scratch console project used
+      to confirm N4 were removed; the working tree is clean and no source file was modified.</p>
+    <p style="margin-top:12px"><strong>Prior art.</strong> Continues <code>AssetPipelineVNextReview.html</code> and answers
+      <code>ResponseToFindingsOfAssetPipelineVNextReview.md</code>. Findings S0&ndash;S7 and P1&ndash;P8 from the previous
+      report are untouched and still stand, except that S2's risk assessment is now out of date.</p>
+  </div>
+</footer>
+
+</body>
+</html>
