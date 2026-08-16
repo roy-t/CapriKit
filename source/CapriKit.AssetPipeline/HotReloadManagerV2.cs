@@ -188,7 +188,9 @@ internal sealed partial class HotReloadManagerV2 : IDisposable
                 LogHotSwapStarted(Logger, reloadable.Id);
                 reloadable.HotSwap();
 
-                RegisterFileDependencies(reloadable.Id, reloadable.NewDependencies);
+                // TODO: this abandoned experiment does not compile, RegisterFileDependencies was never written.
+                // Commented out so that the project builds, see HotReloadManagerV3 for the version that works.
+                //RegisterFileDependencies(reloadable.Id, reloadable.NewDependencies);
 
                 LogHotSwapCompleted(Logger, reloadable.Id);
             }
