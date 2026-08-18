@@ -7,11 +7,14 @@ using System.Collections.Concurrent;
 
 namespace CapriKit.AssetPipeline;
 
+/// <summary>
+/// Manages the building, loading, chaching, clean-up and hot-reloading of assets.
+/// </summary>
 public sealed partial class AssetManager : IDisposable
 {
     private readonly ILogger<AssetManager> Logger;
     private readonly ScopedFileSystem FileSystem;
-    private readonly AssetCache Cache;
+    private readonly AssetPool Cache;
     private readonly HotReloadManager HotReloadManager;
     private readonly ConcurrentDictionary<Type, IAssetTranscoder> Transcoders;
 
@@ -24,7 +27,7 @@ public sealed partial class AssetManager : IDisposable
         Logger = logger.CreateLogger<AssetManager>();
         FileSystem = fileSystem;
         Cache = new();
-        HotReloadManager = new(logger, fileSystem);
+        HotReloadManager = new(logger, Cache, FileSystem);
         Transcoders = [];
         Incoming = new();
         RequestLock = new();
@@ -34,7 +37,7 @@ public sealed partial class AssetManager : IDisposable
     /// <summary>
     /// Register a transcoder for the given asset type. Registering a transcoders for a type
     /// that was already assigned a transcoder throws an exception.
-    /// Threading: thread-safe, multiple threads can register transcoders at the same time. 
+    /// Threading: thread-safe, multiple threads can register transcoders at the same time.
     /// </summary>
     public void RegisterTranscoder<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
@@ -48,7 +51,7 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Use to defines a bundle of assets to load
+    /// Use to defines a bundle of assets to load.
     /// Threading: thread-safe.
     /// </summary>
     public AssetBundleBuilder CreateBundle()
@@ -58,7 +61,7 @@ public sealed partial class AssetManager : IDisposable
 
     /// <summary>
     /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
-    /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
+    /// The caller gets a handle to be used in an <see cref="AssetBundleLoader"/> which can be resolved
     /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{T}.IsReady"/>
     /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
     /// is not loaded multiple times concurrently.
@@ -137,7 +140,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
     /// to unload the same bundle from multiple threads.
     /// </summary>
-    public void Unload(AssetBundle bundle)
+    public void Unload(AssetBundleLoader bundle)
     {
         try
         {
@@ -181,14 +184,16 @@ public sealed partial class AssetManager : IDisposable
             }
         }
 
-        Cache.Collect();
+        Cache.DisposeReleased();
         HotReloadManager.Update();
     }
 
     public void Dispose()
     {
-        Cache.Dispose();
+        // Dispose the hot-reload manager first so that it can release any reference to
+        // assets it might still hold.
         HotReloadManager.Dispose();
+        Cache.Dispose();
     }
 
     // Thread safe, only touches the file system and uses thread safe transcoder methods and properties.
@@ -216,7 +221,7 @@ public sealed partial class AssetManager : IDisposable
         // Dependencies have changed
         foreach (var (file, version) in build.Dependencies)
         {
-            // Treat a file as up-to-date if its dependencies do not exist
+            // Treat a file as up-to-date if does not exist
             if (fileSystem.Exists(file))
             {
                 // Otherwise double check the file date matches

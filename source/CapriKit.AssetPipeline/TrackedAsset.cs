@@ -13,7 +13,7 @@ namespace CapriKit.AssetPipeline;
 internal sealed record ReloadedAsset(IReadOnlyList<Dependency> Dependencies, Action HotSwap);
 
 /// <summary>
-/// Everything the <see cref="HotReloadManagerV3"/> needs to rebuild a single asset. The asset and settings
+/// Everything the <see cref="HotReloadManager"/> needs to rebuild a single asset. The asset and settings
 /// types are erased so that assets of every type can live in one collection.
 /// </summary>
 internal abstract class TrackedAsset(AssetId id, IReadOnlyList<Dependency> dependencies)
@@ -33,7 +33,7 @@ internal abstract class TrackedAsset(AssetId id, IReadOnlyList<Dependency> depen
     /// caller owns that lease and must return it once <paramref name="reload"/> has completed.
     /// Threading: main thread only.
     /// </summary>
-    public abstract bool TryStartReload(AssetCache cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload);
+    public abstract bool TryStartReload(AssetPool cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload);
 }
 
 /// <inheritdoc cref="TrackedAsset"/>
@@ -50,7 +50,7 @@ internal sealed class TrackedAsset<TAsset, TSettings> : TrackedAsset
         Transcoder = transcoder;
     }
 
-    public override bool TryStartReload(AssetCache cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload)
+    public override bool TryStartReload(AssetPool cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload)
     {
         // The lease pins the live instance for the entire rebuild, so the background thread never has to
         // wonder whether the object it is going to hot-swap into still exists.

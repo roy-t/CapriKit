@@ -36,15 +36,17 @@ internal class AssetManagerTests
 
         var logger = NullLoggerFactory.Instance;
         var fileSystem = new FileSystem().ScopedTo(WorkingDirectory);
+        await fileSystem.WriteAllText(AssetFile, "Hello World");
+
         var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
 
-        var transcoder = new TestTranscoder();
+        var transcoder = new TextTranscoder();
         assetManager.RegisterTranscoder(transcoder);
 
         var id = new AssetId(AssetFile);
 
         var builder = assetManager.CreateBundle();
-        var handle = builder.Load<string, NoSettings>(id, default);
+        var handle = builder.Load<TextAsset, NoSettings>(id, default);
         var loader = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
 
         TestBundle? bundle = null;
@@ -56,11 +58,11 @@ internal class AssetManagerTests
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
         await Assert.That(bundle).IsNotNull();
-        await Assert.That(bundle.Text).IsEqualTo(TranscoderText);
+        await Assert.That(bundle.Asset.Text).IsEqualTo(TranscoderText);
 
         // Load again to verify loading the same thing twice gives us the cached value
         var altBuilder = new AssetBundleBuilder(assetManager);
-        var altHandle = altBuilder.Load<string, NoSettings>(id, default);
+        var altHandle = altBuilder.Load<TextAsset, NoSettings>(id, default);
         var altLoader = altBuilder.Build(resolver => new TestBundle(resolver.Get(altHandle)));
 
         TestBundle? altBundle = null;
@@ -72,27 +74,34 @@ internal class AssetManagerTests
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
         await Assert.That(altBundle).IsNotNull();
-        await Assert.That(altBundle.Text).IsSameReferenceAs(bundle.Text);
+        await Assert.That(altBundle.Asset).IsSameReferenceAs(bundle.Asset);
+
+        // TODO: test the dispose path. Check the errors if assets are not returned and that returning both bundles correctly disposes everything.
+    }
+}
+
+internal record TestBundle(TextAsset Asset);
+
+internal sealed class TextAsset(string text)
+{
+    public string Text { get; set; } = text;
+}
+
+internal class TextTranscoder() : NoSettingsTranscoder<TextAsset>(Guid.Parse("{6E4A1D0C-1F73-4C4E-9D2E-0B7F5C6A9E31}"), 1)
+{
+    public override TextAsset Decode(AssetId id, ref SequenceReader<byte> reader)
+    {
+        return new TextAsset(reader.ReadString());
     }
 
-    private record TestBundle(string Text);
-
-    private class TestTranscoder() : NoSettingsTranscoder<string>(Guid.Parse("{AC2D4E77-0D98-43B2-B1D2-35B0E9F5742B}"), 1)
+    public override async Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
     {
-        public override string Decode(AssetId id, ref SequenceReader<byte> reader)
-        {
-            return reader.ReadString();
-        }
+        var text = await fileSystem.ReadAllText(id.Path);
+        writer.Write(text);
+    }
 
-        public override async Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
-        {
-            var text = await fileSystem.ReadAllText(id.Path);
-            writer.Write(text);
-        }
-
-        public override void HotSwap(string instance, string newParts)
-        {
-            throw new NotImplementedException();
-        }
+    public override void HotSwap(TextAsset instance, TextAsset newParts)
+    {
+        instance.Text = newParts.Text;
     }
 }

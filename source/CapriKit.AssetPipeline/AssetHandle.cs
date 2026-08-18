@@ -2,6 +2,9 @@ using System.Diagnostics;
 
 namespace CapriKit.AssetPipeline;
 
+/// <summary>
+/// Represents an asset that is in the progress of loading.
+/// </summary>
 public abstract class AssetHandle(AssetId id)
 {
     public AssetId Id { get; } = id;
@@ -10,7 +13,7 @@ public abstract class AssetHandle(AssetId id)
     private volatile bool isResolved;
 
 
-    internal AssetBundle? Owner { get; set; }
+    internal AssetBundleLoader? Owner { get; set; }
     internal bool IsResolved => isResolved;
     internal object? Value => value;
 
@@ -22,9 +25,13 @@ public abstract class AssetHandle(AssetId id)
     }
 }
 
+/// <inheritdoc cref="AssetHandle"/>
 public sealed class AssetHandle<TValue>(AssetId id) : AssetHandle(id) { }
 
-public sealed class AssetHandleResolver(AssetBundle owner)
+/// <summary>
+/// Helper class for resolving loaded assets from their asset handle.
+/// </summary>
+public sealed class AssetHandleResolver(AssetBundleLoader owner)
 {
     public TValue Get<TValue>(AssetHandle<TValue> promise)
     {

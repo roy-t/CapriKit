@@ -2,6 +2,9 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace CapriKit.AssetPipeline;
 
+/// <summary>
+/// Use the builder to describe how an asset bundle should be built.
+/// </summary>
 public sealed class AssetBundleBuilder
 {
     private readonly List<AssetHandle> Handles = [];
@@ -12,6 +15,11 @@ public sealed class AssetBundleBuilder
         this.assetManager = assetManager;
     }
 
+    /// <summary>
+    /// Each asset that needs to loaded returns a handle that can then put used in the lambda
+    /// for <see cref="Build{TBundle}(Func{AssetHandleResolver, TBundle})"/> to describe how
+    /// the asset bundle should actually be built.
+    /// </summary>
     public AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
@@ -20,6 +28,14 @@ public sealed class AssetBundleBuilder
         return handle;
     }
 
+    /// <inheritdoc cref="Load{TAsset, TSettings}(AssetId, TSettings)"/>
+    public AssetHandle<TAsset> Load<TAsset>(AssetId id)
+        where TAsset : class
+        => Load<TAsset, NoSettings>(id, default);
+
+    /// <summary>
+    /// Create a loader that is used to check the loading progress of the bundle.
+    /// </summary>
     public AssetBundleLoader<TBundle> Build<TBundle>(Func<AssetHandleResolver, TBundle> factory)
         where TBundle : notnull
     {
@@ -34,7 +50,10 @@ public sealed class AssetBundleBuilder
     }
 }
 
-public abstract class AssetBundle
+/// <summary>
+/// Track the progress of loading the actual bundle and can be used to retrieve the actual bundle when finished.
+/// </summary>
+public abstract class AssetBundleLoader
 {
     private readonly HashSet<AssetId> AssetSet = [];
 
@@ -44,8 +63,9 @@ public abstract class AssetBundle
     public IReadOnlySet<AssetId> Assets => AssetSet;
 }
 
+/// <inheritdoc cref="AssetBundleLoader"/>
 public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle> factory, IReadOnlyList<AssetHandle> handles)
-    : AssetBundle
+    : AssetBundleLoader
     where TBundle : notnull
 {
     private bool isReady;
@@ -78,4 +98,6 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
     }
 
     // TODO: Add a method to block and wait without eating all the CPU.
+
+    // TODO: how can we put a sort of progress bar and progress information on this thing?
 }

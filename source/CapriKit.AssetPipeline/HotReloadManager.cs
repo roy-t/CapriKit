@@ -1,135 +1,156 @@
-using CapriKit.Concurrency.Async;
 using CapriKit.IO;
 using CapriKit.IO.Watchers;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// Facilitates hot reloading and hot swapping of assets. Tracks the files used to create an asset
-/// and triggers a rebuild on file changes. Takes care of threading and only performs the final
-/// hot swap when <see cref="Update"/> is called.
+/// Rebuilds, reloads and hot-swaps tracked assets whenever one of the files they were built from changes.
+/// Rebuilding and reloading happen on the thread pool, only the final hot-swap runs on the main thread
+/// (see <see cref="IAssetTranscoder{TAsset, TSettings}.HotSwap"/>).
+/// A failed rebuild, reload or hot-swap only means that the asset keeps its current contents, it never
+/// invalidates a live asset and never leaves a lease behind in the <see cref="AssetPool"/>.
+/// Threading: <see cref="Track"/> may be called from any thread, <see cref="Update"/> and
+/// <see cref="Dispose"/> must be called from the main thread.
 /// </summary>
 internal sealed partial class HotReloadManager : IDisposable
 {
-    private static readonly TimeSpan MinWaitTime = TimeSpan.FromSeconds(0.5);
     private readonly ILogger<HotReloadManager> Logger;
-
+    private readonly AssetPool Cache;
     private readonly ScopedFileSystem FileSystem;
     private readonly IVirtualFileSystemWatcher Watcher;
-    private readonly FileSystemEventQueue FileChances;
+    private readonly FileSystemEventQueue FileChanges;
+    private readonly TimeSpan Debounce;
 
-    private readonly Lock TrackingLock;
-    private readonly Dictionary<AssetId, List<HotReloadable>> Tracked;
+    // Guards the two collections that Track (any thread) and Update (main thread) share.
+    private readonly Lock Lock;
+    private readonly Dictionary<AssetId, TrackedAsset> Tracked;
     private readonly Dictionary<FilePath, HashSet<AssetId>> Dependents;
 
-    private readonly HashSet<AssetId> PendingRebuilds;
-    private readonly ConcurrentQueue<HotSwapAction> PendingReloads;
+    // Only touched by the main thread.
+    private readonly HashSet<AssetId> Stale;
+    private readonly Dictionary<AssetId, Task<ReloadedAsset>> InFlight;
+    private long lastChange;
 
-    private long lastFileChange;
-    private volatile bool isReloading;
+    private bool isDisposed;
 
-    public HotReloadManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
+    /// <summary>
+    /// The optional <c>debounce</c> is how long to wait after the last relevant file change before rebuilding.
+    /// Editors write their buffer in several steps, without a pause we would rebuild the same asset once per
+    /// step and read half-written files. If not provided, it will be set to 500 milliseconds.
+    /// </summary>
+    public HotReloadManager(ILoggerFactory loggerFactory, AssetPool cache, ScopedFileSystem fileSystem, TimeSpan? debounce = null)
     {
-        Logger = logger.CreateLogger<HotReloadManager>();
-
+        Logger = loggerFactory.CreateLogger<HotReloadManager>();
+        Cache = cache;
         FileSystem = fileSystem;
-        Watcher = fileSystem.Watch();
-        FileChances = new(Watcher);
+        Debounce = debounce ?? TimeSpan.FromSeconds(0.5);
 
-        TrackingLock = new();
+        Lock = new();
         Tracked = [];
         Dependents = [];
+        Stale = [];
+        InFlight = [];
 
-        PendingRebuilds = [];
-        PendingReloads = [];
-
-        lastFileChange = Stopwatch.GetTimestamp();
-        isReloading = false;
+        Watcher = FileSystem.Watch();
+        FileChanges = new FileSystemEventQueue(Watcher);
     }
 
     /// <summary>
-    /// Registers an asset for tracking by the hot-reload system.
-    /// Threading: thread-safe, multiple threads can call this method and can even register
-    /// the same asset multiple times. This class figures out which instances are still relevant.
+    /// Registers an asset so that it is rebuilt, reloaded and hot-swapped whenever one of the files it was
+    /// built from changes. Tracking the same asset more than once is a no-op.
+    /// Threading: thread-safe, may be called from any thread at any time.
     /// </summary>
     public void Track<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
     {
-        // An asset can be registered multiple times
-        lock (TrackingLock)
+        lock (Lock)
         {
-            var reloadable = new HotReloadable<TAsset, TSettings>(asset, transcoder);
-            if (Tracked.TryGetValue(asset.Id, out var assets))
-            {
-                // TODO: this is broken!!!!
-                // Prevent adding the exact same instance multiple times
-                if (assets.Any(a => object.ReferenceEquals(a, asset))) { return; }
-                assets.Add(reloadable);
-            }
-            else
-            {
-                Tracked[asset.Id] = [reloadable];
-            }
+            // After disposal we no longer listen for file changes, so tracking would only grow the maps.
+            if (isDisposed) { return; }
 
-            RegisterFileDependencies(asset.Id, asset.BuildMetaData.Dependencies);
+            // The asset manager materializes an asset once per outstanding handle, so the same asset arrives
+            // here several times. Everything we store comes from the build, so the first registration wins.
+            if (Tracked.ContainsKey(asset.Id)) { return; }
+
+            var tracked = new TrackedAsset<TAsset, TSettings>(asset, transcoder);
+            Tracked.Add(asset.Id, tracked);
+            RegisterDependencies(tracked);
         }
     }
 
     /// <summary>
-    /// Stops tracking an asset
-    /// </summary>
-    public void UnTrack(AssetId id)
-    {
-        // Do not remove all references from dependents as that would require us to go through the entire collection
-        // but just forgetting it from tracked the asset will no longer be reloaded.
-        lock (TrackingLock)
-        {
-            Tracked.Remove(id);
-        }
-    }
-
-    /// <summary>
-    /// Checks which files required reloading, start the reloading process and hot swaps any asset that have reloaded
-    /// Threading: Unsafe, must only be called by the primary thread. Other threads can call other methods in this class.
+    /// Reacts to file changes, starts rebuilding the assets those files affect and hot-swaps the assets that
+    /// finished rebuilding. Every step is bounded work, the expensive rebuilding and reloading happens on the
+    /// thread pool so that the main thread only pays for the hot-swap itself.
+    /// Threading: must only be called from the main thread.
     /// </summary>
     public void Update()
     {
-        if (isReloading)
+        if (isDisposed) { return; }
+
+        MarkStaleAssets();
+
+        // Wait for the dust to settle so that a single save does not trigger a burst of rebuilds.
+        if (Stopwatch.GetElapsedTime(lastChange) >= Debounce)
         {
-            return;
+            StartReloads();
         }
 
-        DrainFileChanges();
-        var elapsed = Stopwatch.GetElapsedTime(lastFileChange);
-        if (elapsed > MinWaitTime)
-        {
-            ReloadOne();
-        }
-
-        HotSwapPending();
+        FinishReloads();
     }
 
     /// <summary>
-    /// Drains the queue of file events and adds any assets that dependent on this file to PendingRebuilds
-    /// Threading: Unsafe, must be called single threaded because PendingRebuilds can only
-    /// be used by one thread at a time.
+    /// Stops listening for file changes, abandons everything that has not started yet and finishes the
+    /// rebuilds that are already running so that their leases and freshly built data are handed back.
+    /// Threading: must only be called from the main thread.
     /// </summary>
-    private void DrainFileChanges()
+    public void Dispose()
     {
-        lock (TrackingLock)
+        lock (Lock)
         {
-            while (FileChances.TryDequeue(out var @event))
+            if (isDisposed) { return; }
+            isDisposed = true;
+        }
+
+        Watcher.Stop();
+        Stale.Clear();
+
+        // The running rebuilds hold a lease and own freshly built data that only the main thread can dispose
+        // of, so instead of abandoning them we wait and then finish them through the regular path.
+        try
+        {
+            Task.WaitAll([.. InFlight.Values]);
+        }
+        catch (AggregateException)
+        {
+            // Failures are reported and cleaned up per asset by FinishReloads
+        }
+
+        FinishReloads();
+    }
+
+    /// <summary>
+    /// Marks every asset that depends on a changed file as stale.
+    /// </summary>
+    private void MarkStaleAssets()
+    {
+        lock (Lock)
+        {
+            while (FileChanges.TryDequeue(out var change))
             {
-                if (Dependents.TryGetValue(@event.File, out var dependents))
+                if (!Dependents.TryGetValue(change.File, out var dependents)) { continue; }
+
+                // Only changes we actually care about restart the debounce window, otherwise unrelated
+                // writes (such as the asset pipeline writing its own build files) could postpone a rebuild.
+                lastChange = Stopwatch.GetTimestamp();
+
+                foreach (var id in dependents)
                 {
-                    lastFileChange = Stopwatch.GetTimestamp();
-                    foreach (var id in dependents)
+                    if (Stale.Add(id))
                     {
-                        PendingRebuilds.Add(id);
-                        LogPendingReload(Logger, @event.File, id);
+                        LogAssetStale(Logger, change.File, id);
                     }
                 }
             }
@@ -137,138 +158,152 @@ internal sealed partial class HotReloadManager : IDisposable
     }
 
     /// <summary>
-    /// Starts rebuilding the first asset in the set
-    /// Threading: Unsafe, must be called single threaded because the PendingRebuilds sets can only
-    /// be used by one thread at a time and the isReloading guard would also be confused.
+    /// Starts rebuilding and reloading every stale asset on the thread pool.
     /// </summary>
-    private void ReloadOne()
+    private void StartReloads()
     {
-        if (PendingRebuilds.Count == 0) { return; }
+        if (Stale.Count == 0) { return; }
 
-        var id = PendingRebuilds.First();
-        PendingRebuilds.Remove(id);
-
-        HotReloadable? target = null;
-        List<HotReloadable>? candidates;
-
-        // Even though this method is single threaded, other methods that allow parallelism can
-        // touch Tracked so we need to put a lock around it.
-        lock (TrackingLock)
+        lock (Lock)
         {
-            if (!Tracked.TryGetValue(id, out candidates))
+            foreach (var id in Stale.ToArray())
             {
-                return;
-            }
+                // Let the running rebuild finish first. The asset stays stale so we pick it up again
+                // afterwards, which is exactly what we want because its files changed once more.
+                if (InFlight.ContainsKey(id)) { continue; }
 
-            // TODO: we allow users to add the same asset-id multiple times but we expect
-            // that (after a while) only one of the asset instances is still used by the engine. The
-            // others will be garbage collected eventually. Still, at this point in time we cannot be sure
-            // that the first (or last, or..) alive candidate is the one that will survive.
-            // How should we deal with that?
-            foreach (var candidate in candidates)
-            {
-                if (candidate.IsAlive)
+                Stale.Remove(id);
+
+                if (!Tracked.TryGetValue(id, out var tracked)) { continue; }
+
+                if (tracked.TryStartReload(Cache, FileSystem, out var reload))
                 {
-                    target = candidate;
-                    break;
+                    InFlight.Add(id, reload);
+                    LogReloadStarted(Logger, id);
+                }
+                else
+                {
+                    // The cache is the authority on liveness: no entry means nobody uses this asset anymore.
+                    UntrackAsset(tracked);
+                    LogUntracked(Logger, id);
                 }
             }
-        }
-
-        // Not finding a target is normal, it means a file
-        // changed but the asset depending on it is no longer in use.
-        if (target != null)
-        {
-            LogReloadStarted(Logger, id);
-
-            isReloading = true;
-            Task.Run(() => target.Reload(FileSystem, PendingReloads)
-               .FireAndForget(ex =>
-               {
-                   LogReloadFailed(Logger, id, ex.SourceException);
-                   isReloading = false;
-               },
-               () =>
-               {
-                   LogReloadCompleted(Logger, id);
-                   isReloading = false;
-               }));
         }
     }
 
     /// <summary>
-    /// Hot swaps the assets that have been reloaded.
-    /// Threading: Unsafe, the contract from <see cref="IAssetTranscoder{A,A}.HotSwap(A, A)"/> used here
-    /// requires that assets are only hot swapped on the main thread
+    /// Hot-swaps every asset that finished rebuilding and returns the lease that its rebuild took.
     /// </summary>
-    private void HotSwapPending()
+    private void FinishReloads()
     {
-        while (PendingReloads.TryDequeue(out var action))
+        if (InFlight.Count == 0) { return; }
+
+        foreach (var (id, reload) in InFlight.ToArray())
         {
-            try
+            if (!reload.IsCompleted) { continue; }
+
+            InFlight.Remove(id);
+            FinishReload(id, reload);
+        }
+    }
+
+    private void FinishReload(AssetId id, Task<ReloadedAsset> reload)
+    {
+        try
+        {
+            if (!reload.IsCompletedSuccessfully)
             {
-                LogHotSwapStarted(Logger, action.Id);
-                action.PerformHotSwap();
-
-                RegisterFileDependencies(action.Id, action.Dependencies);
-
-                LogHotSwapCompleted(Logger, action.Id);
+                // Nothing was touched yet, so the asset simply keeps the contents it already had.
+                LogReloadFailed(Logger, id, reload.Exception!);
+                return;
             }
-            catch (Exception ex)
+
+            var reloaded = reload.Result;
+
+            // Deliberately outside of the lock: the transcoder runs code we do not control here.
+            reloaded.HotSwap();
+
+            UpdateDependencies(id, reloaded.Dependencies);
+            LogHotSwapped(Logger, id);
+        }
+        catch (Exception ex)
+        {
+            // A transcoder that fails half-way leaves the asset in whatever state it made of it, all we can
+            // do is report it. The alternative, throwing, would take down the game over a development feature.
+            LogHotSwapFailed(Logger, id, ex);
+        }
+        finally
+        {
+            // Balances the lease that TryStartReload took, whether we managed to hot-swap or not.
+            Cache.Return(id);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the dependencies of an asset with the ones its latest build read.
+    /// </summary>
+    private void UpdateDependencies(AssetId id, IReadOnlyList<Dependency> dependencies)
+    {
+        lock (Lock)
+        {
+            if (Tracked.TryGetValue(id, out var tracked))
             {
-                LogHotSwapFailed(Logger, action.Id, ex);
+                UnregisterDependencies(tracked);
+                tracked.Dependencies = dependencies;
+                RegisterDependencies(tracked);
             }
         }
     }
 
-    // Updates the dependents
-    private void RegisterFileDependencies(AssetId id, IReadOnlyList<Dependency> dependencies)
+    // Threading: must be called while holding the lock
+    private void RegisterDependencies(TrackedAsset tracked)
     {
-        lock (TrackingLock)
+        foreach (var (file, _) in tracked.Dependencies)
         {
-            foreach (var dependency in dependencies)
+            if (!Dependents.TryGetValue(file, out var ids))
             {
-                var file = dependency.File;
-                if (Dependents.TryGetValue(file, out var ids))
-                {
-                    ids.Add(id);
-                }
-                else
-                {
-                    ids = [id];
-                    Dependents.Add(file, ids);
-                }
+                ids = [];
+                Dependents.Add(file, ids);
+            }
+
+            ids.Add(tracked.Id);
+        }
+    }
+
+    // Threading: must be called while holding the lock
+    private void UnregisterDependencies(TrackedAsset tracked)
+    {
+        foreach (var (file, _) in tracked.Dependencies)
+        {
+            if (Dependents.TryGetValue(file, out var ids) && ids.Remove(tracked.Id) && ids.Count == 0)
+            {
+                Dependents.Remove(file);
             }
         }
     }
 
-    public void Dispose()
+    // Threading: must be called while holding the lock
+    private void UntrackAsset(TrackedAsset tracked)
     {
-        Watcher.Stop();
-        Tracked.Clear();
-        Dependents.Clear();
-        PendingRebuilds.Clear();
-        PendingReloads.Clear();
+        UnregisterDependencies(tracked);
+        Tracked.Remove(tracked.Id);
     }
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Detected file change: {path}, affecting asset: {asset}")]
-    private static partial void LogPendingReload(ILogger logger, FilePath path, AssetId asset);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Detected change in file: {file}, marking asset: {asset} as stale")]
+    private static partial void LogAssetStale(ILogger logger, FilePath file, AssetId asset);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset pending: {asset}")]
+    [LoggerMessage(Level = LogLevel.Information, Message = "Started rebuilding and reloading asset: {asset}")]
     private static partial void LogReloadStarted(ILogger logger, AssetId asset);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Reloading asset completed: {asset}")]
-    private static partial void LogReloadCompleted(ILogger logger, AssetId asset);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Reloading asset failed: {asset}")]
+    [LoggerMessage(Level = LogLevel.Error, Message = "Rebuilding or reloading asset: {asset} failed, it keeps its current contents")]
     private static partial void LogReloadFailed(ILogger logger, AssetId asset, Exception exception);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Hot-swapping asset started: {asset}")]
-    private static partial void LogHotSwapStarted(ILogger logger, AssetId asset);
+    [LoggerMessage(Level = LogLevel.Information, Message = "Hot-swapped asset: {asset}")]
+    private static partial void LogHotSwapped(ILogger logger, AssetId asset);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "Hot-swapping asset completed: {asset}")]
-    private static partial void LogHotSwapCompleted(ILogger logger, AssetId asset);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Hot-swapping asset failed: {asset}")]
+    [LoggerMessage(Level = LogLevel.Error, Message = "Hot-swapping asset: {asset} failed")]
     private static partial void LogHotSwapFailed(ILogger logger, AssetId asset, Exception exception);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Stopped tracking asset: {asset}, it is no longer in the cache")]
+    private static partial void LogUntracked(ILogger logger, AssetId asset);
 }

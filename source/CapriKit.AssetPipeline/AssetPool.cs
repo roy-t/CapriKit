@@ -3,10 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// Cache of live assets. Methods are thread-safe and can be accessed concurrently. However,
-/// cleaning-up unused asset using the <see cref="Collect"/> must be done from the main thread.
+/// Pool of keyed, reference-counted deduplicated live assets.
+/// Most methods are thread-safe and can be accessed concurrently. However,
+/// cleaning-up unused asset using the <see cref="DisposeReleased"/> must be done from the main thread.
 /// </summary>
-internal sealed partial class AssetCache : IDisposable
+internal sealed partial class AssetPool : IDisposable
 {
     private sealed class Entry(AssetId id, object asset, int refCount)
     {
@@ -79,7 +80,7 @@ internal sealed partial class AssetCache : IDisposable
 
     /// <summary>
     /// Returns a leased asset. If every user returned their asset it becomes collectable. Which happens in
-    /// <see cref="Collect"/>. After calling return the caller must no longer reference the asset instance.
+    /// <see cref="DisposeReleased"/>. After calling return the caller must no longer reference the asset instance.
     /// Threading: thread-safe.
     /// </summary>
     public void Return(AssetId id)
@@ -109,7 +110,7 @@ internal sealed partial class AssetCache : IDisposable
     /// Disposes all assets that no longer have users.
     /// Threading: this method must only be called from the primary thread.
     /// </summary>
-    public void Collect()
+    public void DisposeReleased()
     {
         List<Entry>? toDispose = null;
 
