@@ -68,36 +68,63 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
     : AssetBundleLoader
     where TBundle : notnull
 {
-    private bool isReady;
-    private TBundle? result;
+    private readonly List<AssetHandle> Pending = [.. handles];
 
-    // Single threaded!
-    // TODO: can we reduce the number of things we need to check each frame?
+    /// <summary>
+    /// The number of assets in this bundle.
+    /// </summary>
+    public int Total { get; } = handles.Count;
+
+    /// <summary>
+    /// The number of assets that have completed loading, updated every time <see cref="IsReady"/> is called.
+    /// </summary>
+    public int Loaded => Total - Pending.Count;
+
+    /// <summary>
+    /// The latest item that completed loading, updated every time <see cref="IsReady"/> is called.
+    /// </summary>
+    public AssetId? LastCompletedItem { get; private set; }
+
+    private TBundle? result;
+    private bool isReady;
+
+    /// <summary>
+    /// Checks whether the bundle finished loading, and if so builds returns it.
+    /// Threading: primary thread only.
+    /// </summary>
     public bool IsReady([NotNullWhen(true)] out TBundle? value)
     {
-        if (isReady)
+        if (isReady) { value = result!; return true; }
+
+        for (var i = Pending.Count - 1; i >= 0; i--)
         {
-            value = result!;
-            return true;
-        }
-        
-        foreach (var handle in handles)
-        {
-            if (!handle.IsResolved)
+            var handle = Pending[i];
+            if (handle.IsResolved)
             {
-                value = default;
-                return false;
+                LastCompletedItem = handle.Id;
+                Pending[i] = Pending[^1];
+                Pending.RemoveAt(Pending.Count - 1);
             }
         }
 
-        result = factory(new AssetHandleResolver(this));
-        isReady = true;
+        if (Pending.Count > 0) { value = default; return false; }
 
-        value = result;
+        result = value = factory(new AssetHandleResolver(this));
+        isReady = true;
         return true;
     }
 
-    // TODO: Add a method to block and wait without eating all the CPU.
-
-    // TODO: how can we put a sort of progress bar and progress information on this thing?
+    /// <summary>
+    /// Busy waits until the bundle finishes loading, then builds and returns it.
+    /// Threading: primary thread only.
+    /// </summary>
+    public TBundle WaitUntilReady()
+    {
+        var wait = new SpinWait();
+        while (true)
+        {
+            if (IsReady(out var bundle)) { return bundle; }
+            wait.SpinOnce();
+        }
+    }
 }

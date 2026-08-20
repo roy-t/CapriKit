@@ -7,7 +7,18 @@ namespace CapriKit.AssetPipeline;
 /// </summary>
 /// <param name="Path">Virtual file path that points to the file the asset originates from.</param>
 /// <param name="Key">Optional key to a sub-resources in Path.</param>
-public record AssetId(FilePath Path, string Key = "");
+public record AssetId(FilePath Path, string Key = "")
+{
+    public override string ToString()
+    {
+        if (string.IsNullOrEmpty(Key))
+        {
+            return Path;
+        }
+
+        return $"{Path}:{Key}";
+    }
+}
 
 /// <summary>
 /// An asset, including its identifier and information on how it was built.
