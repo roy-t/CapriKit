@@ -22,10 +22,11 @@ internal sealed partial class AssetPool : IDisposable
     private bool isDisposed;
 
     /// <summary>
-    /// Stores the given asset and then leases it. If another caller already stored the asset
-    /// the <paramref name="candidate"/> is disposed and the stored instance is leased instead.
-    /// Threading, thread-safe: loading the same asset twice is wasteful but harmless, after calling this
-    /// method users must stop referencing <paramref name="candidate"/>.
+    /// Stores the given asset and then leases it. If an asset for the same asset id is added multiple
+    /// times the first added asset wins. Assets added later just take a lease on the already
+    /// added one and the candidate is disposed of.
+    /// Threading: thread-safe, loading the same asset twice is wasteful but harmless, after calling this
+    /// method users must stop referencing <paramref name="candidate"/> and use the return value of this method instead.
     /// </summary>
     public TAsset PutOrLease<TAsset>(AssetId id, TAsset candidate)
         where TAsset : class
@@ -36,15 +37,17 @@ internal sealed partial class AssetPool : IDisposable
 
             if (Entries.TryGetValue(id, out var entry))
             {
-                // If someone tries to add the same instance twice
-                // just return it, do not schedule it for dispose
-                if (object.ReferenceEquals(candidate, entry))
+                // If someone adds the same asset twice we ensure that
+                // the version already in the cache wins and update
+                // the ref count accordingly
+                if (!object.ReferenceEquals(candidate, entry.Asset))
                 {
-                    return candidate;
+                    // If a different instance was added for the same id
+                    // the candidate also needs to be disposed.
+                    PendingDispose.Enqueue(new Entry(id, candidate, 0));
                 }
 
-                PendingDispose.Enqueue(new Entry(id, candidate, 0));
-
+                
                 var asset = Cast<TAsset>(entry, id);
                 entry.RefCount++;
                 return asset;

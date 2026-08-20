@@ -1,10 +1,10 @@
 # CapriKit.AssetPipeline
 
-Pluggable asset pipeline that provides multi-threaded building and loading and hot-reloading of assets.
+Reusable asset pipeline that provides multi-threaded building, loading and hot-reloading of assets.
 
 ## Usage
 
-1. Create the asset manager and register a transcoder, a class that knows how to build and load one asset type:
+1. Create the asset manager and register a transcoder, an implementation of `IAssetTranscoder` that knows how to build and load one asset type:
 ```
 var assetManager = new AssetManager(LoggerFactory, ScopedFileSystem);
 assetManager.RegisterTranscoder(new VertexShaderTranscoder(GraphicsDevice));
@@ -48,4 +48,3 @@ assetManager.Unload(bundle);
 Hot reloading happens automatically if the files that were used to build the asset are present and change.
 
 ## Implementation
-The AssetPool ensures that files

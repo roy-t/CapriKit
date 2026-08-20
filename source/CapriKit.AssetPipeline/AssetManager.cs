@@ -118,7 +118,7 @@ public sealed partial class AssetManager : IDisposable
         if (build != default && IsUpToDate(transcoder, settings, build, FileSystem))
         {
             var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write((id, () => MaterializeAsset(upToDateAsset, transcoder)));
+            Incoming.Write((id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
         else // If not, try to rebuild and load the asset
@@ -130,7 +130,7 @@ public sealed partial class AssetManager : IDisposable
 
             await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
             var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write((id, () => MaterializeAsset(freshAsset, transcoder)));
+            Incoming.Write((id, () => TrackAndTakeLease(freshAsset, transcoder)));
             LogBuildAndLoaded(Logger, id);
         }
     }
@@ -173,11 +173,11 @@ public sealed partial class AssetManager : IDisposable
         {
             while (Incoming.TryRead(out var result))
             {
-                var (id, materializer) = result;
+                var (id, trackAndTakeLease) = result;
                 var handles = Outstanding[id];
                 foreach (var handle in handles)
                 {
-                    var asset = materializer();
+                    var asset = trackAndTakeLease();
                     handle.Resolve(asset);
                 }
                 Outstanding.Remove(id);
@@ -237,13 +237,13 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Used when an asset is loaded and the handler resolved to register the asset with the cache and hot-reloader.
-    /// Thread safe: calling this method from multiple threads, even to materialize the same asset is safe.
+    /// Used when assigning newly loaded assets to their handles. Puts the new asset into the cache,
+    /// tracks it and then takes a lease for the handle.
     /// </summary>
-    private TAsset MaterializeAsset<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
+    private TAsset TrackAndTakeLease<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
     {
-        // Though the asset manager does not allow loading the same asset multiple times the cache contract does allow it        
+        // Though the asset manager does not allow loading the same asset multiple times the cache contract does allow it
         var actualObject = Cache.PutOrLease(asset.Id, asset.Value);
 
         var actualWrapper = new Asset<TAsset, TSettings>(asset.Id, actualObject, asset.BuildMetaData);

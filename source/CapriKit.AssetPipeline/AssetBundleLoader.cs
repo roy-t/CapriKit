@@ -80,7 +80,7 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
             value = result!;
             return true;
         }
-
+        
         foreach (var handle in handles)
         {
             if (!handle.IsResolved)
