@@ -140,7 +140,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
     /// to unload the same bundle from multiple threads.
     /// </summary>
-    public void Unload(AssetBundleLoader bundle)
+    public void Unload(AssetBundleLoader bundle) // TODO: this should unload an assetbundle, not a loader, but that is not a formal class/interface yet and I don't want it to become more complicated to define an asset bundle. What to do?
     {
         try
         {

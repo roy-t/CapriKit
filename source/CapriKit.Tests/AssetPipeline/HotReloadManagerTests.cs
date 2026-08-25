@@ -79,19 +79,31 @@ internal class HotReloadManagerTests
 
 
 
+/// <summary>
+/// Builds like a <see cref="TextTranscoder"/> until <see cref="ShouldFail"/> is set. Encoding runs on the
+/// thread pool while tests flip the switch and read the counters from the main thread, so all three cross
+/// that boundary explicitly.
+/// </summary>
 internal sealed class TranscoderThatCanFail : TextTranscoder
 {
+    private volatile bool shouldFail;
+    private int attempts;
+    private int failedAttempts;
 
-    public bool ShouldFail { get; set; } = false;
+    public bool ShouldFail { get => shouldFail; set => shouldFail = value; }
 
-    /// <summary>Written on a thread pool thread, only safe to read once the rebuild completed.</summary>
-    public int FailedAttempts { get; private set; }
+    /// <summary>Every build the manager asked for, whether it succeeded or not.</summary>
+    public int Attempts => Volatile.Read(ref attempts);
+
+    public int FailedAttempts => Volatile.Read(ref failedAttempts);
 
     public override Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
     {
+        Interlocked.Increment(ref attempts);
+
         if (ShouldFail)
         {
-            FailedAttempts++;
+            Interlocked.Increment(ref failedAttempts);
             throw new InvalidOperationException("Rebuilding this asset failed on purpose");
         }
         return base.Encode(id, fileSystem, writer);
