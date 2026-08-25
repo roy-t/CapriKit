@@ -39,9 +39,9 @@ if (loader.isReady(out var bundle))
 }
 ```
 
-7. If you no longer need the assets, or if the program exists, return the bundle so the assets can be disposed. Loading and unloading uses reference counting to ensure that an asset is only truly disposed of it nobody references it anymore. To ensure everyone correctly unloads their assets an exception will be thrown if the `AssetManager` (and underlying `AssetPool`) are disposed without first unloading all asset bundles.
+7. If you no longer need the assets, or if the program exists, return the loader so the assets can be disposed. Loading and unloading uses reference counting to ensure that an asset is only truly disposed of it nobody references it anymore. To ensure everyone correctly unloads their assets an exception will be thrown if the `AssetManager` (and underlying `AssetPool`) are disposed without first unloading all assets.
 ```
-assetManager.Unload(bundle);
+assetManager.Unload(loader);
 ```
 
 ## Hot reloading

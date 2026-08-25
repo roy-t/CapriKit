@@ -10,17 +10,39 @@ public abstract class AssetHandle(AssetId id)
     public AssetId Id { get; } = id;
 
     private object? value;
+    private AssetLoadException? error;
     private volatile bool isResolved;
 
 
     internal AssetBundleLoader? Owner { get; set; }
-    internal bool IsResolved => isResolved;
+
+    /// <summary>True once the asset arrived, whether it loaded successfully or failed.</summary>
+    internal bool IsCompleted => isResolved;
+
+    /// <summary>The failure that stopped this asset from loading, null while loading and after success.</summary>
+    internal AssetLoadException? Error => error;
+
+    /// <summary>True once the asset arrived successfully, which is also when it holds a lease on the pool.</summary>
+    internal bool IsLoaded => IsCompleted && error is null;
+
     internal object? Value => value;
 
     internal void Resolve(object asset)
     {
         Debug.Assert(isResolved == false);
         value = asset;
+        isResolved = true;
+    }
+
+    /// <summary>
+    /// Hands this asset's failure to whoever is waiting for it. The volatile write to isResolved happens
+    /// last so a reader that sees the handle complete also sees the error, which is the same ordering
+    /// <see cref="Resolve"/> relies on for its value.
+    /// </summary>
+    internal void Fail(AssetLoadException exception)
+    {
+        Debug.Assert(isResolved == false);
+        error = exception;
         isResolved = true;
     }
 }

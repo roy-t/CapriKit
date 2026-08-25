@@ -18,7 +18,7 @@ public sealed partial class AssetManager : IDisposable
     private readonly HotReloadManager HotReloadManager;
     private readonly ConcurrentDictionary<Type, IAssetTranscoder> Transcoders;
 
-    private readonly LightweightChannel<(AssetId Id, Func<object> Materializer)> Incoming;
+    private readonly LightweightChannel<LoadResult> Incoming;
     private readonly Lock RequestLock;
     private readonly Dictionary<AssetId, List<AssetHandle>> Outstanding;
 
@@ -69,6 +69,10 @@ public sealed partial class AssetManager : IDisposable
     internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
+        // Look the transcoder up here, and before the cache check, so that a missing or mismatched
+        // registration always throws on the calling thread as the programmer error it is. Doing it inside
+        // the request would turn it into a failed asset load, and only for assets that are not cached yet.
+        var transcoder = GetTranscoder<TAsset, TSettings>();
         var handle = new AssetHandle<TAsset>(id);
 
         // At this time an asset is either already loaded, already requested or requested for the first time.
@@ -92,11 +96,11 @@ public sealed partial class AssetManager : IDisposable
             {
                 // Request the asset
                 Outstanding[id] = [handle];
-                Task.Run(() => RequestAsset<TAsset, TSettings>(id, settings)).FireAndForget(
+                Task.Run(() => RequestAsset(id, settings, transcoder)).FireAndForget(
                 ex =>
                 {
                     LogFailed(Logger, id);
-                    Incoming.Write(ex);
+                    Incoming.Write(LoadResult.Failed(new AssetLoadException(id, ex.SourceException)));
                 });
             }
         }
@@ -108,17 +112,15 @@ public sealed partial class AssetManager : IDisposable
     /// Performs the actual loading or building and loading of the asset.
     /// Threading: The caller has to guarantee that this method does not run concurrently for the same asset-id.
     /// </summary>
-    private async Task RequestAsset<TAsset, TSettings>(AssetId id, TSettings settings)
+    private async Task RequestAsset<TAsset, TSettings>(AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
     {
-        var transcoder = GetTranscoder<TAsset, TSettings>();
-
         // Check if the asset can be loaded from an up-to-date build
         var build = await AssetDecoder.TryDecodeBuildMetaData(id, transcoder, FileSystem);
         if (build != default && IsUpToDate(transcoder, settings, build, FileSystem))
         {
             var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write((id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
+            Incoming.Write(LoadResult.Success(id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
         else // If not, try to rebuild and load the asset
@@ -130,26 +132,32 @@ public sealed partial class AssetManager : IDisposable
 
             await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
             var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write((id, () => TrackAndTakeLease(freshAsset, transcoder)));
+            Incoming.Write(LoadResult.Success(id, () => TrackAndTakeLease(freshAsset, transcoder)));
             LogBuildAndLoaded(Logger, id);
         }
     }
 
     /// <summary>
-    /// Unloads all assets in the bundle.
+    /// Unloads all assets in the bundle. A bundle that failed to load can be unloaded too: the assets in it
+    /// that did load are returned, and the ones that failed never took anything that needs returning.
     /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
     /// to unload the same bundle from multiple threads.
     /// </summary>
-    public void Unload(AssetBundleLoader bundle) // TODO: this should unload an assetbundle, not a loader, but that is not a formal class/interface yet and I don't want it to become more complicated to define an asset bundle. What to do?
+    public void Unload(AssetBundleLoader bundle)
     {
+        // TODO: this should unload an assetbundle, not a loader, but that is not a formal class/interface yet and I don't want it to become more complicated to define an asset bundle. What to do?
+        // TODO: Claude says  unloading a bundle that is still loading leaks (fails safe, but isn't right), but is that correct?
         try
         {
             RequestLock.Enter();
             if (bundle.IsActive)
             {
-                foreach (var asset in bundle.Assets)
+                // Give back exactly what was taken. The pool counts one lease per resolved handle, so an
+                // asset this bundle asked for twice has to be returned twice, and one that failed to load
+                // or never arrived has nothing to return.
+                foreach (var handle in bundle.Handles)
                 {
-                    Cache.Return(asset);
+                    if (handle.IsLoaded) { Cache.Return(handle.Id); }
                 }
             }
         }
@@ -163,6 +171,8 @@ public sealed partial class AssetManager : IDisposable
     /// <summary>
     /// Materializes assets that have finished loading, removes unused items from the cache
     /// and hot-reloads changed assets.
+    /// A failed load does not throw here, it is handed to the handles that were waiting for it and
+    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead.
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Update()
@@ -173,14 +183,16 @@ public sealed partial class AssetManager : IDisposable
         {
             while (Incoming.TryRead(out var result))
             {
-                var (id, trackAndTakeLease) = result;
-                var handles = Outstanding[id];
-                foreach (var handle in handles)
+                // Whether it loaded or failed the request is over, so it stops accepting handles. Doing that
+                // here, under the lock that Load uses, is what stops a handle joining a dead request: it
+                // either made this list, or it misses and its own Load starts a fresh request.
+                if (!Outstanding.Remove(result.Id, out var waiting)) { continue; }
+
+                foreach (var handle in waiting)
                 {
-                    var asset = trackAndTakeLease();
-                    handle.Resolve(asset);
+                    if (result.Failure is not null) { handle.Fail(result.Failure); }
+                    else { handle.Resolve(result.Materialize!()); }
                 }
-                Outstanding.Remove(id);
             }
         }
 

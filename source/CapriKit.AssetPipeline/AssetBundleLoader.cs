@@ -16,7 +16,7 @@ public sealed class AssetBundleBuilder
     }
 
     /// <summary>
-    /// Each asset that needs to loaded returns a handle that can then put used in the lambda
+    /// Each asset that needs to load returns a handle that can then be used in the lambda
     /// for <see cref="Build{TBundle}(Func{AssetHandleResolver, TBundle})"/> to describe how
     /// the asset bundle should actually be built.
     /// </summary>
@@ -42,7 +42,7 @@ public sealed class AssetBundleBuilder
         var bundle = new AssetBundleLoader<TBundle>(factory, Handles);
         foreach (var handle in Handles)
         {
-            bundle.Add(handle.Id);
+            bundle.Add(handle);
             handle.Owner = bundle;
         }
 
@@ -51,16 +51,22 @@ public sealed class AssetBundleBuilder
 }
 
 /// <summary>
-/// Track the progress of loading the actual bundle and can be used to retrieve the actual bundle when finished.
+/// Tracks the progress of loading the actual bundle and can be used to retrieve the actual bundle when finished.
 /// </summary>
 public abstract class AssetBundleLoader
 {
-    private readonly HashSet<AssetId> AssetSet = [];
+    private readonly List<AssetHandle> HandleList = [];
 
-    internal void Add(AssetId id) => AssetSet.Add(id);
+    internal void Add(AssetHandle handle) => HandleList.Add(handle);
+
+    /// <summary>
+    /// Every handle in this bundle, failed ones included, kept for as long as the bundle lives. Unloading
+    /// counts handles rather than distinct assets because the pool hands out one lease per resolved handle:
+    /// an asset this bundle asked for twice holds two leases, and one that failed to load holds none.
+    /// </summary>
+    internal IReadOnlyList<AssetHandle> Handles => HandleList;
+
     internal bool IsActive { get; set; } = true;
-
-    public IReadOnlySet<AssetId> Assets => AssetSet;
 }
 
 /// <inheritdoc cref="AssetBundleLoader"/>
@@ -76,7 +82,8 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
     public int Total { get; } = handles.Count;
 
     /// <summary>
-    /// The number of assets that have completed loading, updated every time <see cref="IsReady"/> is called.
+    /// The number of assets that have arrived, successfully or not, updated every time
+    /// <see cref="IsReady"/> is called.
     /// </summary>
     public int Loaded => Total - Pending.Count;
 
@@ -89,8 +96,10 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
     private bool isReady;
 
     /// <summary>
-    /// Checks whether the bundle finished loading, and if so builds returns it.
-    /// Threading: primary thread only.
+    /// Checks whether the bundle finished loading, and if so builds and returns it. The result is
+    /// cached so calling IsReady multiple times after loading finished is OK.
+    /// Throws a <see cref="AssetLoadException"/> when an asset in this bundle could not be built or
+    /// loaded. Throws an <see cref="AggregateException"/> if multiple assets failed to load.
     /// </summary>
     public bool IsReady([NotNullWhen(true)] out TBundle? value)
     {
@@ -99,15 +108,33 @@ public sealed class AssetBundleLoader<TBundle>(Func<AssetHandleResolver, TBundle
         for (var i = Pending.Count - 1; i >= 0; i--)
         {
             var handle = Pending[i];
-            if (handle.IsResolved)
-            {
-                LastCompletedItem = handle.Id;
-                Pending[i] = Pending[^1];
-                Pending.RemoveAt(Pending.Count - 1);
-            }
+            if (!handle.IsCompleted) { continue; }
+
+            // An asset that failed has arrived too, it just arrived as an error instead of as a value.
+            LastCompletedItem = handle.Id;
+            Pending[i] = Pending[^1];
+            Pending.RemoveAt(Pending.Count - 1);
         }
 
         if (Pending.Count > 0) { value = default; return false; }
+
+        // Everything arrived, so every lease this bundle will ever hold is settled and it is safe to report
+        // a failure. Handles keep their own error, so this needs no bookkeeping of its own and reports in
+        // the order the assets were requested. isReady stays false, so every later call throws again.
+        List<AssetLoadException>? failures = null;
+        foreach (var handle in Handles)
+        {
+            if (handle.Error is not null)
+            {
+                (failures ??= []).Add(handle.Error);
+            }
+        }
+
+        if (failures != null)
+        {
+            if (failures.Count == 1) { throw failures[0]; }
+            throw new AggregateException(failures);
+        }
 
         result = value = factory(new AssetHandleResolver(this));
         isReady = true;
