@@ -4,6 +4,7 @@ using CapriKit.IO.Streams;
 using CapriKit.Tests.TestUtilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Buffers;
+using System.Collections.Concurrent;
 
 namespace CapriKit.Tests.AssetPipeline;
 
@@ -62,7 +63,7 @@ internal class AssetManagerTests
         await Assert.That(bundle.Asset.Text).IsEqualTo(TranscoderText);
 
         // Load again to verify loading the same thing twice gives us the cached value
-        var altBuilder = new AssetBundleBuilder(assetManager);
+        var altBuilder = assetManager.CreateBundle();
         var altHandle = altBuilder.Load<TextAsset, NoSettings>(id, default);
         var altLoader = altBuilder.Build(resolver => new TestBundle(resolver.Get(altHandle)));
 
@@ -77,7 +78,89 @@ internal class AssetManagerTests
         await Assert.That(altBundle).IsNotNull();
         await Assert.That(altBundle.Asset).IsSameReferenceAs(bundle.Asset);
 
-        // TODO: test the dispose path. Check the errors if assets are not returned and that returning both bundles correctly disposes everything.
+        // Both bundles lease the one shared instance, so it only really goes away once both gave it back
+        assetManager.Unload(loader);
+        assetManager.Update();
+        await Assert.That(bundle.Asset.IsDisposed).IsFalse();
+
+        assetManager.Unload(altLoader);
+        assetManager.Update();
+        await Assert.That(bundle.Asset.IsDisposed).IsTrue();
+
+        // Nothing is left over, so shutting down is quiet
+        await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
+    }
+
+    /// <summary>
+    /// Unloading a bundle whose assets are still on their way used to leak them: the handles had taken no
+    /// lease yet so Unload had nothing to return, but the load still landed in a later Update and took one
+    /// that nobody would ever give back. Update now returns the lease of a handle whose bundle is gone.
+    /// </summary>
+    [Test]
+    public async Task Unload_ReturnsTheLeaseOfAnAssetThatWasStillLoading()
+    {
+        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
+        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+
+        var transcoder = new TrackingTextTranscoder();
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        assetManager.RegisterTranscoder(transcoder);
+
+        var builder = assetManager.CreateBundle();
+        var handle = builder.Load<TextAsset>(new AssetId(AssetFile));
+        var bundle = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+
+        // Act: unload before the first Update, so the asset is still loading and holds no lease yet.
+        // Disposing the bundle is the same thing as unloading it, and is how this is meant to be written.
+        bundle.Dispose();
+
+        // The load still finishes and still takes its lease, the manager has to hand that one straight back
+        await Assert.That(() =>
+        {
+            assetManager.Update();
+            return transcoder.Decoded.Count == 1 && transcoder.Decoded.All(asset => asset.IsDisposed);
+        })
+        .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
+
+        // The bundle no longer owns its assets, so it refuses to hand them out rather than serving disposed ones
+        await Assert.That(() => bundle.IsReady(out _)).Throws<ObjectDisposedException>();
+
+        await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
+    }
+
+    /// <summary>
+    /// Everything that is loaded has to be unloaded before the game quits. The pool notices when that did
+    /// not happen but can only count the assets left behind, so the manager names the bundle they belong to
+    /// and the line that created it. It deliberately does not unload them: at shutdown that would only hide
+    /// the bug from whoever has to fix it.
+    /// </summary>
+    [Test]
+    public async Task Dispose_ReportsBundlesThatWereNeverUnloaded()
+    {
+        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
+        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+
+        var logger = new CapturingLoggerFactory();
+        var assetManager = new AssetManager(logger, fileSystem);
+        assetManager.RegisterTranscoder(new TrackingTextTranscoder());
+
+        var builder = assetManager.CreateBundle();
+        var handle = builder.Load<TextAsset>(new AssetId(AssetFile));
+        var bundle = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+
+        await Assert.That(() =>
+        {
+            assetManager.Update();
+            return bundle.IsReady(out _);
+        })
+        .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
+
+        // Act: quit without unloading anything
+        await Assert.That(() => assetManager.Dispose()).Throws<Exception>();
+
+        var report = logger.Messages.SingleOrDefault(message => message.Contains("was never unloaded"));
+        await Assert.That(report).IsNotNull();
+        await Assert.That(report!.Contains($"{nameof(AssetManagerTests)}.cs:")).IsTrue();
     }
 
     /// <summary>
@@ -281,9 +364,31 @@ internal record TestBundle(TextAsset Asset);
 
 internal record TwiceBundle(TextAsset First, TextAsset Second);
 
-internal sealed class TextAsset(string text)
+internal sealed class TextAsset(string text) : IDisposable
 {
     public string Text { get; set; } = text;
+
+    /// <summary>Lets tests see whether the pool really let go of this asset.</summary>
+    public bool IsDisposed { get; private set; }
+
+    public void Dispose() => IsDisposed = true;
+}
+
+/// <summary>
+/// Hands out the assets it decoded so that a test can look at an asset the asset manager never gave it.
+/// </summary>
+internal sealed class TrackingTextTranscoder : TextTranscoder
+{
+    private readonly ConcurrentBag<TextAsset> decoded = [];
+
+    public IReadOnlyCollection<TextAsset> Decoded => decoded;
+
+    public override TextAsset Decode(AssetId id, ref SequenceReader<byte> reader)
+    {
+        var asset = base.Decode(id, ref reader);
+        decoded.Add(asset);
+        return asset;
+    }
 }
 
 internal class TextTranscoder() : NoSettingsTranscoder<TextAsset>(Guid.Parse("{6E4A1D0C-1F73-4C4E-9D2E-0B7F5C6A9E31}"), 1)

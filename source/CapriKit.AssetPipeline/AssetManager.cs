@@ -4,11 +4,12 @@ using CapriKit.IO;
 using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
 
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// Manages the building, loading, chaching, clean-up and hot-reloading of assets.
+/// Manages the building, loading, caching, clean-up and hot-reloading of assets.
 /// </summary>
 public sealed partial class AssetManager : IDisposable
 {
@@ -22,6 +23,11 @@ public sealed partial class AssetManager : IDisposable
     private readonly Lock RequestLock;
     private readonly Dictionary<AssetId, List<AssetHandle>> Outstanding;
 
+    // Everything that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
+    // to unload instead of only reporting that some number of assets was left behind.
+    private readonly HashSet<AssetBundle> LiveBundles;
+    private readonly HashSet<AssetBundleBuilder> UnbuiltBundles;
+
     public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
         Logger = logger.CreateLogger<AssetManager>();
@@ -32,6 +38,8 @@ public sealed partial class AssetManager : IDisposable
         Incoming = new();
         RequestLock = new();
         Outstanding = [];
+        LiveBundles = [];
+        UnbuiltBundles = [];
     }
 
     /// <summary>
@@ -51,27 +59,48 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Use to defines a bundle of assets to load.
+    /// Use to defines a bundle of assets to load. The call site is captured so that a bundle that is never
+    /// unloaded can point at the code that created it, callers should not pass the two arguments themselves.
     /// Threading: thread-safe.
     /// </summary>
-    public AssetBundleBuilder CreateBundle()
+    public AssetBundleBuilder CreateBundle([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
     {
-        return new AssetBundleBuilder(this);
+        return new AssetBundleBuilder(this, $"{Path.GetFileName(file.AsSpan())}:{line}");
+    }
+
+    /// <summary>
+    /// Registers a builder as a future owner of leases, see <see cref="RegisterBundle"/>.
+    /// Threading: thread-safe.
+    /// </summary>
+    internal void RegisterBuilder(AssetBundleBuilder builder)
+    {
+        lock (RequestLock) { UnbuiltBundles.Add(builder); }
+    }
+
+    /// <summary>
+    /// Hands ownership of the leases from the builder to the bundle it built. From here on the bundle is
+    /// what has to be unloaded, and what <see cref="Dispose"/> reports if that never happens.
+    /// Threading: thread-safe.
+    /// </summary>
+    internal void RegisterBundle(AssetBundleBuilder builder, AssetBundle bundle)
+    {
+        lock (RequestLock)
+        {
+            UnbuiltBundles.Remove(builder);
+            LiveBundles.Add(bundle);
+        }
     }
 
     /// <summary>
     /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
-    /// The caller gets a handle to be used in an <see cref="AssetBundleLoader"/> which can be resolved
-    /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{T}.IsReady"/>
+    /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
+    /// to the actual asset when loading finishes using <see cref="AssetBundle{T}.IsReady"/>
     /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
     /// is not loaded multiple times concurrently.
     /// </summary>
     internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
     {
-        // Look the transcoder up here, and before the cache check, so that a missing or mismatched
-        // registration always throws on the calling thread as the programmer error it is. Doing it inside
-        // the request would turn it into a failed asset load, and only for assets that are not cached yet.
         var transcoder = GetTranscoder<TAsset, TSettings>();
         var handle = new AssetHandle<TAsset>(id);
 
@@ -139,14 +168,14 @@ public sealed partial class AssetManager : IDisposable
 
     /// <summary>
     /// Unloads all assets in the bundle. A bundle that failed to load can be unloaded too: the assets in it
-    /// that did load are returned, and the ones that failed never took anything that needs returning.
+    /// that did load are returned, and the ones that failed never took anything that needs returning. So can
+    /// a bundle that is still loading, the leases its assets take when they do arrive are returned right away.
+    /// Unloading the same bundle twice is safe, the second call does nothing.
     /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
     /// to unload the same bundle from multiple threads.
     /// </summary>
-    public void Unload(AssetBundleLoader bundle)
+    public void Unload(AssetBundle bundle)
     {
-        // TODO: this should unload an assetbundle, not a loader, but that is not a formal class/interface yet and I don't want it to become more complicated to define an asset bundle. What to do?
-        // TODO: Claude says  unloading a bundle that is still loading leaks (fails safe, but isn't right), but is that correct?
         try
         {
             RequestLock.Enter();
@@ -159,10 +188,13 @@ public sealed partial class AssetManager : IDisposable
                 {
                     if (handle.IsLoaded) { Cache.Return(handle.Id); }
                 }
+
+                LiveBundles.Remove(bundle);
             }
         }
         finally
         {
+            // Marks the handles that have not arrived yet as unwanted, Update returns their leases for us.
             bundle.IsActive = false;
             RequestLock.Exit();
         }
@@ -172,7 +204,7 @@ public sealed partial class AssetManager : IDisposable
     /// Materializes assets that have finished loading, removes unused items from the cache
     /// and hot-reloads changed assets.
     /// A failed load does not throw here, it is handed to the handles that were waiting for it and
-    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead.
+    /// surfaces from <see cref="AssetBundle{TBundle}.IsReady"/> instead.
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Update()
@@ -191,7 +223,16 @@ public sealed partial class AssetManager : IDisposable
                 foreach (var handle in waiting)
                 {
                     if (result.Failure is not null) { handle.Fail(result.Failure); }
-                    else { handle.Resolve(result.Materialize!()); }
+                    else
+                    {
+                        handle.Resolve(result.Materialize!());
+
+                        // The bundle was unloaded while this asset was still on its way. Unload could not
+                        // return the lease that resolving just took, because back then there was nothing to
+                        // return yet, so give it back here instead. Materializing first and returning after
+                        // is deliberate: it routes the asset through the pool, which is what disposes it.
+                        if (handle.Owner is { IsActive: false }) { Cache.Return(handle.Id); }
+                    }
                 }
             }
         }
@@ -200,12 +241,69 @@ public sealed partial class AssetManager : IDisposable
         HotReloadManager.Update();
     }
 
+    /// <summary>
+    /// Shuts the asset manager down. Bundles that were never unloaded are reported but deliberately not
+    /// unloaded for you: this only runs at shutdown, where there is nobody left to hand the assets to, so
+    /// quietly cleaning up after the caller would only hide the bug that the log and the exception report.
+    /// Threading: Should only be called from the primary thread.
+    /// </summary>
     public void Dispose()
     {
         // Dispose the hot-reload manager first so that it can release any reference to
         // assets it might still hold.
         HotReloadManager.Dispose();
+
+        DrainIncoming();
+        ReportAssetsThatWereNeverUnloaded();
+
         Cache.Dispose();
+    }
+
+    /// <summary>
+    /// Settles the loads that finished after the last <see cref="Update"/>. Those assets were decoded but
+    /// never reached a handle, so nobody leases them and nothing would ever dispose them. Taking the lease
+    /// and immediately giving it back moves them through the pool, which does dispose them.
+    /// </summary>
+    private void DrainIncoming()
+    {
+        lock (RequestLock)
+        {
+            while (Incoming.TryRead(out var result))
+            {
+                Outstanding.Remove(result.Id);
+
+                // A failed load never built anything, so there is nothing to dispose of.
+                if (result.Failure is not null) { continue; }
+
+                result.Materialize!();
+                Cache.Return(result.Id);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Names every bundle that still holds leases, and every builder whose assets never got a bundle to
+    /// belong to, so that the leak the <see cref="AssetPool"/> throws about can be traced back to its code.
+    /// </summary>
+    private void ReportAssetsThatWereNeverUnloaded()
+    {
+        lock (RequestLock)
+        {
+            foreach (var bundle in LiveBundles)
+            {
+                LogBundleNotUnloaded(Logger, bundle.Origin, bundle.Handles.Count);
+            }
+
+            foreach (var builder in UnbuiltBundles)
+            {
+                // A builder that never loaded anything is simply unused, only one that did is a problem:
+                // its handles have no bundle to be unloaded through.
+                if (builder.RequestedAssets > 0)
+                {
+                    LogBundleNeverBuilt(Logger, builder.Origin, builder.RequestedAssets);
+                }
+            }
+        }
     }
 
     // Thread safe, only touches the file system and uses thread safe transcoder methods and properties.
@@ -291,4 +389,10 @@ public sealed partial class AssetManager : IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Building or loading asset: {asset} failed.")]
     private static partial void LogFailed(ILogger logger, AssetId asset);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The asset bundle created at {origin} was never unloaded, it still holds {assets} asset(s)")]
+    private static partial void LogBundleNotUnloaded(ILogger logger, string origin, int assets);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "The asset bundle builder created at {origin} loaded {assets} asset(s) but was never built, so those assets could never be unloaded")]
+    private static partial void LogBundleNeverBuilt(ILogger logger, string origin, int assets);
 }

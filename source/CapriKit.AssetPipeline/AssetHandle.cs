@@ -14,7 +14,7 @@ public abstract class AssetHandle(AssetId id)
     private volatile bool isResolved;
 
 
-    internal AssetBundleLoader? Owner { get; set; }
+    internal AssetBundle? Owner { get; set; }
 
     /// <summary>True once the asset arrived, whether it loaded successfully or failed.</summary>
     internal bool IsCompleted => isResolved;
@@ -53,7 +53,7 @@ public sealed class AssetHandle<TValue>(AssetId id) : AssetHandle(id) { }
 /// <summary>
 /// Helper class for resolving loaded assets from their asset handle.
 /// </summary>
-public sealed class AssetHandleResolver(AssetBundleLoader owner)
+public sealed class AssetHandleResolver(AssetBundle owner)
 {
     public TValue Get<TValue>(AssetHandle<TValue> promise)
     {
