@@ -47,45 +47,45 @@ internal class AssetManagerTests
 
         var id = new AssetId(AssetFile);
 
-        var builder = assetManager.CreateBundle();
-        var handle = builder.Load<TextAsset, NoSettings>(id, default);
-        var loader = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+        var bundle = assetManager.CreateBundle();
+        var handle = bundle.Load<TextAsset, NoSettings>(id, default);
+        var loader = bundle.Build(resolver => new TestBundle(resolver.Get(handle)));
 
-        TestBundle? bundle = null;
+        TestBundle? contents = null;
         await Assert.That(() =>
         {
             assetManager.Update();
-            return loader.IsReady(out bundle);
+            return loader.IsReady(out contents);
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
-        await Assert.That(bundle).IsNotNull();
-        await Assert.That(bundle.Asset.Text).IsEqualTo(TranscoderText);
+        await Assert.That(contents).IsNotNull();
+        await Assert.That(contents.Asset.Text).IsEqualTo(TranscoderText);
 
         // Load again to verify loading the same thing twice gives us the cached value
-        var altBuilder = assetManager.CreateBundle();
-        var altHandle = altBuilder.Load<TextAsset, NoSettings>(id, default);
-        var altLoader = altBuilder.Build(resolver => new TestBundle(resolver.Get(altHandle)));
+        var altBundle = assetManager.CreateBundle();
+        var altHandle = altBundle.Load<TextAsset, NoSettings>(id, default);
+        var altLoader = altBundle.Build(resolver => new TestBundle(resolver.Get(altHandle)));
 
-        TestBundle? altBundle = null;
+        TestBundle? altContents = null;
         await Assert.That(() =>
         {
             assetManager.Update();
-            return altLoader.IsReady(out altBundle);
+            return altLoader.IsReady(out altContents);
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
-        await Assert.That(altBundle).IsNotNull();
-        await Assert.That(altBundle.Asset).IsSameReferenceAs(bundle.Asset);
+        await Assert.That(altContents).IsNotNull();
+        await Assert.That(altContents.Asset).IsSameReferenceAs(contents.Asset);
 
         // Both bundles lease the one shared instance, so it only really goes away once both gave it back
-        assetManager.Unload(loader);
+        bundle.Dispose();
         assetManager.Update();
-        await Assert.That(bundle.Asset.IsDisposed).IsFalse();
+        await Assert.That(contents.Asset.IsDisposed).IsFalse();
 
-        assetManager.Unload(altLoader);
+        altBundle.Dispose();
         assetManager.Update();
-        await Assert.That(bundle.Asset.IsDisposed).IsTrue();
+        await Assert.That(contents.Asset.IsDisposed).IsTrue();
 
         // Nothing is left over, so shutting down is quiet
         await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
@@ -106,9 +106,9 @@ internal class AssetManagerTests
         var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
         assetManager.RegisterTranscoder(transcoder);
 
-        var builder = assetManager.CreateBundle();
-        var handle = builder.Load<TextAsset>(new AssetId(AssetFile));
-        var bundle = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+        var bundle = assetManager.CreateBundle();
+        var handle = bundle.Load<TextAsset>(new AssetId(AssetFile));
+        var loader = bundle.Build(resolver => new TestBundle(resolver.Get(handle)));
 
         // Act: unload before the first Update, so the asset is still loading and holds no lease yet.
         // Disposing the bundle is the same thing as unloading it, and is how this is meant to be written.
@@ -122,8 +122,9 @@ internal class AssetManagerTests
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
-        // The bundle no longer owns its assets, so it refuses to hand them out rather than serving disposed ones
-        await Assert.That(() => bundle.IsReady(out _)).Throws<ObjectDisposedException>();
+        // The bundle no longer owns its assets, so its loader refuses to hand them out rather than
+        // serving disposed ones
+        await Assert.That(() => loader.IsReady(out _)).Throws<ObjectDisposedException>();
 
         await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
     }
@@ -144,14 +145,14 @@ internal class AssetManagerTests
         var assetManager = new AssetManager(logger, fileSystem);
         assetManager.RegisterTranscoder(new TrackingTextTranscoder());
 
-        var builder = assetManager.CreateBundle();
-        var handle = builder.Load<TextAsset>(new AssetId(AssetFile));
-        var bundle = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+        var bundle = assetManager.CreateBundle();
+        var handle = bundle.Load<TextAsset>(new AssetId(AssetFile));
+        var loader = bundle.Build(resolver => new TestBundle(resolver.Get(handle)));
 
         await Assert.That(() =>
         {
             assetManager.Update();
-            return bundle.IsReady(out _);
+            return loader.IsReady(out _);
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
@@ -187,9 +188,9 @@ internal class AssetManagerTests
 
         // Act: the first load fails while building. Update stays quiet about it, the failure is handed to
         // the bundle that was waiting and surfaces from IsReady.
-        var failedBuilder = assetManager.CreateBundle();
-        var failedHandle = failedBuilder.Load<TextAsset>(id);
-        var failedLoader = failedBuilder.Build(resolver => new TestBundle(resolver.Get(failedHandle)));
+        var failedBundle = assetManager.CreateBundle();
+        var failedHandle = failedBundle.Load<TextAsset>(id);
+        var failedLoader = failedBundle.Build(resolver => new TestBundle(resolver.Get(failedHandle)));
 
         AssetLoadException? failure = null;
         await Assert.That(() =>
@@ -211,17 +212,17 @@ internal class AssetManagerTests
         // Act: take away the reason the build failed and ask for the very same asset again
         transcoder.ShouldFail = false;
 
-        var retryBuilder = assetManager.CreateBundle();
-        var retryHandle = retryBuilder.Load<TextAsset>(id);
-        var retryLoader = retryBuilder.Build(resolver => new TestBundle(resolver.Get(retryHandle)));
+        var retryBundle = assetManager.CreateBundle();
+        var retryHandle = retryBundle.Load<TextAsset>(id);
+        var retryLoader = retryBundle.Build(resolver => new TestBundle(resolver.Get(retryHandle)));
 
         // Control: a second, untouched asset requested at the same moment, to show that a failure never
         // stopped the manager as a whole and that the retry above is what actually changed.
         await fileSystem.WriteAllText(HealthyFile, TranscoderText);
 
-        var healthyBuilder = assetManager.CreateBundle();
-        var healthyHandle = healthyBuilder.Load<TextAsset>(new AssetId(HealthyFile));
-        var healthyLoader = healthyBuilder.Build(resolver => new TestBundle(resolver.Get(healthyHandle)));
+        var healthyBundle = assetManager.CreateBundle();
+        var healthyHandle = healthyBundle.Load<TextAsset>(new AssetId(HealthyFile));
+        var healthyLoader = healthyBundle.Build(resolver => new TestBundle(resolver.Get(healthyHandle)));
 
         await Assert.That(() =>
         {
@@ -247,11 +248,11 @@ internal class AssetManagerTests
         await Assert.That(() => failedLoader.IsReady(out _)).Throws<AssetLoadException>();
 
         // Every bundle can be unloaded, the failed one included: it returns nothing because its only handle
-        // never took a lease. Getting that wrong would return the lease that retryLoader holds on the same
+        // never took a lease. Getting that wrong would return the lease that retryBundle holds on the same
         // asset, so the clean dispose below is what proves the counting is right.
-        assetManager.Unload(failedLoader);
-        assetManager.Unload(retryLoader);
-        assetManager.Unload(healthyLoader);
+        assetManager.Unload(failedBundle);
+        assetManager.Unload(retryBundle);
+        assetManager.Unload(healthyBundle);
         await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
     }
 
@@ -268,9 +269,9 @@ internal class AssetManagerTests
         await fileSystem.WriteAllText(AssetFile, TranscoderText);
 
         using var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
-        var builder = assetManager.CreateBundle();
+        var bundle = assetManager.CreateBundle();
 
-        await Assert.That(() => builder.Load<TextAsset>(new AssetId(AssetFile))).Throws<Exception>();
+        await Assert.That(() => bundle.Load<TextAsset>(new AssetId(AssetFile))).Throws<Exception>();
     }
 
     /// <summary>
@@ -289,23 +290,23 @@ internal class AssetManagerTests
 
         var id = new AssetId(AssetFile);
 
-        var builder = assetManager.CreateBundle();
-        var first = builder.Load<TextAsset>(id);
-        var second = builder.Load<TextAsset>(id);
-        var loader = builder.Build(resolver => new TwiceBundle(resolver.Get(first), resolver.Get(second)));
+        var bundle = assetManager.CreateBundle();
+        var first = bundle.Load<TextAsset>(id);
+        var second = bundle.Load<TextAsset>(id);
+        var loader = bundle.Build(resolver => new TwiceBundle(resolver.Get(first), resolver.Get(second)));
 
-        TwiceBundle? bundle = null;
+        TwiceBundle? contents = null;
         await Assert.That(() =>
         {
             assetManager.Update();
-            return loader.IsReady(out bundle);
+            return loader.IsReady(out contents);
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
         // Both handles resolved to the single cached instance, but each of them took its own lease
-        await Assert.That(bundle!.Second).IsSameReferenceAs(bundle.First);
+        await Assert.That(contents!.Second).IsSameReferenceAs(contents.First);
 
-        assetManager.Unload(loader);
+        assetManager.Unload(bundle);
         await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
     }
 
@@ -325,15 +326,15 @@ internal class AssetManagerTests
         var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
         assetManager.RegisterTranscoder(transcoder);
 
-        var builder = assetManager.CreateBundle();
-        var handle = builder.Load<TextAsset>(new AssetId(AssetFile));
-        var loader = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+        var bundle = assetManager.CreateBundle();
+        var handle = bundle.Load<TextAsset>(new AssetId(AssetFile));
+        var loader = bundle.Build(resolver => new TestBundle(resolver.Get(handle)));
 
-        TestBundle? bundle = null;
+        TestBundle? contents = null;
         await Assert.That(() =>
         {
             assetManager.Update();
-            return loader.IsReady(out bundle);
+            return loader.IsReady(out contents);
         })
         .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
 
@@ -353,9 +354,9 @@ internal class AssetManagerTests
 
         // Assert: the failure stayed inside the hot-reload path and the asset kept its old contents
         await Assert.That(thrown).IsNull();
-        await Assert.That(bundle!.Asset.Text).IsEqualTo(TranscoderText);
+        await Assert.That(contents!.Asset.Text).IsEqualTo(TranscoderText);
 
-        assetManager.Unload(loader);
+        assetManager.Unload(bundle);
         assetManager.Dispose();
     }
 }

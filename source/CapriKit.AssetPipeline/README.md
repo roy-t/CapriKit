@@ -15,15 +15,15 @@ assetManager.RegisterTranscoder(new VertexShaderTranscoder(GraphicsDevice));
 record UIBundle(PixelShader Shader, Texture2D Font);
 ```
 
-3. Use the asset manager to create a bundle builder and start building (if needed) and loading assets.
+3. Use the asset manager to create a bundle and start building (if needed) and loading assets into it. The bundle owns everything you load into it, so it is the thing to keep and to dispose.
 ```
-var builder = assetManager.CreateBundle();
-var shaderHandle = builder.Load<PixelShader>(new AssetId("./shader.hlsl"));
-var fontHandle = builder.Load<Texture2D>(new AssetId("./"robo.png"));
+using var bundle = assetManager.CreateBundle();
+var shaderHandle = bundle.Load<PixelShader>(new AssetId("./shader.hlsl"));
+var fontHandle = bundle.Load<Texture2D>(new AssetId("./"robo.png"));
 ```
-4. Use the obtained handles to describe how the bundle can be constructed once building and loading finishes.
+4. Use the obtained handles to describe how the contents of the bundle can be constructed once building and loading finishes. This gives you a loader, which only reports progress: dropping it costs nothing, unloading still goes through the bundle.
 ```
-using var bundle = builder.Build(r => new UIBundle(r.get(shaderHandle), r.get(fontHandle));
+var loader = bundle.Build(r => new UIBundle(r.get(shaderHandle), r.get(fontHandle));
 ```
 
 5.  Do not forget to update the asset manager each frame so that it can manage the loading tasks and other bookkeeping.
@@ -33,7 +33,7 @@ assetManager.Update();
 
 6. Check each frame if loading finished and obtain your strongly typed contents
 ```
-if (bundle.isReady(out var ui))
+if (loader.isReady(out var ui))
 {
     // Yay!
 }

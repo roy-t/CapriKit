@@ -23,10 +23,9 @@ public sealed partial class AssetManager : IDisposable
     private readonly Lock RequestLock;
     private readonly Dictionary<AssetId, List<AssetHandle>> Outstanding;
 
-    // Everything that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
+    // Every bundle that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
     // to unload instead of only reporting that some number of assets was left behind.
     private readonly HashSet<AssetBundle> LiveBundles;
-    private readonly HashSet<AssetBundleBuilder> UnbuiltBundles;
 
     public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
@@ -39,7 +38,6 @@ public sealed partial class AssetManager : IDisposable
         RequestLock = new();
         Outstanding = [];
         LiveBundles = [];
-        UnbuiltBundles = [];
     }
 
     /// <summary>
@@ -59,42 +57,23 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Use to defines a bundle of assets to load. The call site is captured so that a bundle that is never
-    /// unloaded can point at the code that created it, callers should not pass the two arguments themselves.
+    /// Creates a bundle to load assets into. The bundle owns everything loaded into it until it is
+    /// unloaded, so it is the thing to keep and to dispose. The call site is captured so that a bundle that
+    /// is never unloaded can point at the code that created it, callers should not pass those two arguments.
     /// Threading: thread-safe.
     /// </summary>
-    public AssetBundleBuilder CreateBundle([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+    public AssetBundle CreateBundle([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
     {
-        return new AssetBundleBuilder(this, $"{Path.GetFileName(file.AsSpan())}:{line}");
-    }
+        var bundle = new AssetBundle(this, $"{Path.GetFileName(file.AsSpan())}:{line}");
+        lock (RequestLock) { LiveBundles.Add(bundle); }
 
-    /// <summary>
-    /// Registers a builder as a future owner of leases, see <see cref="RegisterBundle"/>.
-    /// Threading: thread-safe.
-    /// </summary>
-    internal void RegisterBuilder(AssetBundleBuilder builder)
-    {
-        lock (RequestLock) { UnbuiltBundles.Add(builder); }
-    }
-
-    /// <summary>
-    /// Hands ownership of the leases from the builder to the bundle it built. From here on the bundle is
-    /// what has to be unloaded, and what <see cref="Dispose"/> reports if that never happens.
-    /// Threading: thread-safe.
-    /// </summary>
-    internal void RegisterBundle(AssetBundleBuilder builder, AssetBundle bundle)
-    {
-        lock (RequestLock)
-        {
-            UnbuiltBundles.Remove(builder);
-            LiveBundles.Add(bundle);
-        }
+        return bundle;
     }
 
     /// <summary>
     /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
     /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
-    /// to the actual asset when loading finishes using <see cref="AssetBundle{T}.IsReady"/>
+    /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{TBundle}.IsReady"/>
     /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
     /// is not loaded multiple times concurrently.
     /// </summary>
@@ -174,7 +153,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
     /// to unload the same bundle from multiple threads.
     /// </summary>
-    public void Unload(AssetBundle bundle)
+    internal void Unload(AssetBundle bundle)
     {
         try
         {
@@ -204,7 +183,7 @@ public sealed partial class AssetManager : IDisposable
     /// Materializes assets that have finished loading, removes unused items from the cache
     /// and hot-reloads changed assets.
     /// A failed load does not throw here, it is handed to the handles that were waiting for it and
-    /// surfaces from <see cref="AssetBundle{TBundle}.IsReady"/> instead.
+    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead.
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Update()
@@ -282,8 +261,8 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Names every bundle that still holds leases, and every builder whose assets never got a bundle to
-    /// belong to, so that the leak the <see cref="AssetPool"/> throws about can be traced back to its code.
+    /// Names every bundle that still holds leases, so that the leak the <see cref="AssetPool"/> throws
+    /// about can be traced back to the code that caused it.
     /// </summary>
     private void ReportAssetsThatWereNeverUnloaded()
     {
@@ -291,16 +270,10 @@ public sealed partial class AssetManager : IDisposable
         {
             foreach (var bundle in LiveBundles)
             {
-                LogBundleNotUnloaded(Logger, bundle.Origin, bundle.Handles.Count);
-            }
-
-            foreach (var builder in UnbuiltBundles)
-            {
-                // A builder that never loaded anything is simply unused, only one that did is a problem:
-                // its handles have no bundle to be unloaded through.
-                if (builder.RequestedAssets > 0)
+                // A bundle that never loaded anything is simply unused, not a leak.
+                if (bundle.Total > 0)
                 {
-                    LogBundleNeverBuilt(Logger, builder.Origin, builder.RequestedAssets);
+                    LogBundleNotUnloaded(Logger, bundle.Origin, bundle.Total);
                 }
             }
         }
@@ -392,7 +365,4 @@ public sealed partial class AssetManager : IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The asset bundle created at {origin} was never unloaded, it still holds {assets} asset(s)")]
     private static partial void LogBundleNotUnloaded(ILogger logger, string origin, int assets);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "The asset bundle builder created at {origin} loaded {assets} asset(s) but was never built, so those assets could never be unloaded")]
-    private static partial void LogBundleNeverBuilt(ILogger logger, string origin, int assets);
 }
