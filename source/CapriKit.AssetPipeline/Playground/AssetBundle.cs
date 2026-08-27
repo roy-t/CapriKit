@@ -8,9 +8,9 @@ public record Example(string SomeAsset)
 {
     public static void ExampleLoad(AssetManager manager)
     {
-        using var bundle = new AssetBundle<Example>(manager);
-        var handle = bundle.Request<string, NoSettings>(new AssetId("text.txt"), default);
-        bundle.Build(r => new Example(r.Get(handle)));
+        var builder = new AssetBundleBuilder<Example>(manager);
+        var handle = builder.Request<string, NoSettings>(new AssetId("text.txt"), default);
+        using var bundle = builder.Build(r => new Example(r.Get(handle)));
 
         while (true)
         {
@@ -24,67 +24,91 @@ public record Example(string SomeAsset)
 }
 
 
-public sealed record AssetHandle<TValue>(AssetId Id);
+public readonly record struct AssetHandle<TValue>(AssetId Id, Guid Owner);
 
-
-public sealed class AssetBundle<TContent>(AssetManager assetManager) : IDisposable
-    where TContent : class
+public sealed class AssetBundleBuilder<TContents>(AssetManager assetManager)
+    where TContents : class
 {
-    private readonly AssetManager AssetManager = assetManager;
-    private Func<AssetResolver, TContent>? resolver;
-    private readonly Lock Lock = new();
     private readonly HashSet<AssetId> Requested = [];
-    private readonly Dictionary<AssetId, JobResult<Asset>> Received = [];
-    private bool isReady;
-    private TContent? content;
-    public bool IsDisposed { get; private set; }
+    private readonly List<Action<AssetBundle<TContents>>> Requests = [];
+    private readonly Guid Id = Guid.NewGuid();
 
-    public void Build(Func<AssetResolver, TContent> resolver)
+    public AssetHandle<TAsset> Request<TAsset, TSettings>(AssetId id, TSettings settings)
+       where TAsset : class
     {
-        this.resolver = resolver;
+        if (!Requested.Add(id)) { throw new Exception($"You cannot request the same asset twice for the same bundle: {id}."); }
+        Requests.Add(b => assetManager.Load<TAsset, TSettings>(id, settings, b));
+        return new AssetHandle<TAsset>(id, Id);
     }
 
-    /// <summary>
-    /// Threading: thread-safe
-    /// </summary>    
-    internal bool Accept(AssetId id, JobResult<Asset> result)
+    public AssetBundle<TContents> Build(Func<AssetBundle<TContents>.AssetResolver, TContents> resolver)
     {
-        lock (Lock)
+        var bundle = new AssetBundle<TContents>(Id, assetManager, Requested, resolver);
+        foreach (var request in Requests)
         {
-            if (IsDisposed) { return false; }
-            Received[id] = result;
-            return true;
+            request(bundle);
         }
+
+        return bundle;
+    }
+}
+
+public interface IAssetRequester
+{
+    /// <summary>
+    /// Takes ownership of the asset (or failure).
+    /// </summary>
+    /// <returns>True if ownership is accepted. False if the requester stopped accepting new inputs.</returns>
+    public bool Accept(AssetId id, JobResult<object> result);
+}
+
+public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
+    where TContent : class
+{
+    private readonly Guid Id;
+    private readonly AssetManager AssetManager;
+    private readonly Func<AssetResolver, TContent> Resolver;
+    private readonly Lock Lock = new();
+    private readonly IReadOnlySet<AssetId> Requested;
+    private readonly Dictionary<AssetId, JobResult<object>> Received;
+    private bool isReady;
+    private TContent? content;
+
+    internal AssetBundle(Guid id, AssetManager assetManager, IReadOnlySet<AssetId> requested, Func<AssetResolver, TContent> resolver)
+    {
+        Id = id;
+        AssetManager = assetManager;
+        Requested = requested;
+        Resolver = resolver;
+        Received = [];
+    }
+
+    public bool IsDisposed { get; private set; }
+
+    /// <summary>
+    /// Threading: unsafe, only one thread can access this method at the same time.
+    /// </summary>    
+    public bool Accept(AssetId id, JobResult<object> result)
+    {
+        if (IsDisposed) { return false; }
+        Received[id] = result;
+        return true;
     }
 
     internal TAsset Get<TAsset>(AssetHandle<TAsset> handle)
         where TAsset : class
     {
-        if (handle.Owner != this)
+        if (handle.Owner != Id)
         {
-            throw new InvalidOperationException("Attempted to resolve a handle that was not created by this bundle");
+            throw new InvalidOperationException("Attempted to resolve a handle that was not created for this bundle");
         }
 
         return ((Asset<TAsset>)Received[handle.Id].GetOrThrow()).Value;
     }
 
     /// <summary>
-    /// Threading: unsafe, only one thread can access this method at the same time, but it is safe for other threads
-    /// to access the other methods on this type.
-    /// </summary>    
-    public AssetHandle<TAsset> Request<TAsset, TSettings>(AssetId id, TSettings settings)
-        where TAsset : class
-    {
-        if (!Requested.Add(id)) { throw new Exception($"You cannot request the same asset twice from the same bundle: {id}."); }
-        var handle = AssetManager.Load<TAsset, TSettings>(id, settings);
-        handle.Owner = this;
-        return handle;
-    }
-
-    /// <summary>
-    /// Threading: unsafe, only one thread can access this method at the same time, but it is safe for other threads
-    /// to access the other methods on this type.
-    /// </summary> 
+    /// Threading: unsafe, only one thread can access this method at the same time.
+    /// </summary>
     public bool IsReady([NotNullWhen(true)] out TContent? content)
     {
         if (isReady)
@@ -93,7 +117,7 @@ public sealed class AssetBundle<TContent>(AssetManager assetManager) : IDisposab
             return true;
         }
 
-        if (resolver == null)
+        if (Resolver == null)
         {
             throw new InvalidOperationException("Call Build before calling IsReady");
         }
@@ -101,7 +125,7 @@ public sealed class AssetBundle<TContent>(AssetManager assetManager) : IDisposab
 
         if (Received.Count == Requested.Count)
         {
-            content = resolver(new AssetResolver(this));
+            content = Resolver(new AssetResolver(this));
             isReady = true;
             return true;
         }
@@ -110,19 +134,20 @@ public sealed class AssetBundle<TContent>(AssetManager assetManager) : IDisposab
         return false;
     }
 
+    /// <summary>
+    /// Threading: unsafe, only one thread can access this method at the same time.
+    /// </summary>    
     public void Dispose()
     {
-        lock (Lock)
-        {
-            if (IsDisposed) { return; }
+        if (IsDisposed) { return; }
 
-            foreach (var kv in Received)
-            {
-                AssetManager.Unload(kv.Key);
-            }
-            Received.Clear();
-            IsDisposed = true;
+        foreach (var kv in Received)
+        {
+            // Ignore any assets that failed to load during disposal
+            kv.Value.Match((id, asset) => AssetManager.Unload(id), (id, ex) => { });
         }
+        Received.Clear();
+        IsDisposed = true;
     }
 
     public sealed class AssetResolver
