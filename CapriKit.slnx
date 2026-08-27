@@ -42,6 +42,9 @@
   <Project Path="source/CapriKit.Build/CapriKit.Build.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="source/CapriKit.Collections/CapriKit.Collections.csproj" Id="b660dbe6-c228-4538-a223-81186a16917d">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="source/CapriKit.Concurrency/CapriKit.Concurrency.csproj">
     <Platform Project="x64" />
   </Project>

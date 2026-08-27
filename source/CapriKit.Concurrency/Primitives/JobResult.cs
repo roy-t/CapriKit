@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
-namespace CapriKit.Concurrency.Async;
+namespace CapriKit.Concurrency.Primitives;
+
 public sealed class JobResult<T>
 {
     private readonly string Id;
@@ -38,5 +39,11 @@ public sealed class JobResult<T>
         {
             onFailure(Id, Exception);
         }
+    }
+
+    public T GetOrThrow()
+    {
+        Exception?.Throw();
+        return Result!;
     }
 }

@@ -190,6 +190,9 @@ public sealed class AssetBundleLoader<TBundle>
     /// <summary>
     /// Busy waits until the bundle finishes loading, then builds and returns it.
     /// Threading: primary thread only.
+    /// WARNING: assets only arrive when <see cref="AssetManager.Update"/> runs, and that is the primary
+    /// thread's job too, so this spins forever unless every asset in the bundle came straight from the
+    /// cache. Do not call it until it either pumps the manager itself or is removed.
     /// </summary>
     public TBundle WaitUntilReady()
     {

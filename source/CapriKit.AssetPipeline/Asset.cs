@@ -21,9 +21,20 @@ public record AssetId(FilePath Path, string Key = "")
 }
 
 /// <summary>
+/// An asset
+/// </summary>
+internal abstract record Asset(AssetId Id);
+
+/// <summary>
+/// An asset, including its identifier
+/// </summary>
+internal record Asset<TAsset>(AssetId Id, TAsset Value) : Asset(Id)
+    where TAsset : class;
+
+/// <summary>
 /// An asset, including its identifier and information on how it was built.
 /// </summary>
-internal record Asset<TAsset, TSettings>(AssetId Id, TAsset Value, AssetBuildMetaData<TSettings> BuildMetaData)
+internal sealed record Asset<TAsset, TSettings>(AssetId Id, TAsset Value, AssetBuildMetaData<TSettings> BuildMetaData) : Asset<TAsset>(Id, Value)
     where TAsset : class;
 
 /// <summary>

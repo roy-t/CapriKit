@@ -74,8 +74,9 @@ public sealed partial class AssetManager : IDisposable
     /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
     /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
     /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{TBundle}.IsReady"/>
-    /// Threading: thread-safe, can be called from any thread concurrently. This method guarantees that the same asset
-    /// is not loaded multiple times concurrently.
+    /// Threading: the manager's own state is safe to touch from any thread concurrently, and this method
+    /// guarantees that the same asset is not loaded multiple times concurrently. The bundle above it is
+    /// what limits callers to one thread, see <see cref="AssetBundle"/>.
     /// </summary>
     internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
@@ -150,8 +151,10 @@ public sealed partial class AssetManager : IDisposable
     /// that did load are returned, and the ones that failed never took anything that needs returning. So can
     /// a bundle that is still loading, the leases its assets take when they do arrive are returned right away.
     /// Unloading the same bundle twice is safe, the second call does nothing.
-    /// Threading: Unload updates the internal state of the bundle using a lock so that it is safe
-    /// to unload the same bundle from multiple threads.
+    /// Threading: the lock makes unloading safe against <see cref="Update"/> and against a second unload of
+    /// the same bundle, including from another thread. It does not make unloading safe against
+    /// <see cref="AssetBundle.Load{TAsset}(AssetId)"/> on that same bundle, which touches the same list
+    /// without the lock.
     /// </summary>
     internal void Unload(AssetBundle bundle)
     {
@@ -183,7 +186,9 @@ public sealed partial class AssetManager : IDisposable
     /// Materializes assets that have finished loading, removes unused items from the cache
     /// and hot-reloads changed assets.
     /// A failed load does not throw here, it is handed to the handles that were waiting for it and
-    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead.
+    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead. Update can still throw for
+    /// reasons that are not about one asset failing to build: an asset id used for two different asset
+    /// types, or an asset whose own Dispose throws while the pool cleans up.
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Update()
@@ -199,6 +204,7 @@ public sealed partial class AssetManager : IDisposable
                 // either made this list, or it misses and its own Load starts a fresh request.
                 if (!Outstanding.Remove(result.Id, out var waiting)) { continue; }
 
+                var abandoned = 0;
                 foreach (var handle in waiting)
                 {
                     if (result.Failure is not null) { handle.Fail(result.Failure); }
@@ -207,12 +213,18 @@ public sealed partial class AssetManager : IDisposable
                         handle.Resolve(result.Materialize!());
 
                         // The bundle was unloaded while this asset was still on its way. Unload could not
-                        // return the lease that resolving just took, because back then there was nothing to
-                        // return yet, so give it back here instead. Materializing first and returning after
-                        // is deliberate: it routes the asset through the pool, which is what disposes it.
-                        if (handle.Owner is { IsActive: false }) { Cache.Return(handle.Id); }
+                        // return the lease that resolving just took, because back then there was nothing
+                        // to return yet, so this is where it has to be given back.
+                        if (handle.Owner is { IsActive: false }) { abandoned++; }
                     }
                 }
+
+                // Counted first and returned after, because resolving takes one lease per handle and the
+                // pool evicts at zero: returning as we went would drop an asset that two handles of the
+                // same bundle asked for to zero in between, and queue it for disposal twice.
+                // Returning rather than skipping the materialize is deliberate too, it routes the asset
+                // through the pool, which is what disposes it.
+                for (var i = 0; i < abandoned; i++) { Cache.Return(result.Id); }
             }
         }
 
@@ -228,13 +240,22 @@ public sealed partial class AssetManager : IDisposable
     /// </summary>
     public void Dispose()
     {
+        // Every step below runs even if an earlier one threw. This is the last chance to hand assets back
+        // to the pool and to name the bundles that were left behind, so one failing step must not take the
+        // others with it: swallowing here costs a log line, skipping would cost the whole diagnostic.
+
         // Dispose the hot-reload manager first so that it can release any reference to
         // assets it might still hold.
-        HotReloadManager.Dispose();
+        try { HotReloadManager.Dispose(); }
+        catch (Exception ex) { LogShutdownStepFailed(Logger, nameof(HotReloadManager), ex); }
 
-        DrainIncoming();
-        ReportAssetsThatWereNeverUnloaded();
+        try { DrainIncoming(); }
+        catch (Exception ex) { LogShutdownStepFailed(Logger, nameof(DrainIncoming), ex); }
 
+        try { ReportAssetsThatWereNeverUnloaded(); }
+        catch (Exception ex) { LogShutdownStepFailed(Logger, nameof(ReportAssetsThatWereNeverUnloaded), ex); }
+
+        // Deliberately not guarded: the leak it throws about is the whole point of the check.
         Cache.Dispose();
     }
 
@@ -365,4 +386,7 @@ public sealed partial class AssetManager : IDisposable
 
     [LoggerMessage(Level = LogLevel.Error, Message = "The asset bundle created at {origin} was never unloaded, it still holds {assets} asset(s)")]
     private static partial void LogBundleNotUnloaded(ILogger logger, string origin, int assets);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Shutting the asset manager down failed during {step}, the remaining steps still ran")]
+    private static partial void LogShutdownStepFailed(ILogger logger, string step, Exception exception);
 }

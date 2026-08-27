@@ -130,6 +130,45 @@ internal class AssetManagerTests
     }
 
     /// <summary>
+    /// The corner case of <see cref="Unload_ReturnsTheLeaseOfAnAssetThatWasStillLoading"/>: a bundle that
+    /// asked for the same asset twice takes two leases when it arrives, so it has to give back two. Giving
+    /// them back one at a time as each handle resolves drops the count to zero in between, which evicts and
+    /// queues the asset for disposal once per handle and double frees it.
+    /// </summary>
+    [Test]
+    public async Task Unload_DisposesAnAssetLoadedTwiceOnceWhenItWasStillLoading()
+    {
+        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
+        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+
+        var transcoder = new TrackingTextTranscoder();
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        assetManager.RegisterTranscoder(transcoder);
+
+        var id = new AssetId(AssetFile);
+
+        var bundle = assetManager.CreateBundle();
+        var first = bundle.Load<TextAsset>(id);
+        var second = bundle.Load<TextAsset>(id);
+        _ = bundle.Build(resolver => new TwiceBundle(resolver.Get(first), resolver.Get(second)));
+
+        // Act: unload before the first Update, so both handles are still on their way
+        bundle.Dispose();
+
+        await Assert.That(() =>
+        {
+            assetManager.Update();
+            return transcoder.Decoded.Count == 1 && transcoder.Decoded.All(asset => asset.IsDisposed);
+        })
+        .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
+
+        // Assert: the one asset behind both handles was disposed exactly once
+        await Assert.That(transcoder.Decoded.Single().DisposeCount).IsEqualTo(1);
+
+        await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
+    }
+
+    /// <summary>
     /// Everything that is loaded has to be unloaded before the game quits. The pool notices when that did
     /// not happen but can only count the assets left behind, so the manager names the bundle they belong to
     /// and the line that created it. It deliberately does not unload them: at shutdown that would only hide
@@ -370,9 +409,15 @@ internal sealed class TextAsset(string text) : IDisposable
     public string Text { get; set; } = text;
 
     /// <summary>Lets tests see whether the pool really let go of this asset.</summary>
-    public bool IsDisposed { get; private set; }
+    public bool IsDisposed => DisposeCount > 0;
 
-    public void Dispose() => IsDisposed = true;
+    /// <summary>
+    /// Counted rather than flagged: an asset that is disposed twice would double free the native
+    /// resources of a real asset, so a test has to be able to tell one from two.
+    /// </summary>
+    public int DisposeCount { get; private set; }
+
+    public void Dispose() => DisposeCount++;
 }
 
 /// <summary>
