@@ -1,72 +1,13 @@
-using System.Diagnostics;
-
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// Represents an asset that is in the progress of loading.
+/// A typed reference to an asset that was requested from an <see cref="AssetBundleBuilder{TContents}"/>,
+/// used to read that asset back once its bundle is ready.
 /// </summary>
-public abstract class AssetHandle(AssetId id)
-{
-    public AssetId Id { get; } = id;
-
-    private object? value;
-    private AssetLoadException? error;
-    private volatile bool isResolved;
-
-
-    internal AssetBundle? Owner { get; set; }
-
-    /// <summary>True once the asset arrived, whether it loaded successfully or failed.</summary>
-    internal bool IsCompleted => isResolved;
-
-    /// <summary>The failure that stopped this asset from loading, null while loading and after success.</summary>
-    internal AssetLoadException? Error => error;
-
-    /// <summary>True once the asset arrived successfully, which is also when it holds a lease on the pool.</summary>
-    internal bool IsLoaded => IsCompleted && error is null;
-
-    internal object? Value => value;
-
-    internal void Resolve(object asset)
-    {
-        Debug.Assert(isResolved == false);
-        value = asset;
-        isResolved = true;
-    }
-
-    /// <summary>
-    /// Hands this asset's failure to whoever is waiting for it. The volatile write to isResolved happens
-    /// last so a reader that sees the handle complete also sees the error, which is the same ordering
-    /// <see cref="Resolve"/> relies on for its value.
-    /// </summary>
-    internal void Fail(AssetLoadException exception)
-    {
-        Debug.Assert(isResolved == false);
-        error = exception;
-        isResolved = true;
-    }
-}
-
-/// <inheritdoc cref="AssetHandle"/>
-public sealed class AssetHandle<TValue>(AssetId id) : AssetHandle(id) { }
-
-/// <summary>
-/// Helper class for resolving loaded assets from their asset handle.
-/// </summary>
-public sealed class AssetHandleResolver(AssetBundle owner)
-{
-    public TValue Get<TValue>(AssetHandle<TValue> promise)
-    {
-        if (promise.Owner != owner)
-        {
-            throw new InvalidOperationException($"Attempted to resolve a promise that was not owned by the bundle");
-        }
-
-        if (promise.Value is TValue value)
-        {
-            return value;
-        }
-
-        throw new Exception($"Internal error: resolved value was not of type {typeof(TValue).Name} but {promise.Value?.GetType().Name ?? "null"}");
-    }
-}
+/// <param name="Id">The asset this handle points at.</param>
+/// <param name="Owner">
+/// Identifies the builder that created this handle, so that resolving it against a bundle it does not
+/// belong to is caught instead of quietly returning the wrong asset.
+/// </param>
+public readonly record struct AssetHandle<TValue>(AssetId Id, Guid Owner)
+    where TValue : class;

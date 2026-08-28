@@ -21,7 +21,7 @@ internal static class AssetEncoder
         var outputPath = ToEncodedFilePath(id);
         Stream? output = null;
         try
-        {            
+        {
             output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath);
             var writer = PipeWriter.Create(output, new StreamPipeWriterOptions(leaveOpen: true));
             var spy = fileSystem.SpyOn();

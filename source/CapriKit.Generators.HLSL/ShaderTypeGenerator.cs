@@ -51,8 +51,8 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 
             var config = input.Right.Configuration;
             var includeResolver = new IncludeResolver(input.Left);
-            
-            
+
+
             foreach (var (path, shader) in input.Left)
             {
                 if (ShaderClassBuilder.TryGenerateShader(path, shader, includeResolver, config, out var result))
@@ -66,7 +66,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
                     ReportFailure(context, path);
                 }
             }
-        });     
+        });
     }
 
     private static void ReportNoOp(SourceProductionContext context)

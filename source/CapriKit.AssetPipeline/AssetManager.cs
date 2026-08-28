@@ -1,10 +1,13 @@
+using CapriKit.Collections;
 using CapriKit.Concurrency.Async;
 using CapriKit.Concurrency.Primitives;
 using CapriKit.IO;
 using Microsoft.Extensions.Logging;
 using System.Buffers;
 using System.Collections.Concurrent;
-using System.Runtime.CompilerServices;
+using System.Diagnostics;
+using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 
 namespace CapriKit.AssetPipeline;
 
@@ -19,13 +22,13 @@ public sealed partial class AssetManager : IDisposable
     private readonly HotReloadManager HotReloadManager;
     private readonly ConcurrentDictionary<Type, IAssetTranscoder> Transcoders;
 
-    private readonly LightweightChannel<LoadResult> Incoming;
+    private readonly LightweightChannel<Result> Incoming;
     private readonly Lock RequestLock;
-    private readonly Dictionary<AssetId, List<AssetHandle>> Outstanding;
+    private readonly Dictionary<AssetId, OneOrMany<IAssetRequester>> Outstanding;
 
-    // Every bundle that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
+    // Every requester that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
     // to unload instead of only reporting that some number of assets was left behind.
-    private readonly HashSet<AssetBundle> LiveBundles;
+    private readonly Dictionary<IAssetRequester, Registration> LiveRequesters;
 
     public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
@@ -37,7 +40,9 @@ public sealed partial class AssetManager : IDisposable
         Incoming = new();
         RequestLock = new();
         Outstanding = [];
-        LiveBundles = [];
+
+        // Requesters are identified by who they are, never by what they consider equal to themselves.
+        LiveRequesters = new(ReferenceEqualityComparer.Instance);
     }
 
     /// <summary>
@@ -57,32 +62,28 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Creates a bundle to load assets into. The bundle owns everything loaded into it until it is
-    /// unloaded, so it is the thing to keep and to dispose. The call site is captured so that a bundle that
-    /// is never unloaded can point at the code that created it, callers should not pass those two arguments.
+    /// Announces a requester that is about to ask for assets, so that one which is never unloaded can be
+    /// named at shutdown.
     /// Threading: thread-safe.
     /// </summary>
-    public AssetBundle CreateBundle([CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+    internal void Register(IAssetRequester requester, string origin)
     {
-        var bundle = new AssetBundle(this, $"{Path.GetFileName(file.AsSpan())}:{line}");
-        lock (RequestLock) { LiveBundles.Add(bundle); }
-
-        return bundle;
+        lock (RequestLock) { LiveRequesters[requester] = new Registration(origin); }
     }
 
     /// <summary>
-    /// Starts loading an asset. The asset will either be loaded from the cache, from disk, or rebuild and then loaded.
-    /// The caller gets a handle to be used in an <see cref="AssetBundle"/> which can be resolved
-    /// to the actual asset when loading finishes using <see cref="AssetBundleLoader{TBundle}.IsReady"/>
-    /// Threading: the manager's own state is safe to touch from any thread concurrently, and this method
-    /// guarantees that the same asset is not loaded multiple times concurrently. The bundle above it is
-    /// what limits callers to one thread, see <see cref="AssetBundle"/>.
+    /// Starts loading an asset and delivers it to <paramref name="requester"/> once it arrives. The asset is
+    /// either taken from the cache, loaded from disk, or rebuilt and then loaded. An asset that is already
+    /// cached is delivered before this method returns.
+    /// Threading: complex, multiple threads can enter this method, but the thread that owns <paramref name="requester"/>
+    /// must ensure that no other threads touch it until this method returns. This method
+    /// guarantees that the same asset is not built multiple times concurrently.
     /// </summary>
-    internal AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
+    internal void Load<TAsset, TSettings>(AssetId id, TSettings settings, IAssetRequester requester)
         where TAsset : class
     {
+        // Looked up before the cache is even checked, so that a missing or mismatched transcoder throws immediately.
         var transcoder = GetTranscoder<TAsset, TSettings>();
-        var handle = new AssetHandle<TAsset>(id);
 
         // At this time an asset is either already loaded, already requested or requested for the first time.
         // The lock ensure that this does not change while we check what we should do with the request.
@@ -92,34 +93,61 @@ public sealed partial class AssetManager : IDisposable
             if (Cache.TryLease<TAsset>(id, out var cachedAsset))
             {
                 LogLoadedFromCache(Logger, id);
-                handle.Resolve(cachedAsset);
-                return handle;
+
+                // Only one requester here, so a refusal can hand the lease straight back. Update cannot,
+                // see the comment there.
+                if (!Deliver(id, requester, JobResult<object>.Success(id.ToString(), cachedAsset)))
+                {
+                    Cache.Return(id);
+                }
+
+                return;
             }
 
-            // Check if the asset was already requested
-            if (Outstanding.TryGetValue(id, out var requestors))
+            // Join the request if this asset is already on its way, otherwise start one.
+            ref var waiting = ref CollectionsMarshal.GetValueRefOrAddDefault(Outstanding, id, out var alreadyRequested);
+            waiting.Add(requester);
+
+            if (!alreadyRequested)
             {
-                requestors.Add(handle);
-            }
-            else
-            {
-                // Request the asset
-                Outstanding[id] = [handle];
                 Task.Run(() => RequestAsset(id, settings, transcoder)).FireAndForget(
                 ex =>
                 {
                     LogFailed(Logger, id);
-                    Incoming.Write(LoadResult.Failed(new AssetLoadException(id, ex.SourceException)));
+                    Incoming.Write(Result.Failed(new AssetLoadException(id, ex.SourceException)));
                 });
             }
         }
+    }
 
-        return handle;
+    /// <summary>
+    /// Transfers the ownership of a loaded and leased asset toward the requester and records the lease that
+    /// a successful hand-over creates. Giving back the lease of a refused asset is left to the caller, which
+    /// is the only one that knows whether more requesters are still waiting for it.
+    /// Threading: must be called while holding <see cref="RequestLock"/>.
+    /// </summary>
+    /// <returns>True if the requester took ownership, false if it refused because it was unloaded.</returns>
+    private bool Deliver(AssetId id, IAssetRequester requester, JobResult<object> result)
+    {
+        if (!requester.Accept(id, result)) { return false; }
+
+        // A failed load never took a lease, so there is nothing to record for it.
+        if (result.IsSuccess)
+        {
+            Debug.Assert(LiveRequesters.ContainsKey(requester), "Delivered an asset to a requester that is not registered");
+
+            if (LiveRequesters.TryGetValue(requester, out var registration))
+            {
+                registration.Leased.Add(id);
+            }
+        }
+
+        return true;
     }
 
     /// <summary>
     /// Performs the actual loading or building and loading of the asset.
-    /// Threading: The caller has to guarantee that this method does not run concurrently for the same asset-id.
+    /// Threading: the caller has to guarantee that this does not run concurrently for the same asset-id.
     /// </summary>
     private async Task RequestAsset<TAsset, TSettings>(AssetId id, TSettings settings, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
@@ -129,7 +157,7 @@ public sealed partial class AssetManager : IDisposable
         if (build != default && IsUpToDate(transcoder, settings, build, FileSystem))
         {
             var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write(LoadResult.Success(id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
+            Incoming.Write(Result.Success(id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
         else // If not, try to rebuild and load the asset
@@ -141,90 +169,67 @@ public sealed partial class AssetManager : IDisposable
 
             await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
             var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
-            Incoming.Write(LoadResult.Success(id, () => TrackAndTakeLease(freshAsset, transcoder)));
+            Incoming.Write(Result.Success(id, () => TrackAndTakeLease(freshAsset, transcoder)));
             LogBuildAndLoaded(Logger, id);
         }
     }
 
     /// <summary>
-    /// Unloads all assets in the bundle. A bundle that failed to load can be unloaded too: the assets in it
-    /// that did load are returned, and the ones that failed never took anything that needs returning. So can
-    /// a bundle that is still loading, the leases its assets take when they do arrive are returned right away.
-    /// Unloading the same bundle twice is safe, the second call does nothing.
-    /// Threading: the lock makes unloading safe against <see cref="Update"/> and against a second unload of
-    /// the same bundle, including from another thread. It does not make unloading safe against
-    /// <see cref="AssetBundle.Load{TAsset}(AssetId)"/> on that same bundle, which touches the same list
-    /// without the lock.
+    /// Hands back every lease the requester was given and forgets it. The manager records those leases as
+    /// it hands them out, so unloading needs nothing but the requester's identity. An asset that is still
+    /// on its way was never leased to it and is returned when it arrives and the requester refuses it.
+    /// Threading: complex, multiple threads can enter this method, but the thread that owns <paramref name="requester"/>
+    /// must ensure that no other threads touch it until this method returns.
     /// </summary>
-    internal void Unload(AssetBundle bundle)
+    internal void Unload(IAssetRequester requester)
     {
-        try
+        lock (RequestLock)
         {
-            RequestLock.Enter();
-            if (bundle.IsActive)
-            {
-                // Give back exactly what was taken. The pool counts one lease per resolved handle, so an
-                // asset this bundle asked for twice has to be returned twice, and one that failed to load
-                // or never arrived has nothing to return.
-                foreach (var handle in bundle.Handles)
-                {
-                    if (handle.IsLoaded) { Cache.Return(handle.Id); }
-                }
+            // Taking the registration out is what makes a second unload a no-op.
+            if (!LiveRequesters.Remove(requester, out var registration)) { return; }
 
-                LiveBundles.Remove(bundle);
-            }
-        }
-        finally
-        {
-            // Marks the handles that have not arrived yet as unwanted, Update returns their leases for us.
-            bundle.IsActive = false;
-            RequestLock.Exit();
+            foreach (var id in registration.Leased) { Cache.Return(id); }
         }
     }
 
     /// <summary>
     /// Materializes assets that have finished loading, removes unused items from the cache
     /// and hot-reloads changed assets.
-    /// A failed load does not throw here, it is handed to the handles that were waiting for it and
-    /// surfaces from <see cref="AssetBundleLoader{TBundle}.IsReady"/> instead. Update can still throw for
-    /// reasons that are not about one asset failing to build: an asset id used for two different asset
-    /// types, or an asset whose own Dispose throws while the pool cleans up.
+    /// A failed load does not throw here, it is handed to the requesters that were waiting for it 
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Update()
     {
-        // Ensure that while we check which assets are done loading and up-to-date that administration
+        // Ensure that while we check which assets are done loading and up-to-date that
         // a new request to `Load` of the same asset does not miss these update.
         lock (RequestLock)
         {
             while (Incoming.TryRead(out var result))
             {
-                // Whether it loaded or failed the request is over, so it stops accepting handles. Doing that
-                // here, under the lock that Load uses, is what stops a handle joining a dead request: it
-                // either made this list, or it misses and its own Load starts a fresh request.
-                if (!Outstanding.Remove(result.Id, out var waiting)) { continue; }
+                if (!Outstanding.Remove(result.Id, out var waiting)) { continue; } // Should never happen
 
-                var abandoned = 0;
-                foreach (var handle in waiting)
+                var refused = 0;
+                foreach (var requester in waiting)
                 {
-                    if (result.Failure is not null) { handle.Fail(result.Failure); }
+                    if (result.Failure is not null)
+                    {
+                        // A failed load never took a lease, so a requester turning it down costs nothing.
+                        var failure = JobResult<object>.Failure(result.Id.ToString(), ExceptionDispatchInfo.Capture(result.Failure));
+                        Deliver(result.Id, requester, failure);
+                    }
                     else
                     {
-                        handle.Resolve(result.Materialize!());
-
-                        // The bundle was unloaded while this asset was still on its way. Unload could not
-                        // return the lease that resolving just took, because back then there was nothing
-                        // to return yet, so this is where it has to be given back.
-                        if (handle.Owner is { IsActive: false }) { abandoned++; }
+                        var asset = result.Materialize!(); // materialize every time so the reference count is correct
+                        var success = JobResult<object>.Success(result.Id.ToString(), asset);
+                        if (!Deliver(result.Id, requester, success)) { refused++; }
                     }
                 }
 
-                // Counted first and returned after, because resolving takes one lease per handle and the
-                // pool evicts at zero: returning as we went would drop an asset that two handles of the
-                // same bundle asked for to zero in between, and queue it for disposal twice.
-                // Returning rather than skipping the materialize is deliberate too, it routes the asset
-                // through the pool, which is what disposes it.
-                for (var i = 0; i < abandoned; i++) { Cache.Return(result.Id); }
+                // Counted first and returned after, because materializing takes one lease per requester and
+                // the pool evicts at zero: returning as we went would drop an asset that two bundles are
+                // waiting for to zero in between, which queues it for disposal and lets the next
+                // materialize put that very same instance back in the pool as if it were new.
+                for (var i = 0; i < refused; i++) { Cache.Return(result.Id); }
             }
         }
 
@@ -233,9 +238,7 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Shuts the asset manager down. Bundles that were never unloaded are reported but deliberately not
-    /// unloaded for you: this only runs at shutdown, where there is nobody left to hand the assets to, so
-    /// quietly cleaning up after the caller would only hide the bug that the log and the exception report.
+    /// Shuts the asset manager down. Logs asset that you failed to unload.
     /// Threading: Should only be called from the primary thread.
     /// </summary>
     public void Dispose()
@@ -261,7 +264,7 @@ public sealed partial class AssetManager : IDisposable
 
     /// <summary>
     /// Settles the loads that finished after the last <see cref="Update"/>. Those assets were decoded but
-    /// never reached a handle, so nobody leases them and nothing would ever dispose them. Taking the lease
+    /// never reached a requester, so nobody leases them and nothing would ever dispose them. Taking the lease
     /// and immediately giving it back moves them through the pool, which does dispose them.
     /// </summary>
     private void DrainIncoming()
@@ -282,19 +285,19 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Names every bundle that still holds leases, so that the leak the <see cref="AssetPool"/> throws
+    /// Logs every requester that still holds leases, so that the leak the <see cref="AssetPool"/> throws
     /// about can be traced back to the code that caused it.
     /// </summary>
     private void ReportAssetsThatWereNeverUnloaded()
     {
         lock (RequestLock)
         {
-            foreach (var bundle in LiveBundles)
+            foreach (var registration in LiveRequesters.Values)
             {
-                // A bundle that never loaded anything is simply unused, not a leak.
-                if (bundle.Total > 0)
+                // A bundle that never received anything is simply unused, not a leak.
+                if (registration.Leased.Count > 0)
                 {
-                    LogBundleNotUnloaded(Logger, bundle.Origin, bundle.Total);
+                    LogBundleNotUnloaded(Logger, registration.Origin, registration.Leased.Count);
                 }
             }
         }
@@ -341,8 +344,8 @@ public sealed partial class AssetManager : IDisposable
     }
 
     /// <summary>
-    /// Used when assigning newly loaded assets to their handles. Puts the new asset into the cache,
-    /// tracks it and then takes a lease for the handle.
+    /// Used when handing newly loaded assets to their requesters. Puts the new asset into the cache,
+    /// tracks it and then takes a lease for the requester.
     /// </summary>
     private TAsset TrackAndTakeLease<TAsset, TSettings>(Asset<TAsset, TSettings> asset, IAssetTranscoder<TAsset, TSettings> transcoder)
         where TAsset : class
@@ -370,6 +373,25 @@ public sealed partial class AssetManager : IDisposable
         }
 
         return specializedTranscoder;
+    }
+
+    // Union to hold build results, TODO: replace with a proper union type when switching to C# 15
+    private readonly record struct Result(AssetId Id, Func<object>? Materialize, AssetLoadException? Failure)
+    {
+        public static Result Success(AssetId id, Func<object> materialize) => new(id, materialize, null);
+
+        public static Result Failed(AssetLoadException failure) => new(failure.Asset, null, failure);
+    }
+
+    /// <summary>
+    /// One live requester: where it was created, and every lease it has been handed. Recorded here rather
+    /// than asked of the requester, so that unloading it and reporting it as a leak both need nothing but
+    /// its identity. This makes the manager the only place that knows who leases what.
+    /// </summary>
+    private sealed class Registration(string origin)
+    {
+        public string Origin { get; } = origin;
+        public List<AssetId> Leased { get; } = [];
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Loaded asset: {asset} from cache")]

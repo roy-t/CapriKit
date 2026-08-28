@@ -47,7 +47,7 @@ internal sealed partial class AssetPool : IDisposable
                     PendingDispose.Enqueue(new Entry(id, candidate, 0));
                 }
 
-                
+
                 var asset = Cast<TAsset>(entry, id);
                 entry.RefCount++;
                 return asset;

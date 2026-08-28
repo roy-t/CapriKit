@@ -6,14 +6,12 @@ namespace CapriKit.Collections;
 /// to be contiguous, or when you need to pass the values around as an <see cref="IEnumerable{T}"/>.
 /// </summary>
 /// <remarks>
-/// This is a mutable struct, so <c>dictionary[key].Add(value)</c> silently mutates a copy and
-/// throws the value away. Take a reference to the value inside the dictionary instead:
+/// This is a mutable struct, to use it in a different or other collection take a reference
+/// or the changes are discarded.
 /// <code>
 /// ref var values = ref CollectionsMarshal.GetValueRefOrAddDefault(dictionary, key, out _);
 /// values.Add(value);
 /// </code>
-/// Any insert into that dictionary can resize it and invalidates such a reference, so use it
-/// immediately and never store it.
 /// </remarks>
 public struct OneOrMany<T>
 {

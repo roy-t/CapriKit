@@ -110,7 +110,7 @@ public sealed class ImGuiRenderer : IDisposable
     }
 
     private void SetupRenderState(ImDrawDataPtr drawData, DeviceContext context)
-    {        
+    {
         context.Setup(Effect.InputLayout, PrimitiveTopology.TriangleList, Effect.VertexShader, context.RasterizerStates.CullNone, Effect.PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);

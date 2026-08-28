@@ -34,7 +34,7 @@ public static class FireAndForgetExtensions
         catch (Exception ex)
         {
             // Preserver the original stack trace and allow the handler to rethrow it.
-            var capture = ExceptionDispatchInfo.Capture(ex);            
+            var capture = ExceptionDispatchInfo.Capture(ex);
             onException(capture);
         }
         finally

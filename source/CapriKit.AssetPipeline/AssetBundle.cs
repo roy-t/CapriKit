@@ -1,129 +1,223 @@
+using CapriKit.Concurrency.Primitives;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace CapriKit.AssetPipeline;
 
 /// <summary>
-/// A set of assets that are loaded together and unloaded together. The bundle holds one lease per asset it
-/// loaded for as long as it lives, disposing it hands every one of them back. Use <see cref="Build"/> to
-/// describe the strongly typed value those assets add up to, the bundle itself owns their lifetime.
-/// Threading: create, load and build from one thread, usually the primary one.
+/// Something the <see cref="AssetManager"/> can hand a loaded asset to.
+/// Threading: the manager only calls this from the main thread.
 /// </summary>
-public sealed class AssetBundle : IDisposable
+internal interface IAssetRequester
 {
-    private readonly List<AssetHandle> HandleList = [];
-    private readonly AssetManager Manager;
+    /// <summary>
+    /// Takes ownership of one finished asset, successful or failed. Accepting a successful result takes a
+    /// lease, which the manager records against this requester and hands back when it unloads. Refusing one
+    /// leaves the lease with the manager, which returns it instead.
+    /// </summary>
+    /// <returns>True if ownership is accepted, false if this requester stopped accepting results.</returns>
+    bool Accept(AssetId id, JobResult<object> result);
+}
 
-    internal AssetBundle(AssetManager manager, string origin)
+/// <summary>
+/// Describes the assets a bundle needs. Use <see cref="Build"/> to create the actual bundle and start the loading process.
+/// Threading: unsafe, only one thread can access the same builder at the same time.
+/// </summary>
+public sealed class AssetBundleBuilder<TContents>(AssetManager manager, [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+    where TContents : class
+{
+    private readonly AssetManager Manager = manager;
+    private readonly HashSet<AssetId> Requested = [];
+    private readonly List<Action<AssetBundle<TContents>>> Requests = [];
+    private readonly Guid BundleId = Guid.NewGuid();
+    private readonly string Origin = $"{Path.GetFileName(file.AsSpan())}:{line}";
+    private bool isBuilt;
+
+    /// <summary>
+    /// Records that the bundle needs this asset and hands back the handle used to read it once the bundle is
+    /// ready. Requesting the same asset twice throws: a bundle holds exactly one lease per asset, so the
+    /// second request would be a lease that nobody ever gives back.
+    /// </summary>
+    public AssetHandle<TAsset> Request<TAsset, TSettings>(AssetId id, TSettings settings)
+        where TAsset : class
     {
-        Manager = manager;
-        Origin = origin;
+        ThrowIfBuilt();
+
+        if (!Requested.Add(id))
+        {
+            throw new InvalidOperationException($"You cannot request the same asset twice for the same bundle: {id}.");
+        }
+
+        Requests.Add(bundle => Manager.Load<TAsset, TSettings>(id, settings, bundle));
+
+        return new AssetHandle<TAsset>(id, BundleId);
     }
 
-    /// <summary>
-    /// The number of assets in this bundle.
-    /// </summary>
-    public int Total => HandleList.Count;
+    /// <inheritdoc cref="Request{TAsset, TSettings}(AssetId, TSettings)"/>
+    public AssetHandle<TAsset> Request<TAsset>(AssetId id)
+        where TAsset : class
+        => Request<TAsset, NoSettings>(id, default);
 
     /// <summary>
-    /// The number of assets that have arrived, successfully or not, updated every time
-    /// <see cref="AssetBundleLoader{TBundle}.IsReady"/> is called.
+    /// Creates the bundle and starts building and loading the requested content. A bundle leases
+    /// the assets from the asset system and by disposing it the leases are returned.
     /// </summary>
-    public int Loaded { get; private set; }
+    public AssetBundle<TContents> Build(Func<AssetBundle<TContents>.AssetResolver, TContents> factory)
+    {
+        ThrowIfBuilt();
+        isBuilt = true;
+
+        var bundle = new AssetBundle<TContents>(BundleId, Manager, Requested, factory);
+        Manager.Register(bundle, Origin);
+
+        try
+        {
+            foreach (var request in Requests)
+            {
+                request(bundle);
+            }
+        }
+        catch
+        {
+            // The bundle never reaches the caller
+            bundle.Dispose();
+            throw;
+        }
+
+        return bundle;
+    }
+
+    private void ThrowIfBuilt()
+    {
+        if (isBuilt)
+        {
+            throw new InvalidOperationException("This builder already built its bundle, use a new builder for another one.");
+        }
+    }
+}
+
+/// <summary>
+/// A set of assets wrapped in a bundle to track loading and facilitate unloading. An asset bundle must be
+/// disposed off when the assets are no longer used so that they are cleaned-up correctly.
+/// Create an asset bundle using an <see cref="AssetBundleBuilder{TContents}"/>.
+/// Threading: use one bundle from one thread, the same one that calls <see cref="AssetManager.Update"/>.
+/// </summary>
+public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
+    where TContent : class
+{
+    private readonly Guid Id;
+    private readonly AssetManager Manager;
+    private readonly IReadOnlySet<AssetId> Requested;
+    private readonly Dictionary<AssetId, JobResult<object>> Received;
+    private readonly Func<AssetResolver, TContent> Factory;
+    private TContent? contents;
+    private bool isReady;
+
+    internal AssetBundle(Guid id, AssetManager manager, IReadOnlySet<AssetId> requested, Func<AssetResolver, TContent> factory)
+    {
+        Id = id;
+        Manager = manager;
+        Requested = requested;
+        Factory = factory;
+        Received = [];
+    }
+
+    public bool IsDisposed { get; private set; }
+
+    /// <summary>The number of assets in this bundle.</summary>
+    public int Total => Requested.Count;
+
+    /// <summary>The number of assets that arrived, whether they loaded successfully or failed.</summary>
+    public int Loaded => Received.Count;
 
     /// <summary>
-    /// The last asset that had arrived the last time <see cref="AssetBundleLoader{TBundle}.IsReady"/> was
-    /// called, in the order the assets were requested. Meant to put a name on a loading screen, not to
-    /// report the exact order in which assets finished.
+    /// The asset that arrived most recently, meant to put a name on a loading screen rather than to report
+    /// the exact order in which assets finished. Null until the first asset arrives.
     /// </summary>
     public AssetId? LastCompletedItem { get; private set; }
 
     /// <summary>
-    /// Every handle in this bundle, failed ones included, kept for as long as the bundle lives. Unloading
-    /// counts handles rather than distinct assets because the pool hands out one lease per resolved handle:
-    /// an asset this bundle asked for twice holds two leases, and one that failed to load holds none.
+    /// Reports whether every asset arrived, and if so builds and returns the value they add up to. The
+    /// result is cached.
+    /// Throws an <see cref="AssetLoadException"/> when one asset in this bundle could not be built or
+    /// loaded, and an <see cref="AggregateException"/> when several could not.
+    /// Throws an <see cref="ObjectDisposedException"/> once this bundle has been disposed.
     /// </summary>
-    internal IReadOnlyList<AssetHandle> Handles => HandleList;
-
-    internal bool IsActive { get; set; } = true;
-
-    /// <summary>
-    /// The file and line that created this bundle, used to name it if it is never unloaded.
-    /// </summary>
-    internal string Origin { get; }
-
-    /// <summary>
-    /// Starts building (if needed) and loading an asset, and adds it to this bundle. The handle it returns
-    /// is used in the lambda for <see cref="Build{TBundle}(Func{AssetHandleResolver, TBundle})"/> to
-    /// describe how the assets in this bundle add up to one strongly typed value. Load everything the
-    /// bundle needs before building it, an asset loaded afterwards still belongs to the bundle but the
-    /// loaders that were already built cannot see it.
-    /// </summary>
-    public AssetHandle<TAsset> Load<TAsset, TSettings>(AssetId id, TSettings settings)
-        where TAsset : class
+    public bool IsReady([NotNullWhen(true)] out TContent? contents)
     {
-        var handle = Manager.Load<TAsset, TSettings>(id, settings);
-        handle.Owner = this;
-        HandleList.Add(handle);
-        return handle;
-    }
+        ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-    /// <inheritdoc cref="Load{TAsset, TSettings}(AssetId, TSettings)"/>
-    public AssetHandle<TAsset> Load<TAsset>(AssetId id)
-        where TAsset : class
-        => Load<TAsset, NoSettings>(id, default);
-
-    /// <summary>
-    /// Creates the loader that reports the progress of this bundle and that builds the strongly typed value
-    /// its assets add up to. The loader borrows the bundle, it does not own it: this bundle stays the thing
-    /// that has to be unloaded, which is why building twice is harmless.
-    /// </summary>
-    public AssetBundleLoader<TBundle> Build<TBundle>(Func<AssetHandleResolver, TBundle> factory)
-        where TBundle : notnull
-        => new(this, factory);
-
-    /// <summary>
-    /// Unloads this bundle, see <see cref="AssetManager.Unload(AssetBundle)"/>.
-    /// Unloading a bundle twice is safe, the second call does nothing.
-    /// </summary>
-    public void Dispose() => Manager.Unload(this);
-
-    /// <summary>
-    /// Updates <see cref="Loaded"/> and <see cref="LastCompletedItem"/> and reports whether every asset in
-    /// the bundle arrived, successfully or not. Walks all handles rather than keeping a list of the pending
-    /// ones: a bundle holds a handful of assets, and one list is easier to reason about than two that have
-    /// to agree with each other.
-    /// </summary>
-    internal bool AllAssetsArrived()
-    {
-        var arrived = 0;
-        foreach (var handle in HandleList)
+        if (isReady)
         {
-            // An asset that failed has arrived too, it just arrived as an error instead of as a value.
-            if (handle.IsCompleted)
-            {
-                arrived++;
-                LastCompletedItem = handle.Id;
-            }
+            contents = this.contents!;
+            return true;
         }
 
-        Loaded = arrived;
-        return arrived == HandleList.Count;
+        if (Received.Count < Requested.Count)
+        {
+            contents = default;
+            return false;
+        }
+
+        ThrowOnFailedAssets();
+
+        this.contents = contents = Factory(new AssetResolver(this));
+        isReady = true;
+        return true;
     }
 
     /// <summary>
-    /// Reports the assets in this bundle that could not be built or loaded, in the order they were
-    /// requested. Only call this once <see cref="AllAssetsArrived"/> is true: until then an asset might
-    /// still take a lease, and reporting a failure before that would leave it unaccounted for.
+    /// Hands every asset in this bundle back to the asset manager. Unloading a bundle that failed to load
+    /// works too: the assets that did load are returned, and the ones that failed never took anything that
+    /// needs returning. So does unloading one that is still loading, the assets that are still on their way
+    /// are returned as soon as they arrive. Disposing twice is safe, the second call does nothing.
     /// </summary>
-    internal void ThrowOnFailedAssets()
+    public void Dispose()
+    {
+        if (IsDisposed) { return; }
+
+        // Set before anything else: an asset that finishes after this point has to find a bundle that
+        // refuses it, whether or not unloading below succeeds.
+        IsDisposed = true;
+
+        // The manager recorded every lease it handed us, so it needs nothing from us but our identity.
+        Received.Clear();
+        Manager.Unload(this);
+    }
+
+    bool IAssetRequester.Accept(AssetId id, JobResult<object> result)
+    {
+        if (IsDisposed) { return false; }
+
+        Received[id] = result;
+        LastCompletedItem = id;
+        return true;
+    }
+
+    private TAsset Get<TAsset>(AssetHandle<TAsset> handle)
+        where TAsset : class
+    {
+        if (handle.Owner != Id)
+        {
+            throw new InvalidOperationException($"Attempted to resolve the handle for {handle.Id}, which was not created for this bundle");
+        }
+
+        return (TAsset)Received[handle.Id].GetOrThrow();
+    }
+
+    /// <summary>
+    /// Reports every asset in this bundle that could not be built or loaded.
+    /// </summary>
+    private void ThrowOnFailedAssets()
     {
         List<AssetLoadException>? failures = null;
-        foreach (var handle in HandleList)
+        foreach (var (id, result) in Received)
         {
-            if (handle.Error is not null)
-            {
-                (failures ??= []).Add(handle.Error);
-            }
+            if (result.IsSuccess) { continue; }
+
+            result.Match(
+                static (_, _) => { },
+                (_, error) => (failures ??= []).Add(AsLoadException(id, error.SourceException)));
         }
 
         if (failures is null) { return; }
@@ -131,76 +225,30 @@ public sealed class AssetBundle : IDisposable
 
         throw new AggregateException(failures);
     }
-}
 
-/// <summary>
-/// Tracks the loading progress of an <see cref="AssetBundle"/> and builds the strongly typed value its
-/// assets add up to once they all arrived. Purely a view on the bundle: unloading goes through the bundle,
-/// so a loader that is dropped costs nothing.
-/// </summary>
-public sealed class AssetBundleLoader<TBundle>
-    where TBundle : notnull
-{
-    private readonly AssetBundle Bundle;
-    private readonly Func<AssetHandleResolver, TBundle> Factory;
+    // The manager wraps a failure before it hands it over, the fallback is only here so that a requester
+    // filled in by anything else still reports which asset the failure belongs to.
+    private static AssetLoadException AsLoadException(AssetId id, Exception error)
+        => error as AssetLoadException ?? new AssetLoadException(id, error);
 
-    private TBundle? result;
-    private bool isReady;
-
-    internal AssetBundleLoader(AssetBundle bundle, Func<AssetHandleResolver, TBundle> factory)
-    {
-        Bundle = bundle;
-        Factory = factory;
-    }
-
-    /// <inheritdoc cref="AssetBundle.Total"/>
-    public int Total => Bundle.Total;
-
-    /// <inheritdoc cref="AssetBundle.Loaded"/>
-    public int Loaded => Bundle.Loaded;
-
-    /// <inheritdoc cref="AssetBundle.LastCompletedItem"/>
-    public AssetId? LastCompletedItem => Bundle.LastCompletedItem;
 
     /// <summary>
-    /// Checks whether the bundle finished loading, and if so builds and returns it. The result is
-    /// cached so calling IsReady multiple times after loading finished is OK.
-    /// Throws a <see cref="AssetLoadException"/> when an asset in this bundle could not be built or
-    /// loaded. Throws an <see cref="AggregateException"/> if multiple assets failed to load.
-    /// Throws an <see cref="ObjectDisposedException"/> once the bundle has been unloaded.
+    /// Allows looking up loaded assets by their handle.
     /// </summary>
-    public bool IsReady([NotNullWhen(true)] out TBundle? value)
+    public sealed class AssetResolver
     {
-        // An unloaded bundle gave its leases back, so the assets it would hand out may already be disposed.
-        ObjectDisposedException.ThrowIf(!Bundle.IsActive, Bundle);
+        private readonly AssetBundle<TContent> Owner;
 
-        if (isReady) { value = result!; return true; }
-
-        if (!Bundle.AllAssetsArrived()) { value = default; return false; }
-
-        // Everything arrived, so every lease this bundle will ever hold is settled and it is safe to report
-        // a failure. isReady stays false, so every later call throws again.
-        Bundle.ThrowOnFailedAssets();
-
-        result = value = Factory(new AssetHandleResolver(Bundle));
-        isReady = true;
-        return true;
-    }
-
-    /// <summary>
-    /// Busy waits until the bundle finishes loading, then builds and returns it.
-    /// Threading: primary thread only.
-    /// WARNING: assets only arrive when <see cref="AssetManager.Update"/> runs, and that is the primary
-    /// thread's job too, so this spins forever unless every asset in the bundle came straight from the
-    /// cache. Do not call it until it either pumps the manager itself or is removed.
-    /// </summary>
-    public TBundle WaitUntilReady()
-    {
-        var wait = new SpinWait();
-        while (true)
+        internal AssetResolver(AssetBundle<TContent> owner)
         {
-            if (IsReady(out var bundle)) { return bundle; }
-            wait.SpinOnce();
+            Owner = owner;
         }
+
+        /// <summary>
+        /// Provide the handle returned by <seealso cref="AssetBundleBuilder{TContents}.Request{TAsset, TSettings}(AssetId, TSettings)"/> to obtain the loaded asset.
+        /// You can only use handles created by the builder that built the asset bundle.
+        /// </summary>        
+        public TAsset Get<TAsset>(AssetHandle<TAsset> handle)
+            where TAsset : class => Owner.Get(handle);
     }
 }

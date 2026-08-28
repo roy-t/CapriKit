@@ -17,8 +17,6 @@ public interface IAssetTranscoder
 public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder
     where TAsset : class
 {
-    // Asynchronous since we expect the encoder to read external files
-
     /// <summary>
     /// Loads the raw asset data from the file system and build/encodes it into a format optimized for loading.
     /// Threading: thread-safe, encoding happens asynchronously and can happen on any thread.
