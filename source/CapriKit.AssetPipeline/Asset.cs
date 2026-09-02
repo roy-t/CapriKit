@@ -6,7 +6,7 @@ namespace CapriKit.AssetPipeline;
 /// Unique asset identifier
 /// </summary>
 /// <param name="Path">Virtual file path that points to the file the asset originates from.</param>
-/// <param name="Key">Optional key to a sub-resources in Path.</param>
+/// <param name="Key">Optional key to a sub-resources.</param>
 public record AssetId(FilePath Path, string Key = "")
 {
     public override string ToString()
@@ -27,11 +27,11 @@ internal sealed record Asset<TAsset, TSettings>(AssetId Id, TAsset Value, AssetB
     where TAsset : class;
 
 /// <summary>
-/// Record of the exact transcoder, settings and files used to build the asset.
+/// Record of the exact transcoder, settings and files used to build an asset.
 /// </summary>
 internal record class AssetBuildMetaData<TSettings>(Guid TranscoderId, int TranscoderVersion, TSettings Settings, IReadOnlyList<Dependency> Dependencies);
 
 /// <summary>
-/// A file used to build the asset and the date and time it was last changed
+/// A file used to build the asset and the date and time it was last changed.
 /// </summary>
 internal sealed record Dependency(FilePath File, DateTime Version);

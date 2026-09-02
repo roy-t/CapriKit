@@ -6,7 +6,7 @@ namespace CapriKit.AssetPipeline;
 
 /// <summary>
 /// Something the <see cref="AssetManager"/> can hand a loaded asset to.
-/// Threading: the manager only calls this from the main thread.
+/// Threading: the manager may only calls this from the main thread.
 /// </summary>
 internal interface IAssetRequester
 {
@@ -35,8 +35,7 @@ public sealed class AssetBundleBuilder<TContents>(AssetManager manager, [CallerF
 
     /// <summary>
     /// Records that the bundle needs this asset and hands back the handle used to read it once the bundle is
-    /// ready. Requesting the same asset twice throws: a bundle holds exactly one lease per asset, so the
-    /// second request would be a lease that nobody ever gives back.
+    /// ready. Requesting an asset after the bundle was built or requesting the same asset twice throws an exception.
     /// </summary>
     public AssetHandle<TAsset> Request<TAsset, TSettings>(AssetId id, TSettings settings)
         where TAsset : class
@@ -59,8 +58,11 @@ public sealed class AssetBundleBuilder<TContents>(AssetManager manager, [CallerF
         => Request<TAsset, NoSettings>(id, default);
 
     /// <summary>
-    /// Creates the bundle and starts building and loading the requested content. A bundle leases
-    /// the assets from the asset system and by disposing it the leases are returned.
+    /// Creates the bundle and starts building and loading the requested content.
+    /// Note that a bundle implements <seealso cref="IDisposable"/>.
+    /// A bundle leases the assets from the asset system and
+    /// by disposing it the leases are returned.
+    /// Building the same bundle multiple times throws an exception.
     /// </summary>
     public AssetBundle<TContents> Build(Func<AssetBundle<TContents>.AssetResolver, TContents> factory)
     {
@@ -100,7 +102,8 @@ public sealed class AssetBundleBuilder<TContents>(AssetManager manager, [CallerF
 /// A set of assets wrapped in a bundle to track loading and facilitate unloading. An asset bundle must be
 /// disposed off when the assets are no longer used so that they are cleaned-up correctly.
 /// Create an asset bundle using an <see cref="AssetBundleBuilder{TContents}"/>.
-/// Threading: use one bundle from one thread, the same one that calls <see cref="AssetManager.Update"/>.
+/// Threading, complex, only access from the primary thread while loading, once the asset has been loaded
+/// it can be safely accessed by other threads.
 /// </summary>
 public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
     where TContent : class
@@ -142,6 +145,7 @@ public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
     /// Throws an <see cref="AssetLoadException"/> when one asset in this bundle could not be built or
     /// loaded, and an <see cref="AggregateException"/> when several could not.
     /// Throws an <see cref="ObjectDisposedException"/> once this bundle has been disposed.
+    /// Threading: complex, only access from the primary threaded until loading is done.
     /// </summary>
     public bool IsReady([NotNullWhen(true)] out TContent? contents)
     {
@@ -171,6 +175,7 @@ public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
     /// works too: the assets that did load are returned, and the ones that failed never took anything that
     /// needs returning. So does unloading one that is still loading, the assets that are still on their way
     /// are returned as soon as they arrive. Disposing twice is safe, the second call does nothing.
+    /// Threading: unsafe, only one thread can access this method at the same time.
     /// </summary>
     public void Dispose()
     {
@@ -247,7 +252,7 @@ public sealed class AssetBundle<TContent> : IAssetRequester, IDisposable
         /// <summary>
         /// Provide the handle returned by <seealso cref="AssetBundleBuilder{TContents}.Request{TAsset, TSettings}(AssetId, TSettings)"/> to obtain the loaded asset.
         /// You can only use handles created by the builder that built the asset bundle.
-        /// </summary>        
+        /// </summary>
         public TAsset Get<TAsset>(AssetHandle<TAsset> handle)
             where TAsset : class => Owner.Get(handle);
     }

@@ -94,8 +94,7 @@ public sealed partial class AssetManager : IDisposable
             {
                 LogLoadedFromCache(Logger, id);
 
-                // Only one requester here, so a refusal can hand the lease straight back. Update cannot,
-                // see the comment there.
+                // Only one requester here, so a refusal can hand the lease straight back.
                 if (!Deliver(id, requester, JobResult<object>.Success(id.ToString(), cachedAsset)))
                 {
                     Cache.Return(id);

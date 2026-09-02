@@ -7,7 +7,7 @@ namespace CapriKit.AssetPipeline;
 /// <param name="Id">The asset this handle points at.</param>
 /// <param name="Owner">
 /// Identifies the builder that created this handle, so that resolving it against a bundle it does not
-/// belong to is caught instead of quietly returning the wrong asset.
+/// belong to is caught.
 /// </param>
 public readonly record struct AssetHandle<TValue>(AssetId Id, Guid Owner)
     where TValue : class;
