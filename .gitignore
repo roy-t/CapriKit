@@ -2,3 +2,4 @@
 .vs
 .pack
 .claude/*.local.json
+*.cka

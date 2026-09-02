@@ -4,20 +4,30 @@ namespace CapriKit.DirectX11.Resources.Shaders;
 
 public interface IPixelShader : IDisposable
 {
-    internal ID3D11PixelShader ID3D11PixelShader { get; }
+    internal ID3D11PixelShader ID3D11PixelShader { get; set; }
+
+    public void HotSwap(IPixelShader replacement)
+    {
+        var oldShader = ID3D11PixelShader;
+        ID3D11PixelShader = replacement.ID3D11PixelShader;
+        oldShader.Dispose();
+    }
 }
 
 internal sealed class PixelShader : IPixelShader
 {
-    private readonly ID3D11PixelShader Shader;
+    private ID3D11PixelShader Shader;
 
     internal PixelShader(ID3D11PixelShader shader)
     {
         Shader = shader;
     }
 
-    ID3D11PixelShader IPixelShader.ID3D11PixelShader => Shader;
-
+    ID3D11PixelShader IPixelShader.ID3D11PixelShader
+    {
+        get { return Shader; }
+        set { Shader = value; }
+    }
     public void Dispose()
     {
         Shader.Dispose();

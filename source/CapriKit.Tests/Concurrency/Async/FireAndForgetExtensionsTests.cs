@@ -1,4 +1,5 @@
 using CapriKit.Concurrency.Async;
+using System.Runtime.ExceptionServices;
 
 namespace CapriKit.Tests.Concurrency.Async;
 
@@ -31,7 +32,7 @@ internal class FireAndForgetExtensionsTests
     [Test]
     public async Task FireAndForget_CancelledTask()
     {
-        Exception? observed = null;
+        ExceptionDispatchInfo? observed = null;
         var completed = new TaskCompletionSource();
 
         var cancelled = Task.FromCanceled(new CancellationToken(canceled: true));
@@ -44,14 +45,14 @@ internal class FireAndForgetExtensionsTests
     [Test]
     public async Task FireAndForget_FaultedTask()
     {
-        Exception? observed = null;
+        ExceptionDispatchInfo? observed = null;
         var completed = new TaskCompletionSource();
 
         var faulted = Task.FromException(new InvalidOperationException());
         faulted.FireAndForget(ex => observed = ex, () => completed.SetResult());
 
         await completed.Task.WaitAsync(Timeout);
-        await Assert.That(observed).IsTypeOf<FaFTaskException>();
-        await Assert.That(observed!.InnerException).IsTypeOf<InvalidOperationException>();
+        await Assert.That(observed).IsNotNull();
+        await Assert.That(observed.SourceException).IsTypeOf<InvalidOperationException>();
     }
 }

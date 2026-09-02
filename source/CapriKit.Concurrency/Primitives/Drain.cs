@@ -1,7 +1,7 @@
-using CapriKit.Concurrency.Primitives;
+using CapriKit.Concurrency.Async;
 using System.Diagnostics.CodeAnalysis;
 
-namespace CapriKit.Concurrency.Async;
+namespace CapriKit.Concurrency.Primitives;
 
 /// <summary>
 /// Allows you to drain work as it completes

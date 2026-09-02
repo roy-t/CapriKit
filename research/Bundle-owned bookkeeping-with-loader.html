@@ -1,0 +1,887 @@
+<title>The Builder Split</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Zilla+Slab:wght@600;700&display=swap">
+
+<style>
+  :root {
+    --ground:      #EDEFEE;
+    --surface:     #F8F9F8;
+    --surface-alt: #E3E7E5;
+    --ink:         #16201E;
+    --ink-soft:    #4A5654;
+    --ink-faint:   #6E7B78;
+    --rule:        #D1D8D6;
+    --rule-strong: #B6C0BD;
+    --teal:        #0E6157;
+    --teal-wash:   #DDE9E6;
+    --slate:       #4E5478;
+    --slate-wash:  #E1E3EC;
+    --brick:       #A03A28;
+    --brick-wash:  #F0DFDB;
+    --amber:       #8A5A0B;
+    --amber-wash:  #EFE6D2;
+
+    --measure: 68ch;
+    --step-0: 1rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.4375rem;
+    --step-3: 1.875rem;
+    --step-4: 2.75rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #121817;
+      --surface:     #1A2221;
+      --surface-alt: #232D2B;
+      --ink:         #DCE4E1;
+      --ink-soft:    #9FADAA;
+      --ink-faint:   #7A8785;
+      --rule:        #2A3533;
+      --rule-strong: #3B4846;
+      --teal:        #56C4AC;
+      --teal-wash:   #16302C;
+      --slate:       #9BA2CE;
+      --slate-wash:  #22263A;
+      --brick:       #E4826B;
+      --brick-wash:  #331F1A;
+      --amber:       #D9A441;
+      --amber-wash:  #2C2415;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #121817;
+    --surface:     #1A2221;
+    --surface-alt: #232D2B;
+    --ink:         #DCE4E1;
+    --ink-soft:    #9FADAA;
+    --ink-faint:   #7A8785;
+    --rule:        #2A3533;
+    --rule-strong: #3B4846;
+    --teal:        #56C4AC;
+    --teal-wash:   #16302C;
+    --slate:       #9BA2CE;
+    --slate-wash:  #22263A;
+    --brick:       #E4826B;
+    --brick-wash:  #331F1A;
+    --amber:       #D9A441;
+    --amber-wash:  #2C2415;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page { max-width: 1180px; margin: 0 auto; padding: 0 clamp(1.25rem, 4vw, 3rem) 6rem; }
+
+  .masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: clamp(2.5rem, 6vw, 4.5rem) 0 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .eyebrow .rev { color: var(--teal); }
+
+  h1 {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(2.1rem, 6vw, var(--step-4));
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .deck { font-size: var(--step-1); line-height: 1.5; color: var(--ink-soft); max-width: 62ch; margin: 0; }
+
+  .shell { display: grid; gap: 3rem; padding-top: 2.75rem; }
+
+  @media (min-width: 1020px) {
+    .shell { grid-template-columns: 190px minmax(0, 1fr); gap: 4rem; align-items: start; }
+    .rail { position: sticky; top: 2rem; }
+  }
+
+  .rail ol {
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: 0.55rem;
+    border-left: 1px solid var(--rule);
+  }
+
+  .rail a {
+    display: block;
+    padding: 0.1rem 0 0.1rem 0.9rem;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.775rem;
+    line-height: 1.35;
+    color: var(--ink-faint);
+    text-decoration: none;
+  }
+
+  .rail a:hover, .rail a:focus-visible { color: var(--teal); border-left-color: var(--teal); }
+
+  main { display: flex; flex-direction: column; gap: 3.5rem; min-width: 0; }
+
+  section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 1.5rem; }
+
+  h2 {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-weight: 600;
+    font-size: var(--step-3);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  h3 { font-family: "Zilla Slab", Georgia, serif; font-weight: 600; font-size: var(--step-2); line-height: 1.2; margin: 0; text-wrap: balance; }
+
+  p { margin: 0; max-width: var(--measure); }
+
+  main ul, main ol { margin: 0; padding-left: 1.15rem; max-width: var(--measure); display: flex; flex-direction: column; gap: 0.5rem; }
+
+  li::marker { color: var(--ink-faint); }
+
+  a { color: var(--teal); text-underline-offset: 0.18em; }
+
+  code { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.875em; background: var(--surface-alt); padding: 0.1em 0.34em; border-radius: 2px; }
+
+  strong { font-weight: 600; }
+
+  em { font-style: normal; color: var(--ink-soft); border-bottom: 1px dotted var(--rule-strong); }
+
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-left: 4px solid var(--teal);
+    padding: 1.5rem 1.75rem;
+    display: flex; flex-direction: column; gap: 0.85rem;
+  }
+
+  .verdict p { max-width: 64ch; }
+
+  .verdict .lede { font-family: "Zilla Slab", Georgia, serif; font-size: var(--step-2); line-height: 1.28; font-weight: 600; }
+
+  /* ---------- scorecard ---------- */
+
+  .score { display: grid; gap: 0.5rem; }
+
+  @media (min-width: 640px) { .score { grid-template-columns: repeat(4, 1fr); } }
+
+  .score-cell {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--rule-strong);
+    padding: 0.9rem 1rem 1rem;
+    display: flex; flex-direction: column; gap: 0.15rem;
+  }
+
+  .score-cell .n {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 2rem; line-height: 1; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .score-cell .l {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  .score-cell.fixed  { border-top-color: var(--teal); }
+  .score-cell.fixed .n { color: var(--teal); }
+  .score-cell.gone   { border-top-color: var(--slate); }
+  .score-cell.gone .n  { color: var(--slate); }
+  .score-cell.open   { border-top-color: var(--amber); }
+  .score-cell.open .n  { color: var(--amber); }
+  .score-cell.newly  { border-top-color: var(--brick); }
+  .score-cell.newly .n { color: var(--brick); }
+
+  /* ---------- typed findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 0; }
+
+  .finding { display: grid; gap: 0.35rem 1.25rem; padding: 1.4rem 0; border-top: 1px solid var(--rule); }
+
+  .finding:last-child { border-bottom: 1px solid var(--rule); }
+
+  @media (min-width: 720px) { .finding { grid-template-columns: 8.5rem minmax(0, 1fr); } }
+
+  .tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.11em; text-transform: uppercase;
+    padding: 0.25rem 0.5rem; border: 1px solid currentColor; border-radius: 2px;
+    align-self: start; justify-self: start; white-space: nowrap;
+  }
+
+  .tag.win  { color: var(--teal);  background: var(--teal-wash); }
+  .tag.wash { color: var(--ink-faint); background: var(--surface-alt); }
+  .tag.bug  { color: var(--brick); background: var(--brick-wash); }
+  .tag.trap { color: var(--amber); background: var(--amber-wash); }
+  .tag.safe { color: var(--slate); background: var(--slate-wash); }
+
+  .finding-body { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+
+  .finding-body h3 { font-size: var(--step-1); }
+
+  .caveat { border-left: 2px solid var(--amber); padding-left: 0.9rem; color: var(--ink-soft); font-size: 0.9375rem; max-width: 62ch; }
+
+  pre {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule-strong);
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.62;
+    tab-size: 4;
+  }
+
+  pre.bad  { border-left-color: var(--brick); }
+  pre.good { border-left-color: var(--teal); }
+  pre.term { border-left-color: var(--slate); }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .cmt { color: var(--ink-faint); }
+  .key { color: var(--slate); }
+  .err { color: var(--brick); }
+  .wrn { color: var(--amber); }
+
+  .split { display: grid; gap: 1rem; }
+
+  @media (min-width: 760px) { .split { grid-template-columns: 1fr 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--rule-strong);
+    padding: 1.25rem 1.35rem;
+    display: flex; flex-direction: column; gap: 0.75rem; min-width: 0;
+  }
+
+  .panel.now  { border-top-color: var(--slate); }
+  .panel.next { border-top-color: var(--teal); }
+
+  .panel h3 { font-size: var(--step-1); }
+
+  .panel .who { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.11em; text-transform: uppercase; }
+
+  .panel.now .who  { color: var(--slate); }
+  .panel.next .who { color: var(--teal); }
+
+  .panel ul { padding-left: 1.05rem; font-size: 0.9375rem; gap: 0.4rem; }
+
+  .scroller { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+
+  table { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+  thead th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--ink-faint); background: var(--surface-alt); white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  td code { background: none; padding: 0; color: var(--ink-soft); }
+
+  .pill {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.675rem; letter-spacing: 0.09em; text-transform: uppercase;
+    padding: 0.15rem 0.45rem; border-radius: 2px; white-space: nowrap; border: 1px solid currentColor;
+  }
+
+  .pill.f { color: var(--teal);  background: var(--teal-wash); }
+  .pill.g { color: var(--slate); background: var(--slate-wash); }
+  .pill.o { color: var(--amber); background: var(--amber-wash); }
+  .pill.n { color: var(--brick); background: var(--brick-wash); }
+
+  .stages { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0; max-width: none; }
+
+  .stage { display: grid; gap: 0.3rem 1.5rem; padding: 1.4rem 0; border-top: 1px solid var(--rule); }
+
+  .stage:last-child { border-bottom: 1px solid var(--rule); }
+
+  @media (min-width: 720px) { .stage { grid-template-columns: 5.5rem minmax(0, 1fr); } }
+
+  .stage-num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 1.75rem; line-height: 1; font-weight: 500; color: var(--rule-strong); }
+
+  .stage-body { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+
+  .stage-body h3 { font-size: var(--step-1); }
+
+  .stage-meta { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.7rem; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-faint); }
+
+  footer {
+    margin-top: 4rem; padding-top: 1.5rem; border-top: 2px solid var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-faint);
+    max-width: var(--measure); line-height: 1.7;
+  }
+
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>CapriKit.AssetPipeline</span>
+      <span>feature/asset_pipeline</span>
+      <span class="rev">Revision 2</span>
+      <span>2026-08-27</span>
+    </div>
+    <h1>The Builder Split</h1>
+    <p class="deck">
+      The sketch now separates <code>AssetBundleBuilder&lt;TContents&gt;</code> from
+      <code>AssetBundle&lt;TContent&gt;</code> and defers every load until <code>Build</code>. That change
+      closes most of what the first pass flagged — by construction rather than by convention. Here is what is
+      left.
+    </p>
+  </header>
+
+  <div class="shell">
+
+    <nav class="rail" aria-label="Sections">
+      <ol>
+        <li><a href="#answer">The short answer</a></li>
+        <li><a href="#scorecard">Scorecard</a></li>
+        <li><a href="#mechanism">The mechanism</a></li>
+        <li><a href="#gained">Newly gained</a></li>
+        <li><a href="#new">New findings</a></li>
+        <li><a href="#carried">Still carried</a></li>
+        <li><a href="#manager">What the manager owes</a></li>
+        <li><a href="#path">Revised path</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <section id="answer">
+        <div class="verdict">
+          <p class="lede">
+            This is the right shape. The builder is not extra ceremony — it is the thing that makes
+            <code>Received.Count == Requested.Count</code> a sound question to ask.
+          </p>
+          <p>
+            Deferring the loads means the request set is complete <em>before</em> the first result can arrive,
+            and the bundle exists before the first <code>Load</code> call. Those two facts are what the
+            previous round's worst finding and its shakiest convention were both about, and both are now true
+            by construction rather than by documentation.
+          </p>
+          <p>
+            What is left is small: one real logic bug the compiler is already pointing at, two type mismatches,
+            and one genuinely <em>new</em> failure mode that deferring the loads introduced — a throwing
+            <code>Build</code> now strands a bundle nobody can dispose.
+          </p>
+        </div>
+      </section>
+
+      <section id="scorecard">
+        <h2>Scorecard against the first pass</h2>
+
+        <div class="score">
+          <div class="score-cell fixed"><span class="n">3</span><span class="l">Fixed</span></div>
+          <div class="score-cell gone"><span class="n">2</span><span class="l">No longer applies</span></div>
+          <div class="score-cell open"><span class="n">2</span><span class="l">Still open</span></div>
+          <div class="score-cell newly"><span class="n">4</span><span class="l">New</span></div>
+        </div>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>Finding from revision 1</th>
+                <th>Status</th>
+                <th>Why</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cached assets never arrive</td>
+                <td><span class="pill f">Fixed</span></td>
+                <td>The bundle is constructed first and passed into <code>Load</code>; nothing starts before it exists.</td>
+              </tr>
+              <tr>
+                <td><code>Dispose</code> returns leases for failures</td>
+                <td><span class="pill f">Fixed</span></td>
+                <td><code>Match</code> only unloads on the success branch. (New bug rides along — see N2.)</td>
+              </tr>
+              <tr>
+                <td>Unsynchronized read of <code>Received</code></td>
+                <td><span class="pill g">Gone</span></td>
+                <td>Everything is documented single-threaded now. The <code>Lock</code> field is dead — delete it.</td>
+              </tr>
+              <tr>
+                <td>Lock-order inversion between bundle and manager</td>
+                <td><span class="pill g">Gone</span></td>
+                <td>No second lock, so no ordering rule to get wrong.</td>
+              </tr>
+              <tr>
+                <td>Requesting after building is unguarded</td>
+                <td><span class="pill f">Fixed</span></td>
+                <td><code>Request</code> only exists on the builder. Residual: the builder can be reused — see N4.</td>
+              </tr>
+              <tr>
+                <td>Manager is never told the bundle is gone</td>
+                <td><span class="pill o">Open</span></td>
+                <td><code>Dispose</code> still returns leases by id and says nothing about itself.</td>
+              </tr>
+              <tr>
+                <td>First failure hides the rest</td>
+                <td><span class="pill o">Open</span></td>
+                <td><code>GetOrThrow</code> still fires from inside the caller's factory lambda.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>The compiler agrees the direction is right — four errors became two, and both survivors are informative:</p>
+
+        <pre class="term"><code><span class="err">error CS1501</span>: No overload for method 'Load' takes 3 arguments            <span class="cmt">← the manager change, not yet made</span>
+<span class="err">error CS1503</span>: Argument 1: cannot convert from 'string' to 'AssetBundle'  <span class="cmt">← N2 below</span>
+<span class="wrn">warning CS0649</span>: Field 'AssetBundle&lt;TContent&gt;.content' is never assigned  <span class="cmt">← N1 below</span></code></pre>
+      </section>
+
+      <section id="mechanism">
+        <h2>The mechanism that does the work</h2>
+        <p>
+          Worth stating plainly, because it is the whole design in six lines. <code>Request</code> records a
+          closure instead of starting a load, and <code>Build</code> replays them into a bundle that already
+          exists:
+        </p>
+
+        <pre class="good"><code><span class="cmt">// AssetBundleBuilder</span>
+Requests.Add(b =&gt; assetManager.Load&lt;TAsset, TSettings&gt;(id, settings, b));
+<span class="key">return new</span> AssetHandle&lt;TAsset&gt;(id, Id);
+
+<span class="cmt">// ... later, in Build</span>
+<span class="key">var</span> bundle = <span class="key">new</span> AssetBundle&lt;TContents&gt;(Id, assetManager, Requested, resolver);
+<span class="key">foreach</span> (<span class="key">var</span> request <span class="key">in</span> Requests) { request(bundle); }
+<span class="key">return</span> bundle;</code></pre>
+
+        <p>
+          The closure is what keeps <code>Request&lt;TAsset, TSettings&gt;</code> generic while
+          <code>Requests</code> stays a plain <code>List&lt;Action&lt;…&gt;&gt;</code> — the standard trick,
+          and the right one here. It costs one delegate plus one closure per asset, which the handle turning
+          into a struct pays back.
+        </p>
+
+        <div class="split">
+          <div class="panel now">
+            <span class="who">Revision 1</span>
+            <h3>Bundle attached after the fact</h3>
+            <ul>
+              <li><code>Request</code> starts the load, then sets <code>Owner</code>.</li>
+              <li>Cache hits resolve before the bundle is known.</li>
+              <li>The request set grows while results arrive.</li>
+              <li>Handle is a <code>sealed record</code> — one allocation each.</li>
+            </ul>
+          </div>
+          <div class="panel next">
+            <span class="who">Revision 2</span>
+            <h3>Bundle exists before anything starts</h3>
+            <ul>
+              <li><code>Build</code> constructs the bundle, then issues the loads.</li>
+              <li>Cache hits <code>Accept</code> re-entrantly, during <code>Build</code>.</li>
+              <li>The request set is frozen before the first result.</li>
+              <li>Handle is a <code>readonly record struct</code> — no allocation.</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="caveat">
+          That re-entrancy is load-bearing and non-obvious: a fully cached bundle is ready the instant
+          <code>Build</code> returns, without a single <code>Update</code>. It works because <code>Build</code>
+          does not touch <code>Received</code> while iterating. Say so in a comment, or someone will later add
+          a readiness check to <code>Build</code> and be very confused.
+        </p>
+      </section>
+
+      <section id="gained">
+        <h2>What the split newly buys</h2>
+
+        <div class="findings">
+
+          <div class="finding">
+            <span class="tag win">Win</span>
+            <div class="finding-body">
+              <h3>Abandoning a builder is free</h3>
+              <p>
+                Requesting and then never calling <code>Build</code> starts nothing, leases nothing, and leaks
+                nothing. Today the equivalent mistake — <code>CreateBundle</code>, <code>Load</code>, then
+                forget to <code>Build</code> — leaves a bundle holding leases that only the shutdown leak
+                report will ever mention. The new shape makes the harmless thing the default.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag win">Win</span>
+            <div class="finding-body">
+              <h3><code>IAssetRequester</code> decouples the manager from bundles entirely</h3>
+              <p>
+                <code>Outstanding</code> becomes <code>Dictionary&lt;AssetId, List&lt;IAssetRequester&gt;&gt;</code>
+                and the manager stops knowing what a bundle is. That is a bigger deal than it looks: anything
+                that wants assets delivered — a streaming system, a level-of-detail loader, an editor preview
+                — can implement three lines of interface instead of pretending to be a bundle.
+              </p>
+              <p class="caveat">
+                Decide deliberately whether that extension point is public. <code>Accept</code> hands out
+                leases; a third-party implementation that returns <code>true</code> and then drops the result
+                leaks an asset with no diagnostic. Internal for now is the conservative call.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag win">Win</span>
+            <div class="finding-body">
+              <h3>The handle is now free, and the <code>Guid</code> is the reason</h3>
+              <p>
+                <code>readonly record struct AssetHandle&lt;TValue&gt;(AssetId Id, Guid Owner)</code> is 24
+                bytes, copyable, with value equality and no allocation. The <code>Guid</code> is what makes
+                that possible: a reference to <code>AssetBundle&lt;TContent&gt;</code> would drag the generic
+                parameter into the handle, and even via <code>IAssetRequester</code> it would keep the bundle
+                alive and make the handle a lifetime-bearing thing. An opaque token keeps it a pure value.
+              </p>
+              <p>
+                Pleasant side effect: <code>default(AssetHandle&lt;T&gt;)</code> carries
+                <code>Guid.Empty</code>, so it fails the owner check and throws rather than doing something
+                surprising.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="new">
+        <h2>New findings</h2>
+
+        <div class="findings">
+
+          <div class="finding">
+            <span class="tag bug">N1 · Bug</span>
+            <div class="finding-body">
+              <h3>The cached result is never stored, so the second <code>IsReady</code> returns null</h3>
+              <pre class="bad"><code><span class="key">if</span> (Received.Count == Requested.Count)
+{
+    content = Resolver(<span class="key">new</span> AssetResolver(<span class="key">this</span>));  <span class="cmt">// assigns the out parameter</span>
+    isReady = <span class="key">true</span>;                              <span class="cmt">// this.content is still null</span>
+    <span class="key">return true</span>;
+}</code></pre>
+              <p>
+                The next call takes the <code>isReady</code> branch and hands back <code>this.content!</code>,
+                which was never written — <code>null</code>, through an <code>[NotNullWhen(true)]</code>
+                contract. This is exactly what CS0649 is reporting. Fix is
+                <code>this.content = content = Resolver(…);</code>.
+              </p>
+              <p class="caveat">
+                The polling loop in <code>Example.ExampleLoad</code> returns on the first success, so nothing
+                in the sketch exercises the second call. A game loop that keeps asking will.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag bug">N2 · Bug</span>
+            <div class="finding-body">
+              <h3><code>Match</code> hands you a <code>string</code>, not an <code>AssetId</code></h3>
+              <pre class="bad"><code>kv.Value.Match((id, asset) =&gt; AssetManager.Unload(id), (id, ex) =&gt; { });
+<span class="cmt">//              ^^ JobResult&lt;T&gt;.Id is a string, from the Job/BackgroundWorker world</span></code></pre>
+              <p>
+                Use <code>kv.Key</code> and the problem disappears. But it is worth reading as a signal:
+                <code>JobResult&lt;T&gt;</code> was built for <code>BackgroundWorker</code>, where jobs are
+                keyed by name. Here the dictionary already carries the real key, so the id inside the result
+                is dead weight that stringifies an <code>AssetId</code> on the way in.
+              </p>
+              <p>
+                Either ignore <code>JobResult</code>'s id entirely and always key off <code>kv.Key</code>, or
+                widen it to <code>JobResult&lt;TKey, TValue&gt;</code>. Reusing the type is right; inheriting
+                its key type is not.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag trap">N3 · New failure mode</span>
+            <div class="finding-body">
+              <h3>A throwing <code>Build</code> strands a bundle nobody can dispose</h3>
+              <pre class="bad"><code><span class="key">foreach</span> (<span class="key">var</span> request <span class="key">in</span> Requests)
+{
+    request(bundle);   <span class="cmt">// #3 throws (no transcoder) — #1 and #2 already leased</span>
+}
+<span class="key">return</span> bundle;        <span class="cmt">// never reached; the caller has no reference to dispose</span></code></pre>
+              <p>
+                This one is <em>created</em> by deferring the loads. Today
+                <code>Load_ThrowsOnTheCallingThreadWhenNoTranscoderIsRegistered</code> covers exactly this
+                case, and today the caller still holds the bundle and can dispose it. In the new shape the
+                bundle only exists inside <code>Build</code>.
+              </p>
+              <p>
+                Fix is three lines — catch, <code>bundle.Dispose()</code>, rethrow — and it composes correctly
+                with everything else: the assets already leased are returned, and the ones still in flight hit
+                a disposed bundle whose <code>Accept</code> returns <code>false</code>, so the manager returns
+                those leases too. Worth a test of its own.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag trap">N4 · Aliasing</span>
+            <div class="finding-body">
+              <h3><code>Requested</code> is shared, not copied</h3>
+              <p>
+                The bundle holds an <code>IReadOnlySet&lt;AssetId&gt;</code> pointing at the builder's live
+                <code>HashSet</code>. Call <code>Request</code> after <code>Build</code> and the bundle's
+                total silently grows for an asset that will never be delivered — the bundle hangs, and
+                <code>Get</code> throws <code>KeyNotFoundException</code> if the counts ever line up again.
+                Building twice compounds it: both bundles share one set <em>and</em> one owner
+                <code>Guid</code>, so handles validate against either.
+              </p>
+              <p>
+                Make <code>Build</code> consume the builder: copy the set (<code>[.. Requested]</code>, or
+                <code>ToFrozenSet</code> since it is read-only from then on) and throw from
+                <code>Request</code> and <code>Build</code> afterwards.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag wash">N5 · Tidy</span>
+            <div class="finding-body">
+              <h3>Two loose ends</h3>
+              <p>
+                <code>private readonly Lock Lock = new();</code> is never taken — delete it, it advertises a
+                threading guarantee the XML docs explicitly withdraw.
+              </p>
+              <p>
+                And <code>new AssetBundleBuilder&lt;Example&gt;(manager)</code> loses the
+                <code>[CallerFilePath]</code>/<code>[CallerLineNumber]</code> capture that
+                <code>CreateBundle</code> does today, which is what lets
+                <code>Dispose_ReportsBundlesThatWereNeverUnloaded</code> name the offending line. Primary
+                constructors take caller-info parameters fine — put them on the builder and keep the
+                <code>new</code>.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="carried">
+        <h2>Still carried from the first pass</h2>
+
+        <div class="findings">
+
+          <div class="finding">
+            <span class="tag bug">Open</span>
+            <div class="finding-body">
+              <h3>Nothing tells the manager the bundle is gone</h3>
+              <p>
+                <code>Dispose</code> returns leases by id, so the pool balances — but the manager's live-bundle
+                registry never loses the entry, and the shutdown report starts naming bundles that were
+                unloaded correctly. That burns the one diagnostic that makes a real leak findable.
+              </p>
+              <p>
+                Cleanest fix given the new shape: one call instead of a loop —
+                <code>AssetManager.Unload(IAssetRequester requester, IEnumerable&lt;AssetId&gt; loaded)</code>.
+                The manager returns the leases and drops the registry entry together, and
+                <code>Unload(AssetId)</code> never has to exist as a callable thing that could corrupt a
+                refcount.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag bug">Open</span>
+            <div class="finding-body">
+              <h3>The first failure still hides the rest</h3>
+              <p>
+                <code>Get</code> calls <code>GetOrThrow()</code> from inside the caller's factory lambda.
+                Today <code>ThrowOnFailedAssets</code> collects every failure and throws one
+                <code>AggregateException</code> before the factory runs. A pre-pass over <code>Received</code>
+                in <code>IsReady</code> restores that and puts the stack trace back in the pipeline instead of
+                in user code.
+              </p>
+              <p>
+                Also unchanged: <code>GetOrThrow</code> rethrows the transcoder's raw exception, so the
+                <code>AssetLoadException</code> that names the asset has to be applied by the manager before
+                the result is stored.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag wash">Decide</span>
+            <div class="finding-body">
+              <h3>What travels inside <code>JobResult&lt;object&gt;</code></h3>
+              <p>
+                <code>Get</code> casts to the internal <code>Asset&lt;TAsset&gt;</code> wrapper and reads
+                <code>.Value</code>, but <code>TrackAndTakeLease</code> currently returns the canonical asset
+                itself. Deliver the raw value and cast <code>(TAsset)</code> — one less internal type crossing
+                a public-shaped interface, and the wrapper is only needed by the hot-reload tracking that
+                already builds its own.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="manager">
+        <h2>What the manager still owes</h2>
+        <p>
+          Unchanged from the first pass in substance, but the interface makes it smaller than it was.
+        </p>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>Member</th>
+                <th>Shape</th>
+                <th>Note</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Load</code></td>
+                <td><code>Load&lt;TAsset, TSettings&gt;(AssetId, TSettings, IAssetRequester)</code></td>
+                <td>Cache hit calls <code>Accept</code> while still holding <code>RequestLock</code>.</td>
+              </tr>
+              <tr>
+                <td><code>Outstanding</code></td>
+                <td><code>Dictionary&lt;AssetId, List&lt;IAssetRequester&gt;&gt;</code></td>
+                <td>A natural <code>OneOrMany&lt;IAssetRequester&gt;</code> — usually one waiter.</td>
+              </tr>
+              <tr>
+                <td><code>Update</code></td>
+                <td>materialize per acceptor</td>
+                <td>One lease each; <code>Accept</code> returning <code>false</code> means return it.</td>
+              </tr>
+              <tr>
+                <td><code>Unload</code></td>
+                <td><code>Unload(IAssetRequester, IEnumerable&lt;AssetId&gt;)</code></td>
+                <td>Leases and registry in one call. Keep it internal.</td>
+              </tr>
+              <tr>
+                <td>leak registry</td>
+                <td><code>Dictionary&lt;IAssetRequester, string&gt;</code></td>
+                <td>Origin string, captured by the builder's caller-info parameters.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          Everything below the ownership layer is still untouched: <code>AssetPool</code>,
+          <code>HotReloadManager</code>, <code>TrackedAsset</code>, <code>AssetEncoder</code>,
+          <code>AssetDecoder</code>, <code>IAssetTranscoder</code>. That has not changed between revisions and
+          remains the strongest practical argument for doing this at all.
+        </p>
+      </section>
+
+      <section id="path">
+        <h2>Revised path</h2>
+
+        <ol class="stages">
+          <li class="stage">
+            <span class="stage-num">01</span>
+            <div class="stage-body">
+              <span class="stage-meta">Sketch only · ~10 lines</span>
+              <h3>Close N1 through N5 in the Playground</h3>
+              <p>
+                Assign <code>this.content</code>; swap <code>Match</code>'s id for <code>kv.Key</code>;
+                wrap <code>Build</code>'s replay in try/dispose/rethrow; copy <code>Requested</code> and
+                consume the builder; delete the dead <code>Lock</code>; move caller-info onto the builder
+                constructor. None of these need the manager to change, so the sketch can be made
+                self-consistent before anything real moves.
+              </p>
+            </div>
+          </li>
+
+          <li class="stage">
+            <span class="stage-num">02</span>
+            <div class="stage-body">
+              <span class="stage-meta">The one real change · AssetManager</span>
+              <h3>Add the three-argument <code>Load</code> and push through <code>IAssetRequester</code></h3>
+              <p>
+                This is the single error the compiler is still reporting, and everything else in the design
+                already assumes it. Do the leak-registry call (<code>Unload(requester, ids)</code>) in the same
+                pass — it is the same method touching the same dictionary, and splitting it into two commits
+                just means shipping a broken diagnostic in between.
+              </p>
+            </div>
+          </li>
+
+          <li class="stage">
+            <span class="stage-num">03</span>
+            <div class="stage-body">
+              <span class="stage-meta">Behaviour parity</span>
+              <h3>Restore aggregate failure reporting, then port the tests</h3>
+              <p>
+                Pre-pass over <code>Received</code> before invoking the resolver, wrapping in
+                <code>AssetLoadException</code> at the manager. Then the eight tests in
+                <code>AssetManagerTests</code>: six port, two — both duplicate-asset corner cases — get
+                deleted, and two get added for N3 and for the second <code>IsReady</code> call.
+              </p>
+            </div>
+          </li>
+        </ol>
+
+        <p>
+          One thing to keep an eye on that no fix addresses: the threading contract has narrowed. Today
+          <code>AssetManager.Unload</code> claims to be safe against <code>Update</code> from another thread.
+          The new bundle is single-threaded throughout, so disposal must happen on the game thread between
+          <code>Update</code> calls. That is almost certainly what every caller already does — and today's
+          claim is shaky anyway, since <code>AssetBundle.Load</code> mutates its handle list outside the lock
+          — but it is a documented guarantee being withdrawn, so withdraw it explicitly rather than quietly.
+        </p>
+      </section>
+
+      <footer>
+        Supersedes “Bundle-owned bookkeeping” (revision 1, same date) — read that one for the case for the
+        approach as a whole; this one only covers what the builder split changed.<br>
+        Sources read: Playground/AssetBundle.cs · AssetManager.cs · AssetBundle.cs · AssetHandle.cs ·
+        AssetPool.cs · Asset.cs · AssetManagerTests.cs · Concurrency/Primitives/JobResult.cs<br>
+        Build state at time of writing: 2 errors, 1 warning — CS1501 (the manager change), CS1503 (N2), CS0649 (N1).
+      </footer>
+
+    </main>
+  </div>
+</div>

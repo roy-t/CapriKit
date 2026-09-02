@@ -1,3 +1,4 @@
+using CapriKit.IO.Watchers;
 using System.Diagnostics;
 
 namespace CapriKit.IO;
@@ -38,36 +39,77 @@ public sealed class ScopedFileSystem(IVirtualFileSystem source, DirectoryPath ba
 /// that resolve to directories outside of the scope of this file system results
 /// in a ForbiddenPathException.
 /// </summary>
-public class ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, DirectoryPath basePath) : IReadOnlyVirtualFileSystem
+public class ReadOnlyScopedFileSystem : IReadOnlyVirtualFileSystem
 {
+    private readonly IReadOnlyVirtualFileSystem Source;
+
+    public ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, DirectoryPath basePath)
+    {
+        Source = source;
+        if (basePath.IsAbsolute)
+        {
+            BasePath = basePath;
+        }
+        else
+        {
+            BasePath = source.GetAbsolutePath(basePath);
+        }
+    }
+
+
+    /// <summary>
+    /// Gets the absolute path of a file contained in this scoped file system. To be used with IO methods that are
+    /// not aware of the virtual file system. Throws if the file points to outside the scoped file system,
+    /// </summary>
+    public FilePath GetAbsolutePath(FilePath file) => GetFilePath(file);
+
+
+    /// <summary>
+    /// Gets the full path of a directory contained in this scoped file system. To be used with IO methods that are
+    /// not aware of the virtual file system. Throws if the directory points to outside the scoped file system,
+    /// </summary>
+    public DirectoryPath GetAbsolutePath(DirectoryPath directory) => GetDirectoryPath(directory);
+
+    /// <summary>
+    /// The absolute path of the directory this file system is scoped to.
+    /// </summary>
+    public DirectoryPath BasePath { get; }
+
+
     public bool Exists(FilePath file)
     {
-        return source.Exists(GetFilePath(file));
+        return Source.Exists(GetFilePath(file));
     }
 
     public DateTime LastWriteTime(FilePath file)
     {
-        return source.LastWriteTime(GetFilePath(file));
+        return Source.LastWriteTime(GetFilePath(file));
     }
 
     public IReadOnlyList<FilePath> List(DirectoryPath directory)
     {
-        return source.List(GetDirectoryPath(directory));
+        return Source.List(GetDirectoryPath(directory));
     }
 
     public Stream OpenRead(FilePath file)
     {
-        return source.OpenRead(GetFilePath(file));
+        return Source.OpenRead(GetFilePath(file));
     }
 
     public long SizeInBytes(FilePath file)
     {
-        return source.SizeInBytes(GetFilePath(file));
+        return Source.SizeInBytes(GetFilePath(file));
     }
 
     protected DirectoryPath GetDirectoryPath(DirectoryPath path)
     {
-        var fullPath = path.GetPathRelativeTo(basePath);
+        if (path.IsAbsolute)
+        {
+            ThrowIfPathIsOutsideBasePath(path);
+            return path;
+        }
+
+        var fullPath = BasePath.Append([path]);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
         return fullPath;
@@ -75,7 +117,13 @@ public class ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, Directo
 
     protected FilePath GetFilePath(FilePath path)
     {
-        var fullPath = path.GetPathRelativeTo(basePath);
+        if (path.IsAbsolute)
+        {
+            ThrowIfPathIsOutsideBasePath(path);
+            return path;
+        }
+
+        var fullPath = BasePath.Append(path);
         ThrowIfPathIsOutsideBasePath(fullPath);
 
         return fullPath;
@@ -84,18 +132,32 @@ public class ReadOnlyScopedFileSystem(IReadOnlyVirtualFileSystem source, Directo
     protected void ThrowIfPathIsOutsideBasePath(FilePath file)
     {
         Debug.Assert(file.IsAbsolute);
-        if (!file.StartsWith(basePath))
+        if (!file.StartsWith(BasePath))
         {
-            throw new ForbiddenPathException(file, basePath);
+            throw new ForbiddenPathException(file, BasePath);
         }
     }
 
     protected void ThrowIfPathIsOutsideBasePath(DirectoryPath path)
     {
         Debug.Assert(path.IsAbsolute);
-        if (!path.StartsWith(basePath))
+        if (!path.StartsWith(BasePath))
         {
-            throw new ForbiddenPathException(path, basePath);
+            throw new ForbiddenPathException(path, BasePath);
         }
+    }
+
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        var fullPath = GetAbsolutePath(directory);
+        ThrowIfPathIsOutsideBasePath(fullPath);
+        var watchers = Source.Watch(fullPath, includeSubDirectories);
+        return new ScopedFileSystemEventListener(watchers, BasePath);
+    }
+
+    public IVirtualFileSystemWatcher Watch(bool includeSubDirectories = true)
+    {
+        var watchers = Source.Watch(BasePath, includeSubDirectories);
+        return new ScopedFileSystemEventListener(watchers, BasePath);
     }
 }

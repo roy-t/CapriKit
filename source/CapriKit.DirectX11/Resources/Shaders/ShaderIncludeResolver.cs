@@ -12,11 +12,13 @@ internal sealed class ShaderIncludeResolver : CallbackBase, Include
         public FilePath Source { get; } = source;
     }
 
-    private readonly ReadOnlyScopedFileSystem FileSystem;
+    private readonly IReadOnlyVirtualFileSystem FileSystem;
+    private readonly DirectoryPath BasePath;
 
-    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem, string basePath)
+    public ShaderIncludeResolver(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath basePath)
     {
-        FileSystem = new ReadOnlyScopedFileSystem(fileSystem, basePath);
+        FileSystem = fileSystem;
+        BasePath = fileSystem.GetAbsolutePath(basePath);
     }
 
     public Stream Open(IncludeType type, string fileName, Stream? parentStream)
@@ -28,15 +30,16 @@ internal sealed class ShaderIncludeResolver : CallbackBase, Include
             fileName = includer.Source.Directory.Append(fileName);
         }
 
+        var path = BasePath.Append(fileName);
         // The stream might be UTF-8 or UTF-16 even if the contents
         // are only ASCII characters. Read the full file and convert
         // it before passing it to DirectX.
-        using var fileStream = FileSystem.OpenRead(fileName);
+        using var fileStream = FileSystem.OpenRead(path);
         using var reader = new StreamReader(fileStream);
         var text = reader.ReadToEnd();
         var bytes = Encoding.ASCII.GetBytes(text);
 
-        return new ShaderStream(fileName, bytes);
+        return new ShaderStream(path, bytes);
     }
 
     public void Close(Stream stream)

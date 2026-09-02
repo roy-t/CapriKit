@@ -19,4 +19,18 @@ internal class ScopedFileSystemTests
             sut.Exists(forbiddenPath);
         }).Throws<ForbiddenPathException>();
     }
+
+
+    [Test]
+    public async Task GetAbsolutePath()
+    {
+        var basePath = new DirectoryPath("C:/Temp");
+        var fileSystem = new InMemoryFileSystem();
+        var sut = new ScopedFileSystem(fileSystem, basePath);
+
+        var relativePath = new FilePath("file.txt");
+        var expected = new FilePath("C:/Temp/file.txt");
+
+        await Assert.That(sut.GetAbsolutePath(relativePath)).IsEqualTo(expected);
+    }
 }

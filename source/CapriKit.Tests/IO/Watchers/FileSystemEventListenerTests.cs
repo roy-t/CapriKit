@@ -1,6 +1,8 @@
 using CapriKit.IO;
+using CapriKit.IO.Watchers;
+using CapriKit.Tests.TestUtilities;
 
-namespace CapriKit.Tests.IO;
+namespace CapriKit.Tests.IO.Watchers;
 
 internal class FileSystemEventListenerTests
 {
@@ -9,10 +11,7 @@ internal class FileSystemEventListenerTests
     [Before(Test)]
     public void TestSetup()
     {
-        var id = Path.GetRandomFileName();
-        var path = Path.Combine(Path.GetTempPath(), $"{nameof(FileSystemEventListenerTests)}.{id}");
-        TempDirectory = new DirectoryPath(path);
-        Directory.CreateDirectory(TempDirectory);
+        TempDirectory = FileSystemUtilities.CreateTemporaryDirectory();
     }
 
     [After(Test)]
@@ -30,23 +29,22 @@ internal class FileSystemEventListenerTests
         var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         var deleted = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-
         var fileSystem = new FileSystem();
         var scopedFileSystem = new ScopedFileSystem(fileSystem, TempDirectory);
-        using var watcher = fileSystem.Watch(TempDirectory);
+        var watcher = scopedFileSystem.Watch(TempDirectory, false);
         watcher.OnFileChanged += (s, e) =>
         {
-            if (e.reason == FileSystemChangeKind.Created && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Created && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 created.TrySetResult();
             }
 
-            if (e.reason == FileSystemChangeKind.Changed && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Changed && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 changed.TrySetResult();
             }
 
-            if (e.reason == FileSystemChangeKind.Deleted && e.target.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
+            if (e.Kind == FileSystemChangeKind.Deleted && e.File.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase))
             {
                 deleted.TrySetResult();
             }

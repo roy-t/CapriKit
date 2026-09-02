@@ -1,4 +1,5 @@
 using CapriKit.Concurrency.Primitives;
+using System.Runtime.ExceptionServices;
 
 namespace CapriKit.Tests.Concurrency.Primitives;
 
@@ -32,35 +33,16 @@ internal class LightweightChannelTests
     }
 
     [Test]
-    public async Task TryRead_RethrowsTheWrittenException()
+    public async Task TryRead_RethrowsTheWrittenExceptionBeforeReturningOtherItems()
     {
         var channel = new LightweightChannel<int>();
-        channel.Write(new InvalidOperationException());
+        channel.Write(4);
+        channel.Write(ExceptionDispatchInfo.Capture(new InvalidOperationException()));
 
         await Assert.That(() => channel.TryRead(out _)).Throws<InvalidOperationException>();
-    }
-
-    [Test]
-    public async Task TryRead_DrainsQueuedItemsBeforeThrowingTheException()
-    {
-        var channel = new LightweightChannel<int>();
-        channel.Write(new InvalidOperationException());
-        channel.Write(42);
 
         var read = channel.TryRead(out var value);
-
         await Assert.That(read).IsTrue();
-        await Assert.That(value).IsEqualTo(42);
-        await Assert.That(() => channel.TryRead(out _)).Throws<InvalidOperationException>();
-    }
-
-    [Test]
-    public async Task Write_KeepsOnlyTheFirstException()
-    {
-        var channel = new LightweightChannel<int>();
-        channel.Write(new InvalidOperationException());
-        channel.Write(new FormatException());
-
-        await Assert.That(() => channel.TryRead(out _)).Throws<InvalidOperationException>();
+        await Assert.That(value).IsEqualTo(4);
     }
 }

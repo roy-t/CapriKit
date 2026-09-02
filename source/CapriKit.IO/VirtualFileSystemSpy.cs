@@ -1,3 +1,5 @@
+using CapriKit.IO.Watchers;
+
 namespace CapriKit.IO;
 
 /// <summary>
@@ -64,4 +66,13 @@ public sealed class VirtualFileSystemSpy : IVirtualFileSystem
     {
         return Actual.SizeInBytes(file);
     }
+
+    public IVirtualFileSystemWatcher Watch(DirectoryPath directory, bool includeSubDirectories = true)
+    {
+        return Actual.Watch(directory, includeSubDirectories);
+    }
+
+    public FilePath GetAbsolutePath(FilePath file) => Actual.GetAbsolutePath(file);
+
+    public DirectoryPath GetAbsolutePath(DirectoryPath directory) => Actual.GetAbsolutePath(directory);
 }

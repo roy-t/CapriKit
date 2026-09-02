@@ -1,7 +1,8 @@
 using System.Diagnostics;
 using System.Runtime.ExceptionServices;
 
-namespace CapriKit.Concurrency.Async;
+namespace CapriKit.Concurrency.Primitives;
+
 public sealed class JobResult<T>
 {
     private readonly string Id;
@@ -27,6 +28,12 @@ public sealed class JobResult<T>
         return new JobResult<T>(Id, result, default);
     }
 
+    /// <summary>
+    /// True when the job produced a result, false when it failed. Use <see cref="Match"/> to get at either
+    /// payload, this only answers which one is there.
+    /// </summary>
+    public bool IsSuccess => Exception is null;
+
     public void Match(Action<string, T> onSuccess, Action<string, ExceptionDispatchInfo> onFailure)
     {
         if (Result != null)
@@ -38,5 +45,11 @@ public sealed class JobResult<T>
         {
             onFailure(Id, Exception);
         }
+    }
+
+    public T GetOrThrow()
+    {
+        Exception?.Throw();
+        return Result!;
     }
 }

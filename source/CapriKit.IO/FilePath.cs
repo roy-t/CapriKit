@@ -31,8 +31,6 @@ public sealed class FilePath : IEquatable<FilePath>
 
     public bool IsAbsolute => System.IO.Path.IsPathFullyQualified(Path);
 
-    public FilePath ToAbsolute() => new(System.IO.Path.GetFullPath(Path));
-
     public FilePath ToAbsolute(DirectoryPath basePath)
     {
         if (IsAbsolute)

@@ -1,3 +1,6 @@
+using System.Buffers;
+using System.Text;
+
 namespace CapriKit.IO;
 
 public static class IOUtilities
@@ -5,8 +8,8 @@ public static class IOUtilities
     private const char DirectorySeperator = '/';
     private const char AltDirectorySeperator = '\\';
 
-    private static readonly char[] InvalidFileNameChars = Path.GetInvalidFileNameChars();
-    private static readonly char[] InvalidPathChars = Path.GetInvalidPathChars();
+    private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
+    private static readonly SearchValues<char> InvalidPathChars = SearchValues.Create(Path.GetInvalidPathChars());
 
     internal static StringComparison GetOSPathComparisonType()
     {
@@ -77,6 +80,7 @@ public static class IOUtilities
     /// <summary>
     /// Determines if a file name is not just whitespace or contains any invalid character.
     /// </summary>
+    /// <remarks>The list of invalid character (and thus the exact behavior of this method) is operating system dependent</remarks>
     public static bool IsValidFileName(ReadOnlySpan<char> name)
     {
         if (name.IsWhiteSpace())
@@ -84,13 +88,14 @@ public static class IOUtilities
             return false;
         }
 
-        return name.IndexOfAny(InvalidFileNameChars) < 0;
+        return !name.ContainsAny(InvalidFileNameChars);
     }
 
     /// <summary>
     /// Determines if a path to a file has any invalid characters. An empty
     /// path is invalid as it does not identify a single file.
     /// </summary>
+    /// <remarks>The list of invalid character (and thus the exact behavior of this method) is operating system dependent</remarks>
     public static bool IsValidFilePath(ReadOnlySpan<char> path)
     {
         if (path.IsWhiteSpace())
@@ -108,9 +113,39 @@ public static class IOUtilities
     /// Determines if a path contains any invalid characters, note that an empty path is valid
     /// as it could be a relative path to the current directory
     /// </summary>
+    /// <remarks>The list of invalid character (and thus the exact behavior of this method) is operating system dependent</remarks>
     public static bool IsValidPath(ReadOnlySpan<char> path)
     {
-        return path.IndexOfAny(InvalidPathChars) < 0;
+        return !path.ContainsAny(InvalidPathChars);
+    }
+
+    /// <summary>
+    /// Escapes a string so that it can be used as a valid file name
+    /// </summary>
+    /// <remarks>The list of invalid character (and thus the exact behavior of this method) is operating system dependent</remarks>
+    public static ReadOnlySpan<char> EscapeFileName(ReadOnlySpan<char> name)
+    {
+        if (IsValidFileName(name))
+        {
+            return name;
+        }
+
+        var builder = new StringBuilder();
+        foreach (var c in name)
+        {
+            if (InvalidFileNameChars.Contains(c))
+            {
+                var hexadecimal = ((int)c).ToString("X2");
+                builder.Append('%');
+                builder.Append(hexadecimal);
+            }
+            else
+            {
+                builder.Append(c);
+            }
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>

@@ -5,13 +5,29 @@ using Vortice.Direct3D11.Shader;
 
 namespace CapriKit.DirectX11.Resources.Shaders;
 
-public abstract record ShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
+public record ShaderByteCode(byte[] Bytes, string EntryPoint, string Name);
 
-public sealed record VertexShaderByteCode(byte[] Bytes, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
+public sealed record VertexShaderByteCode(ShaderByteCode Common)
+{
+    public byte[] Bytes => Common.Bytes;
+    public string EntryPoint => Common.EntryPoint;
+    public string Name => Common.Name;
+}
 
-public sealed record PixelShaderByteCode(byte[] Bytes, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
+public sealed record PixelShaderByteCode(ShaderByteCode Common)
+{
+    public byte[] Bytes => Common.Bytes;
+    public string EntryPoint => Common.EntryPoint;
+    public string Name => Common.Name;
+}
 
-public sealed record ComputeShaderByteCode(byte[] Bytes, uint NumThreadsX, uint NumThreadsY, uint NumThreadsZ, string EntryPoint, string Name) : ShaderByteCode(Bytes, EntryPoint, Name);
+
+public sealed record ComputeShaderByteCode(ShaderByteCode Common, uint NumThreadsX, uint NumThreadsY, uint NumThreadsZ)
+{
+    public byte[] Bytes => Common.Bytes;
+    public string EntryPoint => Common.EntryPoint;
+    public string Name => Common.Name;
+}
 
 public static class ShaderCompiler
 {
@@ -21,14 +37,14 @@ public static class ShaderCompiler
 
     public static IVertexShader CompileVertexShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
     {
-        var byteCode = CompileVertexShader(fileSystem, includePath, source, entryPoint, name);
-        return CreateVertexShader(byteCode, device);
+        var bytes = CompileVertexShader(fileSystem, includePath, source, entryPoint, name);
+        return CreateVertexShader(bytes, device);
     }
 
     public static VertexShaderByteCode CompileVertexShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var bytes = Compile(fileSystem, includePath, source, entryPoint, name, VERTEX_SHADER_PROFILE);
-        return new VertexShaderByteCode(bytes, entryPoint, name);
+        var byteCode = Compile(fileSystem, includePath, source, entryPoint, name, VERTEX_SHADER_PROFILE);
+        return new VertexShaderByteCode(byteCode);
     }
 
     public static IVertexShader CreateVertexShader(VertexShaderByteCode byteCode, Device device)
@@ -47,7 +63,7 @@ public static class ShaderCompiler
     public static PixelShaderByteCode CompilePixelShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
         var bytes = Compile(fileSystem, includePath, source, entryPoint, name, PIXEL_SHADER_PROFILE);
-        return new PixelShaderByteCode(bytes, entryPoint, name);
+        return new PixelShaderByteCode(bytes);
     }
     public static IPixelShader CreatePixelShader(PixelShaderByteCode byteCode, Device device)
     {
@@ -58,15 +74,15 @@ public static class ShaderCompiler
 
     public static IComputeShader CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, Device device, string source, string entryPoint, string name)
     {
-        var byteCode = CompileComputeShader(fileSystem, includePath, source, entryPoint, name);
-        return CreateComputeShader(byteCode, device);
+        var common = CompileComputeShader(fileSystem, includePath, source, entryPoint, name);
+        return CreateComputeShader(common, device);
     }
 
     public static ComputeShaderByteCode CompileComputeShader(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name)
     {
-        var bytes = Compile(fileSystem, includePath, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
-        var (x, y, z) = QueryNumThreads(bytes, name);
-        return new ComputeShaderByteCode(bytes, x, y, z, entryPoint, name);
+        var common = Compile(fileSystem, includePath, source, entryPoint, name, COMPUTE_SHADER_PROFILE);
+        var (x, y, z) = QueryNumThreads(common.Bytes, name);
+        return new ComputeShaderByteCode(common, x, y, z);
     }
 
     public static IComputeShader CreateComputeShader(ComputeShaderByteCode byteCode, Device device)
@@ -76,7 +92,7 @@ public static class ShaderCompiler
         return new ComputeShader(shader, byteCode.NumThreadsX, byteCode.NumThreadsY, byteCode.NumThreadsZ);
     }
 
-    private static byte[] Compile(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name, string profile)
+    private static ShaderByteCode Compile(IReadOnlyVirtualFileSystem fileSystem, DirectoryPath includePath, string source, string entryPoint, string name, string profile)
     {
         using var includeResolver = new ShaderIncludeResolver(fileSystem, includePath);
 
@@ -92,7 +108,7 @@ public static class ShaderCompiler
 
         var bytes = blob.AsBytes();
         blob.Dispose();
-        return bytes;
+        return new ShaderByteCode(bytes, entryPoint, name);
     }
 
     /// <summary>

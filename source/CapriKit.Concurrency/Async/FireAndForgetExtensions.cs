@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace CapriKit.Concurrency.Async;
 
@@ -11,22 +12,16 @@ public static class FireAndForgetExtensions
     /// </summary>
     public static void FireAndForget(
         this Task task,
-        Action<Exception> onException,
-        Action? onCompleted = null,
-        [CallerMemberName] string member = "",
-        [CallerFilePath] string file = "",
-        [CallerLineNumber] int line = 0)
+        Action<ExceptionDispatchInfo> onException,
+        Action? onCompleted = null)
     {
-        _ = AwaitAndCatch(task, onException, onCompleted, member, file, line);
+        _ = AwaitAndCatch(task, onException, onCompleted);
     }
 
     private static async Task AwaitAndCatch(
         Task task,
-        Action<Exception> onException,
-        Action? onCompleted,
-        string member,
-        string file,
-        int line)
+        Action<ExceptionDispatchInfo> onException,
+        Action? onCompleted)
     {
         try
         {
@@ -38,27 +33,13 @@ public static class FireAndForgetExtensions
         }
         catch (Exception ex)
         {
-            // The original stack trace is preserved via the inner exception
-            onException(new FaFTaskException(ex, member, file, line));
+            // Preserver the original stack trace and allow the handler to rethrow it.
+            var capture = ExceptionDispatchInfo.Capture(ex);
+            onException(capture);
         }
         finally
         {
             onCompleted?.Invoke();
         }
     }
-}
-
-public sealed class FaFTaskException : Exception
-{
-    public FaFTaskException(Exception innerException, string member, string file, int line)
-        : base($"A fire-and-forget task started from '{member}' at {file}:{line} failed.", innerException)
-    {
-        Member = member;
-        File = file;
-        Line = line;
-    }
-
-    public string Member { get; }
-    public string File { get; }
-    public int Line { get; }
 }
