@@ -24,11 +24,11 @@ public sealed partial class AssetManager : IDisposable
 
     private readonly LightweightChannel<Result> Incoming;
     private readonly Lock RequestLock;
-    private readonly Dictionary<AssetId, OneOrMany<IAssetRequester>> Outstanding;
+    private readonly Dictionary<AssetId, OneOrMany<AssetBundle>> Outstanding;
 
     // Every requester that holds, or is going to hold, leases. Kept so that Dispose can name whoever forgot
     // to unload instead of only reporting that some number of assets was left behind.
-    private readonly Dictionary<IAssetRequester, Registration> LiveRequesters;
+    private readonly Dictionary<AssetBundle, Registration> LiveRequesters;
 
     public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
     {
@@ -66,7 +66,7 @@ public sealed partial class AssetManager : IDisposable
     /// named at shutdown.
     /// Threading: thread-safe.
     /// </summary>
-    internal void Register(IAssetRequester requester, string origin)
+    internal void Register(AssetBundle requester, string origin)
     {
         lock (RequestLock) { LiveRequesters[requester] = new Registration(origin); }
     }
@@ -79,7 +79,7 @@ public sealed partial class AssetManager : IDisposable
     /// must ensure that no other threads touch it until this method returns. This method
     /// guarantees that the same asset is not built multiple times concurrently.
     /// </summary>
-    internal void Load<TAsset, TSettings>(AssetId id, TSettings settings, IAssetRequester requester)
+    internal void Load<TAsset, TSettings>(AssetId id, TSettings settings, AssetBundle requester)
         where TAsset : class
     {
         // Looked up before the cache is even checked, so that a missing or mismatched transcoder throws immediately.
@@ -126,7 +126,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: must be called while holding <see cref="RequestLock"/>.
     /// </summary>
     /// <returns>True if the requester took ownership, false if it refused because it was unloaded.</returns>
-    private bool Deliver(AssetId id, IAssetRequester requester, JobResult<object> result)
+    private bool Deliver(AssetId id, AssetBundle requester, JobResult<object> result)
     {
         if (!requester.Accept(id, result)) { return false; }
 
@@ -180,7 +180,7 @@ public sealed partial class AssetManager : IDisposable
     /// Threading: complex, multiple threads can enter this method, but the thread that owns <paramref name="requester"/>
     /// must ensure that no other threads touch it until this method returns.
     /// </summary>
-    internal void Unload(IAssetRequester requester)
+    internal void Unload(AssetBundle requester)
     {
         lock (RequestLock)
         {
