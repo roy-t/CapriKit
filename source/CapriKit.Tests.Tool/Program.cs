@@ -1,5 +1,5 @@
-using CapriKit.Concurrency.Async;
-using CapriKit.Concurrency.Primitives;
+using CapriKit.AssetPipeline;
+using CapriKit.AssetPipeline.DirectX11.Shaders;
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.IO;
@@ -8,6 +8,8 @@ using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using ImGuiNET;
+using Microsoft.Extensions.Logging;
+using Serilog;
 using System.Diagnostics;
 
 namespace CapriKit.Tests.Tool;
@@ -33,20 +35,41 @@ public partial class Program
         private readonly Mouse Mouse;
         private readonly Keyboard Keyboard;
 
-        private readonly IReadOnlyVirtualFileSystem FileSystem;
+        private readonly ScopedFileSystem FileSystem;
 
         private readonly Device Device;
+        private readonly AssetManager AssetManager;
         private readonly SwapChain SwapChain;
         private readonly RenderDoc? RenderDoc;
         private readonly ImGuiController ImGuiController;
 
         private readonly List<ITestScreen> Tests;
+
+        private bool loadedWindowStates;
+        private bool loadedShaderTest;
+        private readonly AssetBundle<ShaderTestBundle> ShaderTestBundle;
+
         private ITestScreen? CurrentTest;
 
         private bool running;
 
         public GameLoop()
         {
+            // TODO: move to a boostrapper -> loading screen -> gameloop setup
+            // TODO: use dependency injection
+            // TODO: add DX improvements for working with bundles and ensuring code runs only once OR see how that should be handled in the gamescreen loading code
+
+
+            Log.Logger = new LoggerConfiguration()
+                .Enrich.FromLogContext()
+                .WriteTo.Console()
+                .CreateLogger();
+
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddSerilog(Log.Logger);
+            });
+
             Window = Win32Application.Window;
             Keyboard = Win32Application.Keyboard;
             Mouse = Win32Application.Mouse;
@@ -57,20 +80,23 @@ public partial class Program
 
             RenderDoc?.DisableOverlay();
 
-            FileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content"));
+            FileSystem = new FileSystem().ScopedTo(CommandLineArguments.GetArgumentValue("--content"));
 
             Device = new Device();
+            AssetManager = new AssetManager(loggerFactory, FileSystem);
+            AssetManager.RegisterTranscoder(new VertexShaderTranscoder(Device));
+            AssetManager.RegisterTranscoder(new PixelShaderTranscoder(Device));
             SwapChain = new SwapChain(Device, Window);
             ImGuiController = new ImGuiController(Device, Window, Keyboard, Mouse);
 
             Tests = [];
             CurrentTest = null;
+
+            ShaderTestBundle = ShaderTest.LoadBundle(AssetManager);
         }
 
         public void Run()  // TODO: main loop is getting a bit cluttered
         {
-            var drain = StartLoadingTests();
-
             running = true;
             var elapsed = DELTA_TIME;
             var stopwatch = Stopwatch.StartNew();
@@ -109,43 +135,26 @@ public partial class Program
                 elapsed = stopwatch.Elapsed.TotalSeconds;
                 stopwatch.Restart();
 
-                InsertLoadedTests(drain);
+                AssetManager.Update();
+                InsertLoadedTests();
             }
 
-            // Cancel outstanding jobs, then wait for in-flight ones; they may still
-            // be using the device, and their results would otherwise never be disposed
-            CancelLoadingTests(drain);
             AnalyzeRenderDocCaptures();
         }
 
-
-        private Drain<ITestScreen> StartLoadingTests()
+        private void InsertLoadedTests()
         {
-            return BackgroundWorker.Create([
-                    new Job<ITestScreen>(nameof(ShaderTest), token => ShaderTest.Create(Device, FileSystem, token)),
-                    new Job<ITestScreen>(nameof(WindowStatesTest), token => Task.FromResult<ITestScreen>(new WindowStatesTest(Window))),
-                ]);
-        }
-
-        private void CancelLoadingTests(Drain<ITestScreen> drain)
-        {
-            drain.Cancel();
-            while (drain.HasOutstandingWork() || InsertLoadedTests(drain))
+            if (!loadedWindowStates)
             {
-                Thread.Yield();
+                Tests.Add(new WindowStatesTest(Window));
+                loadedWindowStates = true;
             }
-        }
 
-        private bool InsertLoadedTests(Drain<ITestScreen> drain)
-        {
-            if (drain.TryTake(out var loaded))
+            if (!loadedShaderTest && ShaderTestBundle.IsReady(out var bundle))
             {
-                loaded.Match(
-                    (id, screen) => Tests.Add(screen),
-                    (id, exception) => exception.Throw());
-                return true;
+                Tests.Add(new ShaderTest(Device, bundle));
+                loadedShaderTest = true;
             }
-            return false;
         }
 
         private void UpdateMenu()
@@ -211,8 +220,11 @@ public partial class Program
             {
                 test.Dispose();
             }
+
+            ShaderTestBundle.Dispose();
             ImGuiController.Dispose();
             SwapChain.Dispose();
+            AssetManager.Dispose();
             Device.Dispose();
             RenderDoc?.Dispose();
         }
