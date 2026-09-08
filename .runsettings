@@ -4,9 +4,7 @@ Ensure that Visual Studio doesn't accidentally make a TestResults directory, oth
 the new test tooling
 -->
 <RunSettings>
-
-  <RunConfiguration>    
-    <ResultsDirectory>.build/tst</ResultsDirectory>    
+  <RunConfiguration>
+    <ResultsDirectory>.build/tst</ResultsDirectory>
   </RunConfiguration>
-
 </RunSettings>

@@ -20,7 +20,7 @@ public partial class Program
     static void Main()
     {
 #if DEBUG // Ensure writes to console are redirected to Visual Studio
-        Console.SetOut(new DebugOutputTextWriter());
+        //Console.SetOut(new DebugOutputTextWriter());
 #endif
         Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(0, 0, 1280, 1024, WindowOrigin.CenterOffset, WindowMeasure.ClientArea));
         using var gameLoop = new GameLoop();
@@ -60,10 +60,10 @@ public partial class Program
             // TODO: use dependency injection
             // TODO: add DX improvements for working with bundles and ensuring code runs only once OR see how that should be handled in the gamescreen loading code
 
-
             Log.Logger = new LoggerConfiguration()
                 .Enrich.FromLogContext()
-                .WriteTo.Console()
+                .WriteTo.Conditional(_ => Debugger.IsAttached, wt => wt.Debug())
+                .WriteTo.Conditional(_ => !Debugger.IsAttached, wt => wt.Console())
                 .CreateLogger();
 
             var loggerFactory = LoggerFactory.Create(builder =>
