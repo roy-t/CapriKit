@@ -1,6 +1,8 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -26,7 +28,12 @@ public class Device : IDisposable
     private static readonly DeviceCreationFlags Flags = DeviceCreationFlags.None;
 #endif
 
-    public Device()
+    /// <summary>
+    /// Creates the graphics device. In a debug build the DirectX debug layer is enabled and everything it
+    /// reports is written to <paramref name="loggerFactory"/>, so pass the same factory as the rest of the
+    /// application uses to see those messages alongside your own.
+    /// </summary>
+    public Device(ILoggerFactory loggerFactory)
     {
         var deviceResult = D3D11CreateDevice(null, DriverType.Hardware, Flags, [FeatureLevel.Level_11_1], out var device, out _, out var context);
         deviceResult.CheckError();
@@ -39,7 +46,12 @@ public class Device : IDisposable
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Warning, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Error, true);
         IDXGIInfoQueue.SetBreakOnSeverity(DebugAll, InfoQueueMessageSeverity.Corruption, true);
-        InfoQueueSubscription = new InfoQueueSubscription(IDXGIInfoQueue);
+
+        // Without this the debug layer also writes every message straight to the native debug output, where
+        // it bypasses the logger and is only visible to a debugger that is attached at that moment.
+        IDXGIInfoQueue.SetMuteDebugOutput(DebugAll, true);
+
+        InfoQueueSubscription = new InfoQueueSubscription(loggerFactory, IDXGIInfoQueue);
 #endif
 
         ID3D11Device = device ?? throw new Exception($"Failed to create {nameof(ID3D11Device)}");
@@ -76,6 +88,18 @@ public class Device : IDisposable
         return new DeferredDeviceContext(this, context);
     }
 
+    /// <summary>
+    /// Logs DirectX debug layer log messages and throws on any message with severity warning or higher.
+    /// The <seealso cref="SwapChain"/> calls this method automatically after Present. You 
+    /// can call this method explicitly in cases where that does not suffice.
+    /// </summary>
+    public void LogMessages()
+    {
+#if DEBUG
+        InfoQueueSubscription.LogMessages();
+#endif
+    }
+
     public virtual void Dispose()
     {
         // Call clear state before dispose to unbind resources
@@ -101,7 +125,7 @@ public class Device : IDisposable
         IDXGIDebug.ReportLiveObjects(DebugAll, ReportLiveObjectFlags.Detail | ReportLiveObjectFlags.IgnoreInternal);
 
         // Report any exception messages that have not been shown yet
-        InfoQueueSubscription.CheckExceptions();
+        InfoQueueSubscription.LogMessages();
 
         IDXGIInfoQueue.Dispose();
         IDXGIDebug.Dispose();

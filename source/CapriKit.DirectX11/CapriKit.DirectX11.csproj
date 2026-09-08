@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="ImGui.NET" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="Vortice.D3DCompiler" />
     <PackageReference Include="Vortice.Direct3D11" />
   </ItemGroup>

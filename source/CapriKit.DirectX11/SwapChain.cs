@@ -20,8 +20,11 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
     internal readonly IDXGISwapChain IDXGISwapChain;
     internal ID3D11RenderTargetView BackBufferView;
 
+    private readonly Device Device;
+
     public SwapChain(Device device, Win32Window window)
     {
+        Device = device;
         Viewport = new Rectangle(0, 0, window.Width, window.Height);
 
         AllowTearing = SupportsTearingDuringPresent(device.ID3D11Device);
@@ -37,7 +40,7 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
     public int Width => Viewport.Width;
     public int Height => Viewport.Height;
     public bool VSync { get; set; } = true;
-    public bool AllowTearing { get; private set; } = false;
+    public bool AllowTearing { get; private set; }
 
     public void Clear(DeviceContext context)
     {
@@ -71,6 +74,8 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
         {
             IDXGISwapChain.Present(1, PresentFlags.None);
         }
+
+        Device.LogMessages();
     }
 
     [MemberNotNull(nameof(BackBufferView))]
@@ -114,7 +119,7 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
 
     private static bool SupportsTearingDuringPresent(ID3D11Device device)
     {
-        // Tearing support requires DXGI 1.5 which was added in Windows 10 Anniverary edition
+        // Tearing support requires DXGI 1.5 which was added in Windows 10 Anniversary edition
         using var dxgiDevice = device.QueryInterface<IDXGIDevice>();
         using var adapter = dxgiDevice.GetParent<IDXGIAdapter>();
         using var factory5 = adapter.GetParent<IDXGIFactory5>();

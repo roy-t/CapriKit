@@ -2,6 +2,7 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.IO;
+using Microsoft.Extensions.Logging.Abstractions;
 using TUnit.Assertions.Enums;
 
 namespace CapriKit.Tests.DirectX11.Buffers;
@@ -15,7 +16,7 @@ internal class GenericBufferTests
     [Test]
     public async Task Mix_Upload_Modify_Download_Staging()
     {
-        using var device = new Device();
+        using var device = new Device(NullLoggerFactory.Instance);
         var context = device.ImmediateDeviceContext;
 
         // Create a structured buffer to upload four prime numbers to the GPU

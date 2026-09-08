@@ -61,6 +61,7 @@ public partial class Program
             // TODO: add DX improvements for working with bundles and ensuring code runs only once OR see how that should be handled in the gamescreen loading code
 
             Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Verbose()
                 .Enrich.FromLogContext()
                 .WriteTo.Conditional(_ => Debugger.IsAttached, wt => wt.Debug())
                 .WriteTo.Conditional(_ => !Debugger.IsAttached, wt => wt.Console())
@@ -84,7 +85,7 @@ public partial class Program
             InputFileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content-input"));
             OutputFileSystem = new FileSystem().ScopedTo(CommandLineArguments.GetArgumentValue("--content-output"));
 
-            Device = new Device();
+            Device = new Device(loggerFactory);
             AssetManager = new AssetManager(loggerFactory, InputFileSystem, OutputFileSystem);
             AssetManager.RegisterTranscoder(new VertexShaderTranscoder(Device));
             AssetManager.RegisterTranscoder(new PixelShaderTranscoder(Device));
