@@ -1,5 +1,6 @@
 using CapriKit.AssetPipeline;
 using CapriKit.IO;
+using CapriKit.Tests.TestUtilities;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Buffers;
 
@@ -14,23 +15,23 @@ internal class HotReloadManagerTests
     public async Task Update()
     {
         // Arrange: build, load and cache an asset the way the asset manager would
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, "Hello World");
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, "Hello World");
 
         var transcoder = new TextTranscoder();
         var id = new AssetId(AssetFile);
 
-        await AssetEncoder.Encode(id, transcoder, default, fileSystem);
-        var asset = await AssetDecoder.Decode(id, transcoder, fileSystem);
+        await AssetEncoder.Encode(id, transcoder, default, input, output);
+        var asset = await AssetDecoder.Decode(id, transcoder, output);
 
         using var cache = new AssetPool();
         var live = cache.PutOrLease(id, asset.Value);
 
-        using var sut = new HotReloadManager(NullLoggerFactory.Instance, cache, fileSystem, NoDebounce);
+        using var sut = new HotReloadManager(NullLoggerFactory.Instance, cache, input, output, NoDebounce);
         sut.Track(asset, transcoder);
 
         // Act: change the file the asset was built from
-        await fileSystem.WriteAllText(AssetFile, "Goodbye World");
+        await input.WriteAllText(AssetFile, "Goodbye World");
 
         await Assert.That(() =>
         {
@@ -48,24 +49,24 @@ internal class HotReloadManagerTests
     public async Task Update_RebuildFails()
     {
         // Arrange: build, load and cache an asset, then make every following rebuild fail
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, "Hello World");
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, "Hello World");
 
         var transcoder = new TranscoderThatCanFail();
         var id = new AssetId(AssetFile);
 
-        await AssetEncoder.Encode(id, transcoder, default, fileSystem);
-        var asset = await AssetDecoder.Decode(id, transcoder, fileSystem);
+        await AssetEncoder.Encode(id, transcoder, default, input, output);
+        var asset = await AssetDecoder.Decode(id, transcoder, output);
 
         using var cache = new AssetPool();
         var live = cache.PutOrLease(id, asset.Value);
 
-        var sut = new HotReloadManager(NullLoggerFactory.Instance, cache, fileSystem, NoDebounce);
+        var sut = new HotReloadManager(NullLoggerFactory.Instance, cache, input, output, NoDebounce);
         sut.Track(asset, transcoder);
         transcoder.ShouldFail = true;
 
         // Act: one update starts the rebuild, disposing waits for it and finishes it
-        await fileSystem.WriteAllText(AssetFile, "Goodbye World");
+        await input.WriteAllText(AssetFile, "Goodbye World");
         sut.Update();
         sut.Dispose();
 

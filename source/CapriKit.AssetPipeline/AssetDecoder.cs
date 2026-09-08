@@ -48,37 +48,35 @@ internal static class AssetDecoder
     public static async Task<AssetBuildMetaData<TSettings>?> TryDecodeBuildMetaData<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> decoder, IReadOnlyVirtualFileSystem fileSystem)
         where TAsset : class
     {
+        var inputPath = ToEncodedFilePath(id);
+        if (!fileSystem.Exists(inputPath))
+        {
+            return null;
+        }
+
+        byte[]? buffer = null;
         try
         {
-            var inputPath = ToEncodedFilePath(id);
-            if (!fileSystem.Exists(inputPath))
-            {
-                throw new FileNotFoundException($"Could not find file: {inputPath} to load asset: {id}", id.Path);
-            }
-
             using var input = fileSystem.OpenRead(inputPath);
             var length = checked((int)input.Length);
-            var buffer = ArrayPool<byte>.Shared.Rent(length);
+            buffer = ArrayPool<byte>.Shared.Rent(length);
 
-            try
-            {
-                await input.ReadExactlyAsync(buffer.AsMemory(0, length));
-                var reader = SequenceReaders.Create(buffer, 0, length);
+            await input.ReadExactlyAsync(buffer.AsMemory(0, length));
+            var reader = SequenceReaders.Create(buffer, 0, length);
 
-                var (encoderId, encoderVersion) = ReadHeader(ref reader);
-                var settings = ReadSettings(ref reader, decoder);
-                SkipPayload(ref reader);
-                var dependencies = ReadDependencies(ref reader);
-                return new AssetBuildMetaData<TSettings>(encoderId, encoderVersion, settings, dependencies);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(buffer);
-            }
+            var (encoderId, encoderVersion) = ReadHeader(ref reader);
+            var settings = ReadSettings(ref reader, decoder);
+            SkipPayload(ref reader);
+            var dependencies = ReadDependencies(ref reader);
+            return new AssetBuildMetaData<TSettings>(encoderId, encoderVersion, settings, dependencies);
         }
         catch
         {
             return null;
+        }
+        finally
+        {
+            if (buffer != null) { ArrayPool<byte>.Shared.Return(buffer); }
         }
     }
 

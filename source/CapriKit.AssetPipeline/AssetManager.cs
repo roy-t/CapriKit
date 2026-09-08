@@ -17,7 +17,8 @@ namespace CapriKit.AssetPipeline;
 public sealed partial class AssetManager : IDisposable
 {
     private readonly ILogger<AssetManager> Logger;
-    private readonly ScopedFileSystem FileSystem;
+    private readonly ReadOnlyScopedFileSystem InputFileSystem;
+    private readonly ScopedFileSystem OutputFileSystem;
     private readonly AssetPool Cache;
     private readonly HotReloadManager HotReloadManager;
     private readonly ConcurrentDictionary<Type, IAssetTranscoder> Transcoders;
@@ -30,12 +31,13 @@ public sealed partial class AssetManager : IDisposable
     // to unload instead of only reporting that some number of assets was left behind.
     private readonly Dictionary<AssetBundle, Registration> LiveRequesters;
 
-    public AssetManager(ILoggerFactory logger, ScopedFileSystem fileSystem)
+    public AssetManager(ILoggerFactory logger, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem)
     {
         Logger = logger.CreateLogger<AssetManager>();
-        FileSystem = fileSystem;
+        InputFileSystem = inputFileSystem;
+        OutputFileSystem = outputFileSystem;
         Cache = new();
-        HotReloadManager = new(logger, Cache, FileSystem);
+        HotReloadManager = new(logger, Cache, inputFileSystem, outputFileSystem);
         Transcoders = [];
         Incoming = new();
         RequestLock = new();
@@ -152,22 +154,22 @@ public sealed partial class AssetManager : IDisposable
         where TAsset : class
     {
         // Check if the asset can be loaded from an up-to-date build
-        var build = await AssetDecoder.TryDecodeBuildMetaData(id, transcoder, FileSystem);
-        if (build != default && IsUpToDate(transcoder, settings, build, FileSystem))
+        var build = await AssetDecoder.TryDecodeBuildMetaData(id, transcoder, OutputFileSystem);
+        if (build != default && IsUpToDate(transcoder, settings, build, OutputFileSystem))
         {
-            var upToDateAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
+            var upToDateAsset = await AssetDecoder.Decode(id, transcoder, OutputFileSystem);
             Incoming.Write(Result.Success(id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
             LogLoadedFromFile(Logger, id);
         }
         else // If not, try to rebuild and load the asset
         {
-            if (!FileSystem.Exists(id.Path))
+            if (!InputFileSystem.Exists(id.Path))
             {
                 throw new FileNotFoundException("Could not find primary file to build asset from", id.Path);
             }
 
-            await AssetEncoder.Encode(id, transcoder, settings, FileSystem);
-            var freshAsset = await AssetDecoder.Decode(id, transcoder, FileSystem);
+            await AssetEncoder.Encode(id, transcoder, settings, InputFileSystem, OutputFileSystem);
+            var freshAsset = await AssetDecoder.Decode(id, transcoder, OutputFileSystem);
             Incoming.Write(Result.Success(id, () => TrackAndTakeLease(freshAsset, transcoder)));
             LogBuildAndLoaded(Logger, id);
         }

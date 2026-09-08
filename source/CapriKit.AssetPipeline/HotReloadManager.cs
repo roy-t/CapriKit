@@ -19,7 +19,8 @@ internal sealed partial class HotReloadManager : IDisposable
 {
     private readonly ILogger<HotReloadManager> Logger;
     private readonly AssetPool Cache;
-    private readonly ScopedFileSystem FileSystem;
+    private readonly ReadOnlyScopedFileSystem InputFileSystem;
+    private readonly ScopedFileSystem OutputFileSystem;
     private readonly IVirtualFileSystemWatcher Watcher;
     private readonly FileSystemEventQueue FileChanges;
     private readonly TimeSpan Debounce;
@@ -41,11 +42,12 @@ internal sealed partial class HotReloadManager : IDisposable
     /// Editors write their buffer in several steps, without a pause we would rebuild the same asset once per
     /// step and read half-written files. If not provided, it will be set to 500 milliseconds.
     /// </summary>
-    public HotReloadManager(ILoggerFactory loggerFactory, AssetPool cache, ScopedFileSystem fileSystem, TimeSpan? debounce = null)
+    public HotReloadManager(ILoggerFactory loggerFactory, AssetPool cache, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem, TimeSpan? debounce = null)
     {
         Logger = loggerFactory.CreateLogger<HotReloadManager>();
         Cache = cache;
-        FileSystem = fileSystem;
+        InputFileSystem = inputFileSystem;
+        OutputFileSystem = outputFileSystem;
         Debounce = debounce ?? TimeSpan.FromSeconds(0.5);
 
         Lock = new();
@@ -54,7 +56,7 @@ internal sealed partial class HotReloadManager : IDisposable
         Stale = [];
         InFlight = [];
 
-        Watcher = FileSystem.Watch();
+        Watcher = inputFileSystem.Watch();
         FileChanges = new FileSystemEventQueue(Watcher);
     }
 
@@ -177,7 +179,7 @@ internal sealed partial class HotReloadManager : IDisposable
 
                 if (!Tracked.TryGetValue(id, out var tracked)) { continue; }
 
-                if (tracked.TryStartReload(Cache, FileSystem, out var reload))
+                if (tracked.TryStartReload(Cache, InputFileSystem, OutputFileSystem, out var reload))
                 {
                     InFlight.Add(id, reload);
                     LogReloadStarted(Logger, id);
@@ -321,7 +323,7 @@ internal sealed partial class HotReloadManager : IDisposable
         /// caller owns that lease and must return it once <paramref name="reload"/> has completed.
         /// Threading: main thread only.
         /// </summary>
-        public abstract bool TryStartReload(AssetPool cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload);
+        public abstract bool TryStartReload(AssetPool cache, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload);
     }
 
     /// <inheritdoc cref="TrackedAsset"/>
@@ -338,7 +340,7 @@ internal sealed partial class HotReloadManager : IDisposable
             Transcoder = transcoder;
         }
 
-        public override bool TryStartReload(AssetPool cache, IVirtualFileSystem fileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload)
+        public override bool TryStartReload(AssetPool cache, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem, [NotNullWhen(true)] out Task<ReloadedAsset>? reload)
         {
             // The lease pins the live instance for the entire rebuild, so the background thread never has to
             // wonder whether the object it is going to hot-swap into still exists.
@@ -348,19 +350,19 @@ internal sealed partial class HotReloadManager : IDisposable
                 return false;
             }
 
-            reload = Task.Run(() => Reload(live, fileSystem));
+            reload = Task.Run(() => Reload(live, inputFileSystem, outputFileSystem));
             return true;
         }
 
-        private async Task<ReloadedAsset> Reload(TAsset live, IVirtualFileSystem fileSystem)
+        private async Task<ReloadedAsset> Reload(TAsset live, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem)
         {
             // Build into memory rather than over the existing build on disk: other threads may be reading that
             // file to load the very same asset and overwriting it underneath them would fail those loads.
             using var stream = new MemoryStream();
-            await AssetEncoder.Encode(Id, Transcoder, Settings, fileSystem, stream);
+            await AssetEncoder.Encode(Id, Transcoder, Settings, inputFileSystem, outputFileSystem, stream);
 
             stream.Seek(0, SeekOrigin.Begin);
-            var rebuilt = await AssetDecoder.Decode(Id, Transcoder, fileSystem, stream);
+            var rebuilt = await AssetDecoder.Decode(Id, Transcoder, outputFileSystem, stream);
 
             return new ReloadedAsset(rebuilt.BuildMetaData.Dependencies, () => Transcoder.HotSwap(live, rebuilt.Value));
         }

@@ -35,7 +35,8 @@ public partial class Program
         private readonly Mouse Mouse;
         private readonly Keyboard Keyboard;
 
-        private readonly ScopedFileSystem FileSystem;
+        private readonly ReadOnlyScopedFileSystem InputFileSystem;
+        private readonly ScopedFileSystem OutputFileSystem;
 
         private readonly Device Device;
         private readonly AssetManager AssetManager;
@@ -80,10 +81,11 @@ public partial class Program
 
             RenderDoc?.DisableOverlay();
 
-            FileSystem = new FileSystem().ScopedTo(CommandLineArguments.GetArgumentValue("--content"));
+            InputFileSystem = new FileSystem().ScopedToReadOnly(CommandLineArguments.GetArgumentValue("--content-input"));
+            OutputFileSystem = new FileSystem().ScopedTo(CommandLineArguments.GetArgumentValue("--content-output"));
 
             Device = new Device();
-            AssetManager = new AssetManager(loggerFactory, FileSystem);
+            AssetManager = new AssetManager(loggerFactory, InputFileSystem, OutputFileSystem);
             AssetManager.RegisterTranscoder(new VertexShaderTranscoder(Device));
             AssetManager.RegisterTranscoder(new PixelShaderTranscoder(Device));
             SwapChain = new SwapChain(Device, Window);

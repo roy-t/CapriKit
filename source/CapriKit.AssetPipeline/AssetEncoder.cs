@@ -14,17 +14,17 @@ namespace CapriKit.AssetPipeline;
 /// </summary>
 internal static class AssetEncoder
 {
-    public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IVirtualFileSystem fileSystem, Stream? outputStreamOverride = default)
+    public static async Task Encode<TAsset, TSettings>(AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, IReadOnlyVirtualFileSystem inputFileSystem, IVirtualFileSystem outputFileSystem, Stream? outputStreamOverride = default)
         where TAsset : class
     {
-        ThrowOnFileNotFound(id.Path, fileSystem);
+        ThrowOnFileNotFound(id.Path, inputFileSystem);
         var outputPath = ToEncodedFilePath(id);
         Stream? output = null;
         try
         {
-            output = outputStreamOverride ?? fileSystem.CreateReadWrite(outputPath);
+            output = outputStreamOverride ?? outputFileSystem.CreateReadWrite(outputPath);
             var writer = PipeWriter.Create(output, new StreamPipeWriterOptions(leaveOpen: true));
-            var spy = fileSystem.SpyOn();
+            var spy = inputFileSystem.SpyOn();
 
             WriteHeader(writer, encoder);
             WriteSettings(writer, encoder, settings);
@@ -57,7 +57,7 @@ internal static class AssetEncoder
         writer.Write(buffer.WrittenSpan);
     }
 
-    private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, VirtualFileSystemSpy spy)
+    private static async Task WritePayload<TAsset, TSettings>(PipeWriter writer, AssetId id, IAssetTranscoder<TAsset, TSettings> encoder, TSettings settings, ReadOnlyVirtualFileSystemSpy spy)
         where TAsset : class
     {
         var payload = new ArrayBufferWriter<byte>();
@@ -66,7 +66,7 @@ internal static class AssetEncoder
         writer.Write(payload.WrittenSpan);
     }
 
-    private static void WriteDependencies(PipeWriter writer, VirtualFileSystemSpy spy)
+    private static void WriteDependencies(PipeWriter writer, ReadOnlyVirtualFileSystemSpy spy)
     {
         writer.Write(spy.OpenedFiles.Count);
         foreach (var dependency in spy.OpenedFiles)

@@ -15,7 +15,7 @@ internal static class AssetUtilities
         return $"{id.Path}.{key}.cka";
     }
 
-    public static void ThrowOnFileNotFound(FilePath path, IVirtualFileSystem fileSystem)
+    public static void ThrowOnFileNotFound(FilePath path, IReadOnlyVirtualFileSystem fileSystem)
     {
         if (!fileSystem.Exists(path))
         {

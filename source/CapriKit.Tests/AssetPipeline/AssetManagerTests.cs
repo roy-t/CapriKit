@@ -16,11 +16,14 @@ internal class AssetManagerTests
     private readonly FilePath HealthyFile = new("Goodbye.txt");
     private const string TranscoderText = "Hello World";
 
+    private static readonly DirectoryPath InputDirectory = new("Input");
+    private static readonly DirectoryPath OutputDirectory = new("Output");
+
     [Before(Test)]
     public void Setup()
     {
         WorkingDirectory = FileSystemUtilities.CreateTemporaryDirectory();
-        var fileSystem = new FileSystem().ScopedTo(WorkingDirectory);
+        var fileSystem = new FileSystem().ScopedTo(WorkingDirectory.Append([InputDirectory]));
         using var stream = fileSystem.CreateReadWrite(AssetFile);
         using var writer = new StreamWriter(stream);
         writer.Write(TranscoderText);
@@ -37,10 +40,10 @@ internal class AssetManagerTests
     {
         await Assert.That(WorkingDirectory).IsNotNull();
 
-        var fileSystem = new FileSystem().ScopedTo(WorkingDirectory);
-        await fileSystem.WriteAllText(AssetFile, "Hello World");
+        var input = new FileSystem().ScopedToReadOnly(WorkingDirectory.Append([InputDirectory]));
+        var output = new FileSystem().ScopedTo(WorkingDirectory.Append([OutputDirectory]));
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
 
         var transcoder = new TextTranscoder();
         assetManager.RegisterTranscoder(transcoder);
@@ -85,6 +88,40 @@ internal class AssetManagerTests
     }
 
     /// <summary>
+    /// A build is written to the output file system instead of next to the file it was made from. That keeps
+    /// generated files out of the content directory, which is what the hot-reload watcher looks at.
+    /// </summary>
+    [Test]
+    public async Task LoadAsset_WritesTheBuildToTheOutputFileSystem()
+    {
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
+
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
+        assetManager.RegisterTranscoder(new TextTranscoder());
+
+        var id = new AssetId(AssetFile);
+        var builder = new AssetBundleBuilder<TestBundle>(assetManager);
+        var handle = builder.Request<TextAsset>(id);
+        var bundle = builder.Build(resolver => new TestBundle(resolver.Get(handle)));
+
+        await Assert.That(() =>
+        {
+            assetManager.Update();
+            return bundle.IsReady(out _);
+        })
+        .Eventually(v => v.IsTrue(), TimeSpan.FromSeconds(5));
+
+        var build = AssetUtilities.ToEncodedFilePath(id);
+        await Assert.That(output.Exists(build)).IsTrue();
+        await Assert.That(input.Exists(build)).IsFalse();
+
+        bundle.Dispose();
+        assetManager.Update();
+        await Assert.That(() => assetManager.Dispose()).ThrowsNothing();
+    }
+
+    /// <summary>
     /// The contents are built once and then handed out again on every later call. Rebuilding them would run
     /// the caller's factory once per frame, and forgetting to keep them hands back null through a
     /// contract that promises otherwise.
@@ -92,10 +129,10 @@ internal class AssetManagerTests
     [Test]
     public async Task IsReady_KeepsHandingOutTheSameContents()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(new TextTranscoder());
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -131,11 +168,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Load_HandsOneInFlightAssetToEveryBundleWaitingForIt()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var id = new AssetId(AssetFile);
@@ -182,11 +219,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Unload_ReturnsTheLeaseOfAnAssetThatWasStillLoading()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -219,10 +256,10 @@ internal class AssetManagerTests
     [Test]
     public async Task Request_RefusesTheSameAssetTwice()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
-        using var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        using var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(new TextTranscoder());
 
         var id = new AssetId(AssetFile);
@@ -240,10 +277,10 @@ internal class AssetManagerTests
     [Test]
     public async Task Build_UnloadsWhatItTookWhenALaterRequestThrows()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(new TrackingTextTranscoder());
 
         var id = new AssetId(AssetFile);
@@ -289,11 +326,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Dispose_ReportsBundlesThatWereNeverUnloaded()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var logger = new CapturingLoggerFactory();
-        var assetManager = new AssetManager(logger, fileSystem);
+        var assetManager = new AssetManager(logger, input, output);
         assetManager.RegisterTranscoder(new TrackingTextTranscoder());
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -324,15 +361,15 @@ internal class AssetManagerTests
     [Test]
     public async Task Load_RetriesAnAssetWhoseFirstLoadFailed()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TranscoderThatCanFail { ShouldFail = true };
 
         // Deliberately not a `using`: AssetPool.Dispose throws when leases are outstanding, and an exception
         // from a dispose during unwinding replaces the assertion that actually failed. Disposing at the end
         // keeps the leak check but lets a real failure report itself.
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var id = new AssetId(AssetFile);
@@ -369,7 +406,7 @@ internal class AssetManagerTests
 
         // Control: a second, untouched asset requested at the same moment, to show that a failure never
         // stopped the manager as a whole and that the retry above is what actually changed.
-        await fileSystem.WriteAllText(HealthyFile, TranscoderText);
+        await input.WriteAllText(HealthyFile, TranscoderText);
 
         var healthyBuilder = new AssetBundleBuilder<TestBundle>(assetManager);
         var healthyHandle = healthyBuilder.Request<TextAsset>(new AssetId(HealthyFile));
@@ -417,10 +454,10 @@ internal class AssetManagerTests
     [Test]
     public async Task Build_ThrowsOnTheCallingThreadWhenNoTranscoderIsRegistered()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
-        using var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        using var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -437,11 +474,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Update_DoesNotThrowWhenAHotReloadFails()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TranscoderThatCanFail();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -458,7 +495,7 @@ internal class AssetManagerTests
 
         // Act: make every rebuild fail, then change the file the asset was built from
         transcoder.ShouldFail = true;
-        await fileSystem.WriteAllText(AssetFile, "Goodbye World");
+        await input.WriteAllText(AssetFile, "Goodbye World");
 
         // Pump past the hot-reload debounce until the rebuild has actually been attempted and failed
         Exception? thrown = null;
@@ -488,11 +525,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Update_ReturnsNoLeaseForAFailedLoadThatItsBundleRefuses()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TranscoderThatCanFail { ShouldFail = true };
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -528,11 +565,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Update_ReturnsOneLeasePerBundleWhenEveryWaitingBundleRefuses()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var id = new AssetId(AssetFile);
@@ -571,11 +608,11 @@ internal class AssetManagerTests
     [Test]
     public async Task Update_KeepsAnAssetAliveWhenOnlyTheFirstWaitingBundleRefuses()
     {
-        var fileSystem = new InMemoryFileSystem().ScopedTo("C:/Test");
-        await fileSystem.WriteAllText(AssetFile, TranscoderText);
+        var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
+        await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, fileSystem);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
         assetManager.RegisterTranscoder(transcoder);
 
         var id = new AssetId(AssetFile);
