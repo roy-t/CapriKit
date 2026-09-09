@@ -1,0 +1,960 @@
+<title>LightInject or Microsoft DI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Zilla+Slab:wght@600;700&display=swap">
+
+<style>
+  :root {
+    --ground:      #EDEFEE;
+    --surface:     #F8F9F8;
+    --surface-alt: #E3E7E5;
+    --ink:         #16201E;
+    --ink-soft:    #4A5654;
+    --ink-faint:   #6E7B78;
+    --rule:        #D1D8D6;
+    --rule-strong: #B6C0BD;
+    --teal:        #0E6157;
+    --teal-wash:   #DDE9E6;
+    --slate:       #4E5478;
+    --slate-wash:  #E1E3EC;
+    --brick:       #A03A28;
+    --brick-wash:  #F0DFDB;
+    --amber:       #8A5A0B;
+    --amber-wash:  #EFE6D2;
+
+    --measure: 68ch;
+    --step-0: 1rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.4375rem;
+    --step-3: 1.875rem;
+    --step-4: 2.75rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #121817;
+      --surface:     #1A2221;
+      --surface-alt: #232D2B;
+      --ink:         #DCE4E1;
+      --ink-soft:    #9FADAA;
+      --ink-faint:   #7A8785;
+      --rule:        #2A3533;
+      --rule-strong: #3B4846;
+      --teal:        #56C4AC;
+      --teal-wash:   #16302C;
+      --slate:       #9BA2CE;
+      --slate-wash:  #22263A;
+      --brick:       #E4826B;
+      --brick-wash:  #331F1A;
+      --amber:       #D9A441;
+      --amber-wash:  #31281440;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #121817;
+    --surface:     #1A2221;
+    --surface-alt: #232D2B;
+    --ink:         #DCE4E1;
+    --ink-soft:    #9FADAA;
+    --ink-faint:   #7A8785;
+    --rule:        #2A3533;
+    --rule-strong: #3B4846;
+    --teal:        #56C4AC;
+    --teal-wash:   #16302C;
+    --slate:       #9BA2CE;
+    --slate-wash:  #22263A;
+    --brick:       #E4826B;
+    --brick-wash:  #331F1A;
+    --amber:       #D9A441;
+    --amber-wash:  #31281440;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 clamp(1.25rem, 4vw, 3rem) 6rem;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: clamp(2.5rem, 6vw, 4.5rem) 0 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+  }
+
+  h1 {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(2.1rem, 6vw, var(--step-4));
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+
+  .deck {
+    font-size: var(--step-1);
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  /* ---------- shell ---------- */
+
+  .shell {
+    display: grid;
+    gap: 3rem;
+    padding-top: 2.75rem;
+  }
+
+  @media (min-width: 1020px) {
+    .shell {
+      grid-template-columns: 190px minmax(0, 1fr);
+      gap: 4rem;
+      align-items: start;
+    }
+    .rail { position: sticky; top: 2rem; }
+  }
+
+  .rail ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    border-left: 1px solid var(--rule);
+  }
+
+  .rail a {
+    display: block;
+    padding: 0.1rem 0 0.1rem 0.9rem;
+    margin-left: -1px;
+    border-left: 2px solid transparent;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.775rem;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+    text-decoration: none;
+  }
+
+  .rail a:hover,
+  .rail a:focus-visible { color: var(--teal); border-left-color: var(--teal); }
+
+  main { display: flex; flex-direction: column; gap: 3.5rem; min-width: 0; }
+
+  section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 1.5rem; }
+
+  h2 {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-weight: 600;
+    font-size: var(--step-3);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  h3 {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-weight: 600;
+    font-size: var(--step-2);
+    line-height: 1.2;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  p { margin: 0; max-width: var(--measure); }
+
+  main ul, main ol { margin: 0; padding-left: 1.15rem; max-width: var(--measure); display: flex; flex-direction: column; gap: 0.5rem; }
+
+  li::marker { color: var(--ink-faint); }
+
+  a { color: var(--teal); text-underline-offset: 0.18em; }
+
+  code {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.875em;
+    background: var(--surface-alt);
+    padding: 0.1em 0.34em;
+    border-radius: 2px;
+  }
+
+  strong { font-weight: 600; }
+
+  em { font-style: normal; color: var(--ink-soft); border-bottom: 1px dotted var(--rule-strong); }
+
+  /* ---------- verdict ---------- */
+
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-left: 4px solid var(--teal);
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .verdict p { max-width: 64ch; }
+
+  .verdict .lede {
+    font-family: "Zilla Slab", Georgia, serif;
+    font-size: var(--step-2);
+    line-height: 1.28;
+    font-weight: 600;
+  }
+
+  /* ---------- typed findings ---------- */
+
+  .findings { display: flex; flex-direction: column; gap: 0; }
+
+  .finding {
+    display: grid;
+    gap: 0.35rem 1.25rem;
+    padding: 1.4rem 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .finding:last-child { border-bottom: 1px solid var(--rule); }
+
+  @media (min-width: 720px) {
+    .finding { grid-template-columns: 8.5rem minmax(0, 1fr); }
+  }
+
+  .tag {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    align-self: start;
+    justify-self: start;
+    white-space: nowrap;
+  }
+
+  .tag.win   { color: var(--teal);  background: var(--teal-wash); }
+  .tag.wash  { color: var(--ink-faint); background: var(--surface-alt); }
+  .tag.bug   { color: var(--brick); background: var(--brick-wash); }
+  .tag.trap  { color: var(--amber); background: var(--amber-wash); }
+  .tag.safe  { color: var(--slate); background: var(--slate-wash); }
+
+  .finding-body { display: flex; flex-direction: column; gap: 0.7rem; min-width: 0; }
+
+  .finding-body h3 { font-size: var(--step-1); }
+
+  .caveat {
+    border-left: 2px solid var(--amber);
+    padding-left: 0.9rem;
+    color: var(--ink-soft);
+    font-size: 0.9375rem;
+    max-width: 62ch;
+  }
+
+  /* ---------- code ---------- */
+
+  pre {
+    margin: 0;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule-strong);
+    padding: 1rem 1.15rem;
+    overflow-x: auto;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.8125rem;
+    line-height: 1.62;
+    tab-size: 4;
+  }
+
+  pre.bad  { border-left-color: var(--brick); }
+  pre.good { border-left-color: var(--teal); }
+
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  .cmt { color: var(--ink-faint); }
+  .key { color: var(--slate); }
+  .str { color: var(--teal); }
+
+  .code-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin-bottom: -0.5rem;
+  }
+
+  /* ---------- split ---------- */
+
+  .split { display: grid; gap: 1rem; }
+
+  @media (min-width: 760px) { .split { grid-template-columns: 1fr 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--rule-strong);
+    padding: 1.25rem 1.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  .panel.now  { border-top-color: var(--slate); }
+  .panel.next { border-top-color: var(--teal); }
+
+  .panel h3 { font-size: var(--step-1); }
+
+  .panel .who {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .panel.now .who  { color: var(--slate); }
+  .panel.next .who { color: var(--teal); }
+
+  .panel ul { padding-left: 1.05rem; font-size: 0.9375rem; gap: 0.4rem; }
+
+  /* ---------- table ---------- */
+
+  .scroller { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 640px;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  th, td { text-align: left; padding: 0.7rem 1rem; border-bottom: 1px solid var(--rule); vertical-align: top; }
+
+  thead th {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--surface-alt);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  td code { background: none; padding: 0; color: var(--ink-soft); }
+
+  .yes { color: var(--teal); font-weight: 600; }
+  .no  { color: var(--brick); }
+
+  /* ---------- staged path ---------- */
+
+  .stages { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0; max-width: none; }
+
+  .stage {
+    display: grid;
+    gap: 0.3rem 1.5rem;
+    padding: 1.4rem 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .stage:last-child { border-bottom: 1px solid var(--rule); }
+
+  @media (min-width: 720px) { .stage { grid-template-columns: 5.5rem minmax(0, 1fr); } }
+
+  .stage-num {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 1.75rem;
+    line-height: 1;
+    font-weight: 500;
+    color: var(--rule-strong);
+  }
+
+  .stage-body { display: flex; flex-direction: column; gap: 0.55rem; min-width: 0; }
+
+  .stage-body h3 { font-size: var(--step-1); }
+
+  .stage-meta {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--ink);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-faint);
+    max-width: var(--measure);
+    line-height: 1.7;
+  }
+
+  :focus-visible { outline: 2px solid var(--teal); outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  /* ---------- additions for this report ---------- */
+
+  .tag.pick {
+    color: var(--surface);
+    background: var(--teal);
+    border-color: var(--teal);
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; list-style: none; max-width: none; }
+
+  .chips li {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 0.775rem;
+    color: var(--ink-soft);
+    background: var(--surface-alt);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 0.22rem 0.5rem;
+    white-space: nowrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-left: 4px solid var(--brick);
+    padding: 1.1rem 1.4rem;
+    flex-wrap: wrap;
+  }
+
+  .stat b {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: clamp(2rem, 7vw, 3rem);
+    font-weight: 500;
+    line-height: 1;
+    color: var(--brick);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat span { color: var(--ink-soft); font-size: 0.9375rem; max-width: 44ch; }
+
+  .sources { list-style: none; padding: 0; margin: 0.75rem 0 0; display: flex; flex-direction: column; gap: 0.3rem; }
+
+  .sources a { color: var(--ink-faint); }
+  .sources a:hover, .sources a:focus-visible { color: var(--teal); }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="eyebrow">
+      <span>CapriKit.Tests.Tool</span>
+      <span>main</span>
+      <span>2026-09-08</span>
+    </div>
+    <h1>LightInject or Microsoft DI</h1>
+    <p class="deck">
+      <code>Microsoft.Extensions.DependencyInjection.Abstractions</code> is already pinned at 10.0.10. This is
+      what can sit behind it, what each option costs to keep, and the two disposal rules that matter more than
+      the choice itself.
+    </p>
+  </header>
+
+  <div class="shell">
+
+    <nav class="rail" aria-label="Sections">
+      <ol>
+        <li><a href="#answer">The short answer</a></li>
+        <li><a href="#premise">Two corrections</a></li>
+        <li><a href="#options">The options</a></li>
+        <li><a href="#compare">Side by side</a></li>
+        <li><a href="#shim">The shim, sized</a></li>
+        <li><a href="#disposal">What actually matters</a></li>
+        <li><a href="#path">Recommended path</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <section id="answer">
+        <div class="verdict">
+          <p class="lede">
+            LightInject already implements the abstraction. The shim you were budgeting for is zero lines.
+          </p>
+          <p>
+            <code>LightInject.Microsoft.DependencyInjection</code> 4.1.0 passes
+            <code>Microsoft.Extensions.DependencyInjection.Specification.Tests</code> &mdash; the same conformance
+            suite Microsoft runs against its own container. So the question is no longer <em>can I</em>, it is
+            <em>should I</em>.
+          </p>
+          <p>
+            And for a graph of services that all live for the lifetime of the app &mdash; <code>Device</code>,
+            <code>SwapChain</code>, the asset pipeline &mdash; consumed only through <code>IServiceCollection</code>
+            and <code>IServiceProvider</code>, the honest answer is that the built-in container gives you
+            everything a richer one would. The abstraction is a lowest common denominator: whatever makes
+            LightInject nicer than <code>ServiceProvider</code> lives in LightInject's own API, which you would
+            not be calling.
+          </p>
+          <p>
+            <strong>Start on the built-in container. Swap when you actually want decorators or assembly
+            scanning</strong> &mdash; behind the abstraction that swap is one line at the composition root.
+          </p>
+        </div>
+      </section>
+
+      <section id="premise">
+        <h2>Two corrections to the premise</h2>
+
+        <div class="findings">
+
+          <div class="finding">
+            <span class="tag safe">Exists</span>
+            <div class="finding-body">
+              <h3>LightInject does implement the abstraction</h3>
+              <p>
+                <a href="https://github.com/seesharper/LightInject.Microsoft.DependencyInjection">seesharper/LightInject.Microsoft.DependencyInjection</a>,
+                version 4.1.0, published 2026-05-28. 2.8&nbsp;million downloads across all versions. It targets
+                <code>net8.0</code> and <code>netstandard2.0</code>, so it loads fine on your <code>net10.0</code>,
+                and it depends on <code>Microsoft.Extensions.DependencyInjection.Abstractions</code>
+                <strong>&ge;&nbsp;10.0.8</strong> &mdash; which your <code>Directory.Packages.props</code> already
+                satisfies at 10.0.10.
+              </p>
+              <p class="caveat">
+                One gotcha in the README worth remembering if CapriKit ever grows a generic host: this package is
+                the raw adapter. For a hosted app you are meant to use <code>LightInject.Microsoft.Hosting</code>
+                instead, which wires <code>IServiceProviderFactory</code> into the host builder for you.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag wash">Not web</span>
+            <div class="finding-body">
+              <h3><code>Microsoft.Extensions.DependencyInjection</code> was never web-specific</h3>
+              <p>
+                The implementation package has zero ASP.NET dependencies and never has. The association is purely
+                that ASP.NET is its largest consumer. It is a plain library you can reference from a WinExe.
+              </p>
+              <p>
+                The change you are half-remembering is most likely <strong>keyed services</strong>, added to the
+                abstraction in .NET 8: <code>AddKeyedSingleton</code>, <code>GetRequiredKeyedService</code>,
+                <code>IKeyedServiceProvider</code>. Useful here if you ever want two named
+                <code>SwapChain</code>s or a per-adapter <code>Device</code>. The LightInject adapter implements
+                the keyed interfaces too, mapping service keys onto LightInject's string service names.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="options">
+        <h2>The options</h2>
+
+        <div class="findings">
+
+          <div class="finding">
+            <span class="tag pick">Start here</span>
+            <div class="finding-body">
+              <h3>Built-in <code>Microsoft.Extensions.DependencyInjection</code></h3>
+              <p>
+                The reference implementation of the abstraction you are already coding against. One package, no
+                third-party risk, no adapter layer that can lag a .NET release.
+              </p>
+              <p>
+                What it does not have, per Microsoft's own list of reasons to replace it: property injection,
+                child containers, custom lifetime management, <code>Func&lt;T&gt;</code> for lazy initialization,
+                and convention-based registration. Nothing on that list is load-bearing for a fixed set of
+                engine singletons wired up by hand in one place.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag win">Zero shim</span>
+            <div class="finding-body">
+              <h3>LightInject + its official adapter</h3>
+              <p>Two package references and one line at the composition root:</p>
+              <p class="code-label">Directory.Packages.props</p>
+<pre><code>&lt;<span class="key">PackageVersion</span> Include=<span class="str">"LightInject"</span> Version=<span class="str">"7.x"</span> /&gt;
+&lt;<span class="key">PackageVersion</span> Include=<span class="str">"LightInject.Microsoft.DependencyInjection"</span> Version=<span class="str">"4.1.0"</span> /&gt;</code></pre>
+              <p class="code-label">Composition root</p>
+<pre class="good"><code><span class="cmt">// WithMicrosoftSettings() switches LightInject to MS DI semantics.</span>
+<span class="cmt">// Without it, conformance is not guaranteed.</span>
+<span class="key">var</span> container = <span class="key">new</span> ServiceContainer(ContainerOptions.Default.WithMicrosoftSettings());
+
+<span class="key">var</span> services = <span class="key">new</span> ServiceCollection();
+services.AddSingleton&lt;Device&gt;();
+services.AddSingleton&lt;SwapChain&gt;();
+<span class="cmt">// snip</span>
+
+IServiceProvider provider = container.CreateServiceProvider(services);</code></pre>
+              <p>
+                This buys you LightInject's decorators, <code>Func&lt;T&gt;</code>, property injection and
+                assembly scanning &mdash; but only when you talk to <code>IServiceContainer</code> directly.
+                Through <code>IServiceCollection</code> alone you get none of it.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag wash">Heavier</span>
+            <div class="finding-body">
+              <h3>Autofac, DryIoc, Stashbox</h3>
+              <p>
+                All three ship first-party adapters and all three appear on Microsoft's supported-container list
+                alongside LightInject, Lamar, Grace and Simple Injector. DryIoc and Stashbox are the fast ones;
+                Autofac is the best documented and the heaviest.
+              </p>
+              <p>
+                None of them buy anything the built-in container lacks <em>for a graph of app-lifetime
+                singletons</em>. Their strengths &mdash; module systems, interception, elaborate scoping &mdash;
+                are answers to problems a game engine's composition root does not have.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag trap">Compile-time</span>
+            <div class="finding-body">
+              <h3>Pure.DI, Jab &mdash; source-generated containers</h3>
+              <p>
+                Genuinely interesting for an engine: no reflection, NativeAOT-clean, and resolution compiles down
+                to straight-line construction rather than a runtime graph walk. Jab reports ~200&times; faster
+                startup and ~7&times; faster resolution than the built-in container.
+              </p>
+              <p>
+                The catch is the shape of registration. <a href="https://github.com/DevTeam/Pure.DI">Pure.DI</a>
+                can meet you halfway &mdash; the <code>Pure.DI.MS</code> package has your composition class derive
+                from <code>ServiceProviderFactory&lt;T&gt;</code>, so it can hand out an
+                <code>IServiceProvider</code>. <a href="https://github.com/pakrym/jab">Jab</a> explicitly will
+                not: its stated plan is to support the minimum the abstraction requires but
+                <strong>not</strong> <code>IServiceCollection</code>-based registration, because that is
+                inherently runtime-based.
+              </p>
+              <p class="caveat">
+                Either way you register through attributes on a partial class, not the
+                <code>IServiceCollection</code> API. That is a different programming model, not a drop-in
+                implementation of the abstraction. Worth revisiting only if NativeAOT becomes a goal.
+              </p>
+            </div>
+          </div>
+
+          <div class="finding">
+            <span class="tag bug">Don't</span>
+            <div class="finding-body">
+              <h3>A hand-rolled LightInject shim</h3>
+              <p>
+                Sized in the next section. The short version: the maintained one is 693 lines, and the last 10% of
+                the semantics is where every bug lives.
+              </p>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <section id="compare">
+        <h2>Side by side</h2>
+
+        <div class="scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>Option</th>
+                <th>Packages</th>
+                <th>Shim to maintain</th>
+                <th>Reflection-free</th>
+                <th>Reach for it when&hellip;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Built-in MS DI</strong></td>
+                <td><code>Microsoft.Extensions.DependencyInjection</code></td>
+                <td class="yes">none</td>
+                <td class="no">no</td>
+                <td>Now. It is the default for a reason.</td>
+              </tr>
+              <tr>
+                <td><strong>LightInject</strong></td>
+                <td><code>LightInject</code> + <code>.Microsoft.DependencyInjection</code></td>
+                <td class="yes">none</td>
+                <td class="no">no</td>
+                <td>You want decorators, <code>Func&lt;T&gt;</code> or assembly scanning.</td>
+              </tr>
+              <tr>
+                <td><strong>DryIoc / Stashbox</strong></td>
+                <td>container + <code>.Microsoft.DependencyInjection</code></td>
+                <td class="yes">none</td>
+                <td class="no">no</td>
+                <td>Resolution throughput becomes a measured problem. It won't.</td>
+              </tr>
+              <tr>
+                <td><strong>Autofac</strong></td>
+                <td><code>Autofac</code> + <code>Autofac.Extensions.DependencyInjection</code></td>
+                <td class="yes">none</td>
+                <td class="no">no</td>
+                <td>You want modules and the deepest docs, and don't mind the weight.</td>
+              </tr>
+              <tr>
+                <td><strong>Pure.DI</strong></td>
+                <td><code>Pure.DI</code> + <code>Pure.DI.MS</code></td>
+                <td>attribute-based registration</td>
+                <td class="yes">yes</td>
+                <td>NativeAOT becomes a goal.</td>
+              </tr>
+              <tr>
+                <td><strong>Jab</strong></td>
+                <td><code>Jab</code></td>
+                <td>replaces the abstraction, doesn't implement it</td>
+                <td class="yes">yes</td>
+                <td>You drop the abstraction entirely.</td>
+              </tr>
+              <tr>
+                <td><strong>Hand-rolled</strong></td>
+                <td><code>LightInject</code></td>
+                <td class="no">~693 lines, forever</td>
+                <td class="no">no</td>
+                <td>Never.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="shim">
+        <h2>The shim, sized</h2>
+
+        <p>
+          You asked how much you would have to keep alive if you wired LightInject to the abstraction yourself.
+          The maintained adapter is a single source file:
+        </p>
+
+        <div class="stat">
+          <b>693</b>
+          <span>lines in <code>LightInject.Microsoft.DependencyInjection.cs</code> &mdash; the whole adapter,
+          including keyed-service and annotated-constructor support.</span>
+        </div>
+
+        <p>These are the contracts it has to satisfy:</p>
+
+        <ul class="chips">
+          <li>IServiceProvider</li>
+          <li>ISupportRequiredService</li>
+          <li>IKeyedServiceProvider</li>
+          <li>IServiceProviderIsKeyedService</li>
+          <li>IServiceScope</li>
+          <li>IServiceScopeFactory</li>
+          <li>IServiceProviderFactory&lt;IServiceContainer&gt;</li>
+          <li>IDisposable</li>
+          <li>IAsyncDisposable</li>
+          <li>ILifetime</li>
+          <li>ICloneableLifeTime</li>
+        </ul>
+
+        <p>
+          Plus the translation of every <code>ServiceDescriptor</code> across the full matrix &mdash;
+          type&nbsp;&times;&nbsp;instance&nbsp;&times;&nbsp;factory, against
+          singleton&nbsp;&times;&nbsp;scoped&nbsp;&times;&nbsp;transient, each with a keyed variant.
+        </p>
+
+        <p>The plumbing is not the hard part. These four are:</p>
+
+        <div class="findings">
+          <div class="finding">
+            <span class="tag bug">Ordering</span>
+            <div class="finding-body">
+              <p>
+                Registering <code>IFoo</code> twice means <code>GetService&lt;IFoo&gt;()</code> must return the
+                <em>last</em> registration, while <code>GetServices&lt;IFoo&gt;()</code> must return
+                <em>all</em> of them in <em>registration</em> order. Most containers natively do neither.
+              </p>
+            </div>
+          </div>
+          <div class="finding">
+            <span class="tag bug">Open generics</span>
+            <div class="finding-body">
+              <p>
+                <code>typeof(ILogger&lt;&gt;)</code> registered once must resolve
+                <code>ILogger&lt;Device&gt;</code> on demand, and must still obey the ordering rule above.
+              </p>
+            </div>
+          </div>
+          <div class="finding">
+            <span class="tag bug">Scope ownership</span>
+            <div class="finding-body">
+              <p>
+                Transient <code>IDisposable</code>s are tracked by the scope that <em>resolved</em> them, not the
+                one that registered them, and released when that scope dies. Getting this wrong is a leak that
+                only shows up under load.
+              </p>
+            </div>
+          </div>
+          <div class="finding">
+            <span class="tag bug">Disposal order</span>
+            <div class="finding-body">
+              <p>
+                Reverse creation order, and <code>DisposeAsync</code> preferred over <code>Dispose</code> where
+                both exist. For GPU objects, getting this backwards is a crash on shutdown, not a warning.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="disposal">
+        <h2>What actually matters here</h2>
+
+        <p>
+          &ldquo;Everything is an app-lifetime singleton&rdquo; means the features you would normally shop for
+          &mdash; scoping, per-request lifetimes, captive-dependency validation &mdash; are close to irrelevant.
+          What is <em>not</em> irrelevant, for <code>Device</code> and <code>SwapChain</code>, is disposal. Two
+          rules bite, and they bite identically on every option above.
+        </p>
+
+        <div class="split">
+          <div class="panel now">
+            <span class="who">Trap 1</span>
+            <h3>Reverse <em>creation</em> order, not registration order</h3>
+            <p>
+              Creation order is driven by resolution, not by the order you called <code>AddSingleton</code>. A
+              lazily-touched <code>Device</code> can end up constructed <em>after</em> something that depends on
+              it, and therefore disposed <em>before</em> it.
+            </p>
+            <p>
+              For GPU resources, don't lean on container disposal at all. Keep an explicit shutdown sequence and
+              let the container own the lifetime, not the teardown order.
+            </p>
+          </div>
+          <div class="panel next">
+            <span class="who">Trap 2</span>
+            <h3>The container never disposes what it did not create</h3>
+            <p>
+              Straight from the .NET guidelines: for an instance registration, &ldquo;the framework does
+              <strong>not</strong> dispose of the services automatically. The developer is responsible for
+              disposing the services.&rdquo;
+            </p>
+            <p>
+              So the instance overload silently leaks native handles. Use the factory overload if you want the
+              container to own cleanup.
+            </p>
+          </div>
+        </div>
+
+        <p class="code-label">Not disposed by the container</p>
+<pre class="bad"><code>services.AddSingleton(<span class="key">new</span> Device(adapter));  <span class="cmt">// you own Dispose()</span></code></pre>
+
+        <p class="code-label">Disposed by the container</p>
+<pre class="good"><code>services.AddSingleton&lt;Device&gt;(sp =&gt; <span class="key">new</span> Device(adapter));</code></pre>
+
+        <p class="caveat">
+          Related, and cheap to turn on either way: build with <code>ValidateOnBuild</code> and
+          <code>ValidateScopes</code> so a mis-wired graph fails at startup naming the offending service, rather
+          than at first resolve three frames into a render loop.
+        </p>
+      </section>
+
+      <section id="path">
+        <h2>Recommended path</h2>
+
+        <ol class="stages">
+          <li class="stage">
+            <span class="stage-num">01</span>
+            <div class="stage-body">
+              <span class="stage-meta">now &middot; one package</span>
+              <h3>Add <code>Microsoft.Extensions.DependencyInjection</code> to CapriKit.Tests.Tool</h3>
+              <p>
+                Same version line as the abstractions you already pin. Wire the composition root by hand, use the
+                factory overload for anything holding a native handle, and keep an explicit shutdown sequence for
+                the graphics objects.
+              </p>
+            </div>
+          </li>
+          <li class="stage">
+            <span class="stage-num">02</span>
+            <div class="stage-body">
+              <span class="stage-meta">when the registrations get repetitive</span>
+              <h3>Swap in LightInject</h3>
+              <p>
+                One line changes at the composition root, because everything downstream only ever saw
+                <code>IServiceProvider</code>. That is the whole payoff of coding against the abstraction &mdash;
+                and it is why this decision is genuinely low-stakes today.
+              </p>
+            </div>
+          </li>
+          <li class="stage">
+            <span class="stage-num">03</span>
+            <div class="stage-body">
+              <span class="stage-meta">only if NativeAOT becomes a goal</span>
+              <h3>Re-evaluate Pure.DI</h3>
+              <p>
+                At that point the abstraction itself is the thing in the way, and the trade shifts from
+                &ldquo;which container&rdquo; to &ldquo;runtime graph or generated code&rdquo;. A different
+                question, worth its own note.
+              </p>
+            </div>
+          </li>
+        </ol>
+      </section>
+
+      <footer>
+        Conversation with Claude Opus 5, 2026-09-08. Package versions and download counts current as of that date.
+        <ul class="sources">
+          <li><a href="https://github.com/seesharper/LightInject.Microsoft.DependencyInjection">github.com/seesharper/LightInject.Microsoft.DependencyInjection</a></li>
+          <li><a href="https://www.nuget.org/packages/LightInject.Microsoft.DependencyInjection">nuget.org/packages/LightInject.Microsoft.DependencyInjection</a></li>
+          <li><a href="https://www.lightinject.net/microsoft.dependencyinjection/">lightinject.net/microsoft.dependencyinjection</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection/guidelines">learn.microsoft.com &mdash; Dependency injection guidelines</a></li>
+          <li><a href="https://github.com/pakrym/jab">github.com/pakrym/jab</a></li>
+          <li><a href="https://github.com/DevTeam/Pure.DI">github.com/DevTeam/Pure.DI</a></li>
+          <li><a href="https://github.com/autofac/Autofac.Extensions.DependencyInjection">github.com/autofac/Autofac.Extensions.DependencyInjection</a></li>
+          <li><a href="https://github.com/z4kn4fein/stashbox-extensions-dependencyinjection">github.com/z4kn4fein/stashbox-extensions-dependencyinjection</a></li>
+        </ul>
+      </footer>
+
+    </main>
+  </div>
+</div>

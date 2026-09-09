@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 namespace CapriKit.AssetPipeline;
 
-// For Microsoft.Extensions.DependencyInjection.Abstractions
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAssetPipeline(this IServiceCollection services, DirectoryPath assetDirectory, DirectoryPath outputDirectory)

@@ -19,9 +19,8 @@ public partial class Program
     [STAThread]
     static void Main()
     {
-#if DEBUG // Ensure writes to console are redirected to Visual Studio
-        //Console.SetOut(new DebugOutputTextWriter());
-#endif
+        new Bootstrapper().Run();
+        return;
         Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(0, 0, 1280, 1024, WindowOrigin.CenterOffset, WindowMeasure.ClientArea));
         using var gameLoop = new GameLoop();
         gameLoop.Run();
