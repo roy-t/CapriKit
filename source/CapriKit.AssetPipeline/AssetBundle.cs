@@ -108,6 +108,9 @@ public abstract class AssetBundle : IDisposable
     /// <summary>The number of assets that arrived, whether they loaded successfully or failed.</summary>
     public int Loaded => Received.Count;
 
+    /// <summary>True if all assets requested by this bundle have been received.</summary>
+    public bool LoadingComplete => Total == Loaded;
+
     /// <summary>
     /// The asset that arrived most recently, meant to put a name on a loading screen rather than to report
     /// the exact order in which assets finished. Null until the first asset arrives.

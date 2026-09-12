@@ -16,6 +16,16 @@ internal sealed record ShaderTestBundle(IVertexShader VertexShader, IPixelShader
 
 internal sealed class ShaderTest : ITestScreen
 {
+    public static ITestFactory CreateFactory(AssetManager assetManager)
+    {
+        var builder = new AssetBundleBuilder<ShaderTestBundle>(assetManager);
+        var vs = builder.Request<IVertexShader>(new AssetId(BasicShader.Path, BasicShader.Vs));
+        var ps = builder.Request<IPixelShader>(new AssetId(BasicShader.Path, BasicShader.Ps));
+        var bundle = builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
+        return new TestFactory<ShaderTest, ShaderTestBundle>(bundle);
+    }
+
+
     private readonly IVertexShader VertexShader;
     private readonly IPixelShader PixelShader;
     private readonly IInputLayout InputLayout;

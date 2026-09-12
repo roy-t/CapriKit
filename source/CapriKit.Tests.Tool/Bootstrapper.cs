@@ -1,48 +1,67 @@
 using CapriKit.AssetPipeline;
 using CapriKit.DirectX11;
-using CapriKit.IO;
+using CapriKit.DirectX11.Debug;
+using CapriKit.Tests.Tool.Tests;
 using CapriKit.Win32;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace CapriKit.Tests.Tool;
 
 internal sealed class Bootstrapper
 {
-    public void Run()
+    private readonly Device Device;
+    private readonly SwapChain SwapChain;
+    private readonly ImGuiController Gui;
+    private readonly AssetManager AssetManager;
+    private readonly List<AssetBundle> Bundles;
+
+    public Bootstrapper(Device device, SwapChain swapChain, ImGuiController gui, AssetManager assetManager)
     {
-        Win32Application.Initialize("CapriKit.Tests.Tool", new WindowCreationOptions(0, 0, 1280, 1024, WindowOrigin.CenterOffset, WindowMeasure.ClientArea));
-
-        var services = new ServiceCollection();
-        services.AddLogging(b => b.AddDebug());
-        services.AddLogging(b => b.AddConsole());
-        services.AddSingleton(Win32Application.Window);
-        services.AddSingleton(Win32Application.Keyboard);
-        services.AddSingleton(Win32Application.Mouse);
-
-        services.AddSingleton<Device>();
-        services.AddSingleton<SwapChain>();
-        
-        services.AddAssetPipeline(CLA("--content-input"), CLA("--content-output"));
-        services.AddSingleton<GameLoop>();
-
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
-        {
-            ValidateOnBuild = true,
-            ValidateScopes = true
-        });
-
-        var loop = provider.GetRequiredService<GameLoop>();
-
+        Device = device;
+        SwapChain = swapChain;
+        Gui = gui;
+        AssetManager = assetManager;
+        ShaderTestBundle = ShaderTest.LoadBundle(assetManager);
+        Bundles = [ShaderTestBundle];
     }
 
-    private class GameLoop(Device Device, SwapChain SwapChain) { }
+    public AssetBundle<ShaderTestBundle> ShaderTestBundle { get; }
 
-
-    // Retrieves a required command line argument, or throws if it is missing
-    private static string CLA(string argument)
+    // TODO: convert to a proper frame loop with Update and Render steps
+    // that take care of most of the boilerplate so that the loading screen
+    // and later game loop just handle the relevant drawing/updates.
+    public void Run()
     {
-        if (!CommandLineArguments.IsPresent(argument)) { throw new Exception($"Missing required command line argument {argument}"); }
-        return CommandLineArguments.GetArgumentValue(argument);
+        var running = true;
+        var elapsed = TimeSpan.FromSeconds(1.0 / 60.0);
+        var timestamp = Stopwatch.GetTimestamp();
+
+        while (running)
+        {
+            var context = Device.ImmediateDeviceContext;
+
+            Gui.NewFrame((float)elapsed.TotalSeconds);
+            SwapChain.Clear(context);
+            context.OM.SetRenderTargetToBackBuffer(SwapChain);
+            context.RS.SetViewport(SwapChain.Viewport);
+            context.RS.SetScissorRect(SwapChain.Viewport);
+
+            AssetManager.Update();
+
+            Gui.Render(context);
+            context.OM.UnsetRenderTargets();
+            SwapChain.Present();
+
+            running &= Win32Application.PumpMessages();
+
+            elapsed = Stopwatch.GetElapsedTime(timestamp);
+            timestamp = Stopwatch.GetTimestamp();
+
+
+            if (Bundles.All(b => b.LoadingComplete))
+            {
+                return;
+            }
+        }
     }
 }

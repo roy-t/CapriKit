@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>$(TargetFramework)-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
+    <StartupObject>CapriKit.Tests.Tool.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>

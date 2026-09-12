@@ -3,12 +3,10 @@
     "CapriKit.Tests.Tool": {
       "commandName": "Project",
       "commandLineArgs": "--content-input \"$(ProjectDir)Assets\"\r\n--content-output \"$(TargetDir)Assets\"",
-      "nativeDebugging": true
     },
     "CapriKit.Tests.Tool --RenderDoc": {
       "commandName": "Project",
       "commandLineArgs": "--renderdoc\r\n--content-input \"$(ProjectDir)Assets\"\r\n--content-output \"$(TargetDir)Assets\"",
-      "nativeDebugging": true
     }
   }
 }
