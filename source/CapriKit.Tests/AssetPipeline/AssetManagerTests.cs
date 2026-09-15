@@ -321,7 +321,7 @@ internal class AssetManagerTests
 
         var logger = new CapturingLoggerFactory();
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
+        var assetManager = new AssetManager(logger, input, output, [transcoder]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
