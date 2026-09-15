@@ -24,8 +24,6 @@ internal sealed class ShaderTest : ITestScreen
         var bundle = builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
         return new TestFactory<ShaderTest, ShaderTestBundle>("Shader Test", bundle);
     }
-
-
     private readonly IVertexShader VertexShader;
     private readonly IPixelShader PixelShader;
     private readonly IInputLayout InputLayout;

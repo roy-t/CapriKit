@@ -13,6 +13,30 @@ internal interface ITestFactory : IDisposable
     public AssetId? LastCompletedItem { get; }
 }
 
+internal sealed class TestFactory<TTest>(string name) : ITestFactory
+    where TTest : ITestScreen
+{
+    private static readonly ObjectFactory<TTest> Activate =
+      ActivatorUtilities.CreateFactory<TTest>([]);
+
+    private bool created;
+    public string Name { get; } = name;
+    public int Total => 1;
+    public int Loaded => 1;
+    public AssetId? LastCompletedItem { get; }
+
+    public bool TryCreate(IServiceProvider provider, List<ITestScreen> tests)
+    {
+        if (created) { return true; }
+        var instance = Activate(provider, []);
+        tests.Add(instance);
+        created = true;
+        return created;
+    }
+
+    public void Dispose() { }
+}
+
 internal sealed class TestFactory<TTest, TBundle> : ITestFactory
     where TTest : ITestScreen
     where TBundle : class

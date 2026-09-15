@@ -4,7 +4,6 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.IO;
 using CapriKit.Tests.Tool.Tests;
-using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -31,6 +30,7 @@ internal sealed class Program
 
         services.AddSingleton<GameLoop>();
         services.AddSingleton<LoadingScene>();
+        services.AddSingleton<MainScene>();
         AddTestFactories(services);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -40,7 +40,7 @@ internal sealed class Program
         });
 
         var gameLoop = provider.GetRequiredService<GameLoop>();
-        gameLoop.Scene = provider.GetRequiredService<LoadingScene>();
+        gameLoop.ChangeScene(provider.GetRequiredService<LoadingScene>());
         gameLoop.Run();
 
         UnloadRenderDoc(provider);
@@ -48,7 +48,8 @@ internal sealed class Program
 
     private static void AddTestFactories(ServiceCollection services)
     {
-        services.AddSingleton<ITestFactory>(provider => ShaderTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
+        services.AddSingleton(provider => ShaderTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
+        services.AddSingleton(_ => WindowStatesTest.CreateFactory());
     }
 
     private static void LoadRenderDoc(ServiceCollection services)
