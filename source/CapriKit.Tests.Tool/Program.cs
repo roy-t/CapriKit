@@ -25,12 +25,12 @@ internal sealed class Program
         services.AddSingleton(Win32Application.Window);
         services.AddSingleton(Win32Application.Keyboard);
         services.AddSingleton(Win32Application.Mouse);
-
         services.AddDirectX11();
         services.AddAssetPipeline(GetArg("--content-input"), GetArg("--content-output"));
         services.AddDirectX11AssetTranscoders();
 
         services.AddSingleton<GameLoop>();
+        services.AddSingleton<LoadingScene>();
         AddTestFactories(services);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
@@ -40,7 +40,7 @@ internal sealed class Program
         });
 
         var gameLoop = provider.GetRequiredService<GameLoop>();
-        gameLoop.Scene = new LoadingScene();
+        gameLoop.Scene = provider.GetRequiredService<LoadingScene>();
         gameLoop.Run();
 
         UnloadRenderDoc(provider);

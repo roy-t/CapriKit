@@ -2,7 +2,6 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Contexts.States;
 using CapriKit.DirectX11.Debug;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;

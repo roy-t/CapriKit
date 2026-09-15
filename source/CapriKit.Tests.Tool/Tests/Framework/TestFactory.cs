@@ -1,6 +1,5 @@
 using CapriKit.AssetPipeline;
 using Microsoft.Extensions.DependencyInjection;
-using System.Reflection.Metadata;
 
 namespace CapriKit.Tests.Tool.Tests.Framework;
 
@@ -52,27 +51,5 @@ internal sealed class TestFactory<TTest, TBundle> : ITestFactory
     public void Dispose()
     {
         Bundle.Dispose();
-    }
-}
-
-internal sealed class ShaderTestFactory
-{
-
-
-    private readonly AssetBundle<ShaderTestBundle> Bundle;
-
-    public bool Resolve(IServiceProvider provider, List<ITestScreen> screens)
-    {
-        ObjectFactory <
-
-
-        if (Bundle.IsReady(out var contents))
-        {
-            var test = ActivatorUtilities.CreateInstance<ShaderTest>(provider, contents);
-            screens.Add(test);
-            return true;
-        }
-
-        return false;
     }
 }

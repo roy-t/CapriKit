@@ -31,7 +31,7 @@ public sealed partial class AssetManager : IDisposable
     // to unload instead of only reporting that some number of assets was left behind.
     private readonly Dictionary<AssetBundle, Registration> LiveRequesters;
 
-    public AssetManager(ILoggerFactory logger, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem)
+    public AssetManager(ILoggerFactory logger, ReadOnlyScopedFileSystem inputFileSystem, ScopedFileSystem outputFileSystem, IEnumerable<IAssetTranscoder> transcoders)
     {
         Logger = logger.CreateLogger<AssetManager>();
         InputFileSystem = inputFileSystem;
@@ -43,6 +43,8 @@ public sealed partial class AssetManager : IDisposable
         RequestLock = new();
         Outstanding = [];
 
+        foreach (var transcoder in transcoders) { RegisterTranscoder(transcoder); }
+
         // Requesters are identified by who they are, never by what they consider equal to themselves.
         LiveRequesters = new(ReferenceEqualityComparer.Instance);
     }
@@ -52,10 +54,9 @@ public sealed partial class AssetManager : IDisposable
     /// that was already assigned a transcoder throws an exception.
     /// Threading: thread-safe, multiple threads can register transcoders at the same time.
     /// </summary>
-    public void RegisterTranscoder<TAsset, TSettings>(IAssetTranscoder<TAsset, TSettings> transcoder)
-        where TAsset : class
+    private void RegisterTranscoder(IAssetTranscoder transcoder)
     {
-        var key = typeof(TAsset);
+        var key = transcoder.AssetType;
         var original = Transcoders.GetOrAdd(key, transcoder);
         if (original != transcoder)
         {

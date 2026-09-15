@@ -1,21 +1,45 @@
+using CapriKit.AssetPipeline;
 using CapriKit.Tests.Tool.Tests.Framework;
 using ImGuiNET;
 using System.Numerics;
 
 namespace CapriKit.Tests.Tool;
 
-internal sealed class LoadingScene : IScene
+internal sealed class LoadingScene : IScene, IDisposable
 {
     private readonly IEnumerable<ITestFactory> Factories;
+    private readonly HashSet<AssetId> Seen;
+    private string log;
 
     public LoadingScene(IEnumerable<ITestFactory> factories)
     {
         Factories = factories;
+        Seen = [];
+        log = string.Empty;
     }
 
     private void CheckProgress()
     {
-        // TODO: look at each TestFactory, update progress, change scene when completed
+        var total = 0;
+        var loaded = 0;
+        AssetId? lastCompletedItem = null;
+        foreach (var factory in Factories)
+        {
+            total += factory.Total;
+            loaded += factory.Loaded;
+            var candidate = factory.LastCompletedItem;
+            if (candidate != null && !Seen.Contains(candidate))
+            {
+                Seen.Add(candidate);
+                log += $"{candidate}" + Environment.NewLine;
+            }
+        }
+
+        Progress = loaded / (float)total;
+        if (lastCompletedItem != null)
+        {
+            Status = $"Loading... {lastCompletedItem}";
+        }
     }
 
 
@@ -30,11 +54,13 @@ internal sealed class LoadingScene : IScene
         ImGuiWindowFlags.NoNavInputs;
 
 
-    public float Progress { get; set; } = -0.123f;
+    public float Progress { get; set; } = 0.0f;
     public string Status { get; set; } = "Loading...";
 
     public void Update(float elapsed)
     {
+        CheckProgress();
+
         var viewport = ImGui.GetMainViewport();
         ImGui.SetNextWindowPos(viewport.Pos);
         ImGui.SetNextWindowSize(viewport.Size);
@@ -44,7 +70,7 @@ internal sealed class LoadingScene : IScene
         ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
         ImGui.PushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
 
-        if (ImGui.Begin("##loadingscreen", Flags))
+        if (ImGui.Begin("##loading", Flags))
         {
             var area = ImGui.GetContentRegionAvail();
             var bar = new Vector2(BarWidth, BarHeight);
@@ -55,8 +81,8 @@ internal sealed class LoadingScene : IScene
             var top = (area.Y - blockHeight) * 0.5f;
 
             ImGui.SetCursorPos(new Vector2((area.X - bar.X) * 0.5f, top));
-            //ImGui.ProgressBar(Progress, bar, string.Empty); // empty overlay: suppresses the built-in "42%" text
-            ImGui.ProgressBar(-1.0f * (float)ImGui.GetTime(), bar, string.Empty);
+            ImGui.ProgressBar(Progress, bar, string.Empty); // empty overlay: suppresses the built-in "42%" text
+            //ImGui.ProgressBar(-1.0f * (float)ImGui.GetTime(), bar, string.Empty);
 
             ImGui.SetCursorPosX((area.X - label.X) * 0.5f);
             ImGui.TextUnformatted(Status);
@@ -64,5 +90,10 @@ internal sealed class LoadingScene : IScene
         ImGui.End();
 
         ImGui.PopStyleVar(3);
+    }
+
+    public void Dispose()
+    {
+
     }
 }

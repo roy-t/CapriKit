@@ -22,7 +22,7 @@ internal sealed class ShaderTest : ITestScreen
         var vs = builder.Request<IVertexShader>(new AssetId(BasicShader.Path, BasicShader.Vs));
         var ps = builder.Request<IPixelShader>(new AssetId(BasicShader.Path, BasicShader.Ps));
         var bundle = builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
-        return new TestFactory<ShaderTest, ShaderTestBundle>(bundle);
+        return new TestFactory<ShaderTest, ShaderTestBundle>("Shader Test", bundle);
     }
 
 

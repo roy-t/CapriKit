@@ -11,12 +11,18 @@ public interface IAssetTranscoder
 {
     Guid Id { get; }
     int Version { get; }
+    Type AssetType { get; }
 }
 
 /// <inheritdoc cref="IAssetTranscoder"/>
 public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder
     where TAsset : class
 {
+    /// <summary>
+    /// The type the transcoder produces
+    /// </summary>
+    Type IAssetTranscoder.AssetType => typeof(TAsset);
+
     /// <summary>
     /// Loads the raw asset data from the file system and build/encodes it into a format optimized for loading.
     /// Threading: thread-safe, encoding happens asynchronously and can happen on any thread.
@@ -36,7 +42,6 @@ public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder
     /// it can happen as part of a multi-threaded or async operation.
     /// </summary>
     public void WriteSettings(TSettings settings, IBufferWriter<byte> writer);
-
 
     /// <summary>
     /// Decodes the settings required to encode/decode the asset into the stream.

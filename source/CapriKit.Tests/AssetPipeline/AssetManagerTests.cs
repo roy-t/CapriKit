@@ -43,11 +43,7 @@ internal class AssetManagerTests
         var input = new FileSystem().ScopedToReadOnly(WorkingDirectory.Append([InputDirectory]));
         var output = new FileSystem().ScopedTo(WorkingDirectory.Append([OutputDirectory]));
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-
-        var transcoder = new TextTranscoder();
-        assetManager.RegisterTranscoder(transcoder);
-
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [new TextTranscoder()]);
         var id = new AssetId(AssetFile);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -97,8 +93,7 @@ internal class AssetManagerTests
         var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
         await input.WriteAllText(AssetFile, TranscoderText);
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(new TextTranscoder());
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [new TextTranscoder()]);
 
         var id = new AssetId(AssetFile);
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -132,8 +127,7 @@ internal class AssetManagerTests
         var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
         await input.WriteAllText(AssetFile, TranscoderText);
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(new TextTranscoder());
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [new TextTranscoder()]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -172,8 +166,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var id = new AssetId(AssetFile);
 
@@ -223,8 +216,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -259,8 +251,7 @@ internal class AssetManagerTests
         var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
         await input.WriteAllText(AssetFile, TranscoderText);
 
-        using var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(new TextTranscoder());
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [new TextTranscoder()]);
 
         var id = new AssetId(AssetFile);
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
@@ -280,8 +271,7 @@ internal class AssetManagerTests
         var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
         await input.WriteAllText(AssetFile, TranscoderText);
 
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(new TrackingTextTranscoder());
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [new TextTranscoder()]);
 
         var id = new AssetId(AssetFile);
 
@@ -330,8 +320,8 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var logger = new CapturingLoggerFactory();
-        var assetManager = new AssetManager(logger, input, output);
-        assetManager.RegisterTranscoder(new TrackingTextTranscoder());
+        var transcoder = new TrackingTextTranscoder();
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -369,8 +359,7 @@ internal class AssetManagerTests
         // Deliberately not a `using`: AssetPool.Dispose throws when leases are outstanding, and an exception
         // from a dispose during unwinding replaces the assertion that actually failed. Disposing at the end
         // keeps the leak check but lets a real failure report itself.
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var id = new AssetId(AssetFile);
 
@@ -457,7 +446,7 @@ internal class AssetManagerTests
         var (input, output) = FileSystemUtilities.CreateInMemoryAssetFileSystems();
         await input.WriteAllText(AssetFile, TranscoderText);
 
-        using var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
+        using var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, []);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -478,8 +467,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TranscoderThatCanFail();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -529,8 +517,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TranscoderThatCanFail { ShouldFail = true };
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var builder = new AssetBundleBuilder<TestBundle>(assetManager);
         var handle = builder.Request<TextAsset>(new AssetId(AssetFile));
@@ -569,8 +556,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var id = new AssetId(AssetFile);
 
@@ -612,8 +598,7 @@ internal class AssetManagerTests
         await input.WriteAllText(AssetFile, TranscoderText);
 
         var transcoder = new TrackingTextTranscoder();
-        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output);
-        assetManager.RegisterTranscoder(transcoder);
+        var assetManager = new AssetManager(NullLoggerFactory.Instance, input, output, [transcoder]);
 
         var id = new AssetId(AssetFile);
 
