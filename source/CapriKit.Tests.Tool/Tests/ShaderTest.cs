@@ -13,7 +13,6 @@ namespace CapriKit.Tests.Tool.Tests;
 
 internal sealed record ShaderTestBundle(IVertexShader VertexShader, IPixelShader PixelShader);
 
-
 internal sealed class ShaderTest : ITestScreen
 {
     public static ITestFactory CreateFactory(AssetManager assetManager)
@@ -52,14 +51,6 @@ internal sealed class ShaderTest : ITestScreen
         ];
 
         isDirty = true;
-    }
-
-    public static AssetBundle<ShaderTestBundle> LoadBundle(AssetManager assetManager)
-    {
-        var builder = new AssetBundleBuilder<ShaderTestBundle>(assetManager);
-        var vs = builder.Request<IVertexShader>(new AssetId(BasicShader.Path, BasicShader.Vs));
-        var ps = builder.Request<IPixelShader>(new AssetId(BasicShader.Path, BasicShader.Ps));
-        return builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
     }
 
     public string Title => "Basic Shader";

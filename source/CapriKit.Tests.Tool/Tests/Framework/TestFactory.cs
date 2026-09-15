@@ -21,8 +21,8 @@ internal sealed class TestFactory<TTest>(string name) : ITestFactory
 
     private bool created;
     public string Name { get; } = name;
-    public int Total => 1;
-    public int Loaded => 1;
+    public int Total => 0;
+    public int Loaded => 0;
     public AssetId? LastCompletedItem { get; }
 
     public bool TryCreate(IServiceProvider provider, List<ITestScreen> tests)

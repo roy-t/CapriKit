@@ -40,7 +40,8 @@ internal sealed class Program
         });
 
         var gameLoop = provider.GetRequiredService<GameLoop>();
-        gameLoop.ChangeScene(provider.GetRequiredService<LoadingScene>());
+        var scene = provider.GetRequiredService<LoadingScene>();
+        gameLoop.ChangeScene(scene);
         gameLoop.Run();
 
         UnloadRenderDoc(provider);
