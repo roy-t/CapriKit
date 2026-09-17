@@ -7,6 +7,10 @@ param(
 )
 
 $blender = $env:BLENDER_PATH ?? 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe'
+if (-not (Test-Path $blender -PathType Leaf)) {
+    "Blender not found at '$blender'. Set BLENDER_PATH or update the default path in this script and in .mcp.json."
+    exit 1
+}
 
 function Get-Listener {
     Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -37,3 +41,4 @@ while (-not (Get-Listener)) {
 }
 
 "Blender (PID $($process.Id)) MCP bridge is listening on port $Port."
+exit 0
