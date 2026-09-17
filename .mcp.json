@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "blender": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--directory", "external/blender_mcp/mcp", "blender-mcp"],
+      "env": {
+        "BLENDER_PATH": "${BLENDER_PATH:-C:\\Program Files\\Blender Foundation\\Blender 5.2\\blender.exe}"
+      }
+    }
+  }
+}

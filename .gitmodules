@@ -2,3 +2,7 @@
 	path = external/basis_universal
 	url = https://github.com/BinomialLLC/basis_universal.git
 	ignore = untracked
+[submodule "external/blender_mcp"]
+	path = external/blender_mcp
+	url = https://projects.blender.org/lab/blender_mcp.git
+	ignore = untracked
