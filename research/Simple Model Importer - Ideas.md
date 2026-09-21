@@ -1,5 +1,8 @@
 # Simple Model Importer - Ideas
 
+TODO: research https://doc.kaitai.io/user_guide.html
+
+
 I want to create a model exporter in Blender (Python) and importer (C#, in a new CapriKit project). Let's first look at what the Blender scene contains. 
 
 In Blender there are collections. I want the exporter to export every collection that matches a prefix. For example given `Container.1TUE` should export the collection `Container.1TUE` and any other collections with the same prefix like `Container.1TUE.LOD1` or `Container.1TUE.LOD2`. So one file contains multiple (related) models. The data is exported as arrays per data type. Which look a little bit like an enhanced version of a combined .obj+.mtl file.
