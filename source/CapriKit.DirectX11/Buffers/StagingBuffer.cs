@@ -6,7 +6,7 @@ namespace CapriKit.DirectX11.Buffers;
 
 /// <summary>
 /// Used to read back data from GPU buffers by first copying them to a buffer that is CPU readable.
-/// TODO: Figure out what we need to do to also read back texture data. Can we just read that directy if mapped?
+/// TODO: Figure out what we need to do to also read back texture data. Can we just read that directly if mapped?
 /// </summary>
 public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
     where T : unmanaged
@@ -31,7 +31,7 @@ public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
     public void CopyResourceToStagingBuffer(DeviceContext context, DeviceBuffer<T> source)
     {
         // TODO: this method should later get overloads for other resources, like render targets/textures.
-        EnsureCapacity(source.Length);
+        SetCapacity(source.Capacity); // match full buffer otherwise copying fails because dimensions mismatch!
         context.ID3D11DeviceContext.CopyResource(nativeBuffer, source.nativeBuffer);
     }
 

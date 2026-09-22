@@ -1,16 +1,10 @@
+using CapriKit.DirectX11;
+using CapriKit.DirectX11.Buffers;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Vortice.Mathematics;
 
 namespace CapriKit.AssetPipeline.DirectX11.Models;
-
-// TODO: what about names of individual meshes?
-// TODO: define that Y is up is assumed
-// TODO: header is not blittaable, maybe just take 8 magic bytes?
-// TODO: require/validate that exporter dedubed vertices
-// TODO: validate invariants like (indices.Length == Triangles.Length *3)
-// TODO: 16 bit or 32 bit indices support
-// TODO: Blender: applied modifiers, split corner (corner_normals), make material indexes global, scene unit == 1.0 (1meter)
-
 
 /// <summary>
 /// Material properties.
@@ -20,7 +14,7 @@ namespace CapriKit.AssetPipeline.DirectX11.Models;
 /// <param name="Roughness">Roughness in [0..1].</param>
 /// <param name="EmissionColor">Emission color in linear space.</param>
 /// <param name="EmissionStrength">Strength of the emitted light in arbitrary units [0..inf).</param>
-public readonly record struct SMaterial(Color3 BaseColor, float Metallic, float Roughness, Color3 EmissionColor, float EmissionStrength);
+public readonly record struct CKTMaterial(Color3 BaseColor, float Metallic, float Roughness, Color3 EmissionColor, float EmissionStrength);
 
 /// <summary>
 /// An individual mesh in a model, representing a specific and unique LOD.
@@ -29,44 +23,61 @@ public readonly record struct SMaterial(Color3 BaseColor, float Metallic, float 
 /// <param name="VertexCount">Number of vertices in this mesh.</param>
 /// <param name="IndexOffset">Offset to the first index of this mesh in the indices array.</param>
 /// <param name="IndexCount">Number of indices in this mesh.</param>
-/// <param name="LOD">Level of detail from zero (0) most detailed to n (simplest).</param>
 /// <param name="BoundsMin"></param>
 /// <param name="BoundsMax"></param>
-public readonly record struct SMesh(int VertexOffset, int VertexCount, int IndexOffset, int IndexCount, int LOD, Vector3 BoundsMin, Vector3 BoundsMax);
+public readonly record struct CKTMesh(int VertexOffset, int VertexCount, int IndexOffset, int IndexCount, Vector3 BoundsMin, Vector3 BoundsMax);
 
 /// <summary>
 /// A vertex with a position and normal
 /// </summary>
 /// <param name="Position">Position in meters from an arbitrary origin</param>
 /// <param name="Normal">Normalized normal for lighting calculations</param>
-public readonly record struct SVertex(Vector3 Position, Vector3 Normal);
+public readonly record struct CKTVertex(Vector3 Position, Vector3 Normal);
 
 /// <summary>
 /// A triangle with an assigned material.
 /// </summary>
 /// <param name="MaterialIndex">Index into the materials array</param>
-public readonly record struct STriangle(int MaterialIndex);
+public readonly record struct CKTTriangle(int MaterialIndex);
 
-public readonly record struct Header(Guid FileType, int FileTypeVersion, string Name, int Materials, int Meshes, int Vertices, int Triangles);
-
-public sealed class BinaryModel
+/// <summary>
+/// Should always spell "CapriKit.Textureless.Model" for valid files.
+/// </summary>
+[InlineArray(26)]
+public struct FileTypeIdentifier
 {
+    public char[] Magic;
+}
+
+public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTypeVersion, string Name, int Materials, int Meshes, int Vertices, int Triangles);
+
+/// <summary>
+/// Data for a CapriKit Textureless Model. A 3D model with 1..n LODs where each triangle is assigned a material instead of a texture.
+/// Assumes:
+/// - Y is up
+/// - Units are in meters
+/// </summary>
+public sealed class CKTModelData
+{
+    public CKTHeader Header { get; }
+
     /// <summary>
-    /// All meshes in the model.
+    /// All meshes in the model. Each mesh represent a different Level-Of-Detail (LOD).
+    /// Meshes are ordered from highest to lowest detail.
     /// </summary>
-    private readonly SMesh[] Meshes;
+    public CKTMesh[] Meshes { get; }
 
     /// <summary>
     /// All materials in the model.
     /// </summary>
-    private readonly SMaterial[] Materials;
+    public CKTMaterial[] Materials { get; }
 
     /// <summary>
     /// The vertices. All the vertices that belong to one mesh are unique in the combined value of (Position, Normal).
     /// Multiple vertices with the same position but with a different normal can exist to facilitate sharp corners.
     /// Vertices is one contiguous array of all vertices of all meshes, but vertices are not shared between meshes.
     /// </summary>
-    private readonly SVertex[] Vertices;
+    public CKTVertex[] Vertices { get; }
 
     /// <summary>
     /// The indices that define triangles. Each triangle is defined by three indices.
@@ -74,11 +85,28 @@ public sealed class BinaryModel
     /// Index values are relative towards the first vertex that belongs to the model.
     /// Each triangle is defined by three indices, (no triangle fans or other tricks)
     /// </summary>
-    private readonly int[] Indices;
+    public uint[] Indices { get; }
 
     /// <summary>
     /// Provides extra information for each triangle. For every three indices there is exactly one entry in triangles.
     /// Indices at Indices[3], Indices[4], Indices[5] all refer to the triangle at Triangles[1].
     /// </summary>
-    private readonly STriangle[] Triangles;
+    public CKTTriangle[] Triangles { get; }
+}
+
+public sealed class CKTModel
+{
+    private readonly ImmutableStructuredBuffer<CKTMaterial> Materials;
+    private readonly ImmutableStructuredBuffer<CKTTriangle> Triangles;
+    private readonly ImmutableVertexBuffer<CKTVertex> Vertices;
+    private readonly ImmutableIndexBuffer<uint> Indices;
+
+    public CKTModel(Device device, CKTModelData data)
+    {
+        var name = data.Header.Name;
+        Materials = new ImmutableStructuredBuffer<CKTMaterial>(device, data.Materials, $"{name}_materials");
+        Triangles = new ImmutableStructuredBuffer<CKTTriangle>(device, data.Triangles, $"{name}_triangles");
+        Vertices = new ImmutableVertexBuffer<CKTVertex>(device, data.Vertices, $"{name}_vertices");
+        Indices = IndexBuffers.CreateU32Immutable(device, data.Indices, $"{name}_indices");
+    }
 }

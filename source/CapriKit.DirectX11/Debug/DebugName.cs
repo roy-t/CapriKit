@@ -7,11 +7,33 @@ internal static class DebugName
 {
     private static int NextSequenceId = 1;
 
+
+    public static string For<T>(string? hint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
+    {
+#if DEBUG
+        var type = typeof(T);
+        return For(type, hint, caller, callerFile);
+#else
+    return string.Empty;
+#endif
+    }
+
     public static string For(object instance, string? hint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
     {
 #if DEBUG
+        var type = instance.GetType();
+        return For(type, hint, caller, callerFile);
+#else
+    return string.Empty;
+#endif
+    }
+
+
+    private static string For(Type type, string? hint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
+    {
+#if DEBUG
         var id = Interlocked.Increment(ref NextSequenceId);
-        var typeName = instance.GetType().Name;
+        var typeName = type.Name;
         var builder = new StringBuilder();
 
         builder.Append(typeName);
@@ -43,6 +65,5 @@ internal static class DebugName
 #else
         return string.Empty;
 #endif
-
     }
 }

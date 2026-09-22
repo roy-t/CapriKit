@@ -5,21 +5,30 @@ namespace CapriKit.DirectX11.Buffers;
 // Marker interfaces to be able to add extension methods to device buffers. Buffers have different traits
 // so adding them via extension methods is easier than via a convoluted type hierarchy.
 
+
 /// <summary>
-/// A buffer that lives on the GPU device
+/// An immutable buffer that lives on the GPU device
 /// </summary>
-public interface IDeviceBuffer<T>
+public interface IImmutableDeviceBuffer<T>
     where T : unmanaged
 {
-    int Capacity { get; }
+    uint PrimitiveSizeInBytes { get; }
 
     int Length { get; }
 
     string Name { get; }
 
-    void EnsureCapacity(int primitiveCount, int reserveExtra = 0);
-
     internal ID3D11Buffer? ID3D11Buffer { get; }
+}
+
+/// <summary>
+/// A mutable buffer that lives on the GPU device
+/// </summary>
+public interface IDeviceBuffer<T> : IImmutableDeviceBuffer<T>
+    where T : unmanaged
+{
+    int Capacity { get; }
+    void EnsureCapacity(int primitiveCount, int reserveExtra = 0);
 }
 
 /// <summary>
@@ -39,7 +48,7 @@ public interface ICpuReadFromBuffer<T> : IDeviceBuffer<T>
 /// <summary>
 /// A buffer that the shader can read from.
 /// </summary>
-public interface IShaderReadFromBuffer<T> : IDeviceBuffer<T>
+public interface IShaderReadFromBuffer<T> : IImmutableDeviceBuffer<T>
     where T : unmanaged
 { }
 

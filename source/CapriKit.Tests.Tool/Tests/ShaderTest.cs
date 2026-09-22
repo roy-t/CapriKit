@@ -27,7 +27,7 @@ internal sealed class ShaderTest : ITestScreen
     private readonly IPixelShader PixelShader;
     private readonly IInputLayout InputLayout;
     private readonly VertexBuffer<VsInput> VertexBuffer;
-    private readonly IndexBufferU16 IndexBuffer;
+    private readonly IndexBuffer<ushort> IndexBuffer;
     private readonly ConstantBuffer<Constants> ConstantBuffer;
 
     private readonly VsInput[] Vertices;
@@ -40,7 +40,7 @@ internal sealed class ShaderTest : ITestScreen
         PixelShader = bundle.PixelShader;
         InputLayout = VertexShader.CreateInputLayout(device, VsInputElementDescription);
         VertexBuffer = new VertexBuffer<VsInput>(device, nameof(ShaderTest));
-        IndexBuffer = new IndexBufferU16(device, nameof(ShaderTest));
+        IndexBuffer = IndexBuffers.CreateU16(device, nameof(ShaderTest));
         ConstantBuffer = new ConstantBuffer<Constants>(device, nameof(ShaderTest));
         Indices = [0, 1, 2];
         Vertices =

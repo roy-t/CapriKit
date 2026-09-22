@@ -1,6 +1,5 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
-using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Views;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
@@ -135,12 +134,12 @@ public static class BufferExtensions
         return uav;
     }
 
-    private static ID3D11Buffer GetNativeBufferOrThrow<T>(this IDeviceBuffer<T> buffer)
+    private static ID3D11Buffer GetNativeBufferOrThrow<T>(this IImmutableDeviceBuffer<T> buffer)
         where T : unmanaged
     {
-        if (buffer.ID3D11Buffer == null || buffer.Capacity == 0)
+        if (buffer.ID3D11Buffer == null)
         {
-            throw new InvalidOperationException($"Cannot read or write from buffer {buffer.Name}. The native buffer is null or has a capacity of 0");
+            throw new InvalidOperationException($"Cannot read or write from buffer {buffer.Name}. The native buffer is null.");
         }
 
         return buffer.ID3D11Buffer;

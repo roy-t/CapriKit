@@ -19,7 +19,7 @@ public sealed class ImGuiRenderer : IDisposable
 
     private readonly Device Device;
     private readonly VertexBuffer<ImDrawVert> VertexBuffer;
-    private readonly IndexBufferU16 IndexBuffer;
+    private readonly IndexBuffer<ushort> IndexBuffer;
     private readonly ConstantBuffer<Matrix4x4> ConstantBuffer;
     private readonly ImGuiEffect Effect;
     private readonly ID3D11Texture2D FontTexture;
@@ -29,7 +29,7 @@ public sealed class ImGuiRenderer : IDisposable
     {
         Device = device;
         VertexBuffer = new VertexBuffer<ImDrawVert>(device, nameof(ImGuiRenderer));
-        IndexBuffer = new IndexBufferU16(device, nameof(ImGuiRenderer));
+        IndexBuffer = IndexBuffers.CreateU16(device, nameof(ImGuiRenderer));
         ConstantBuffer = new ConstantBuffer<Matrix4x4>(device, nameof(ImGuiRenderer));
         Effect = new ImGuiEffect(device);
 

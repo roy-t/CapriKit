@@ -9,7 +9,6 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     private readonly BufferDescription BufferDescription;
 
     internal readonly ID3D11Device Device;
-    internal readonly uint PrimitiveSizeInBytes;
     internal ID3D11Buffer? nativeBuffer;
 
     internal DeviceBuffer(Device device, BufferDescription description)
@@ -21,6 +20,7 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
             PrimitiveSizeInBytes = (uint)sizeof(T);
         }
     }
+    public uint PrimitiveSizeInBytes { get; }
 
     public int Capacity { get; private set; }
 
@@ -28,11 +28,44 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
 
     public abstract string Name { get; }
 
-    ID3D11Buffer? IDeviceBuffer<T>.ID3D11Buffer => nativeBuffer;
+    ID3D11Buffer? IImmutableDeviceBuffer<T>.ID3D11Buffer => nativeBuffer;
 
     [MemberNotNull(nameof(nativeBuffer))]
+
+    /// <summary>
+    /// Grows or shrinks the capacity of the buffer to the exact primitive count, discarding all existing data.
+    /// If the buffer was already the right capacity, nothing happens.
+    /// </summary>
+    public void SetCapacity(int primitiveCount)
+    {
+        if (primitiveCount < 1)
+        { throw new Exception("primitive count must be at least one, reserve extra at least zero"); }
+
+        if (nativeBuffer == null || Capacity != primitiveCount)
+        {
+            nativeBuffer?.Dispose();
+            Capacity = primitiveCount;
+            Length = (int)primitiveCount;
+
+            var bufferSize = Capacity * PrimitiveSizeInBytes;
+
+            nativeBuffer = CreateBuffer((uint)bufferSize);
+#if DEBUG
+            nativeBuffer.DebugName = Name;
+#endif
+        }
+    }
+
+    /// <summary>
+    /// Grows the capacity of the buffer to primitiveCount+reserveExtra if the current capacity is less then primitiveCount,
+    /// discarding all existing data.
+    /// If the buffer could already fit at least primitiveCount items, nothing happens.
+    /// </summary>
     public void EnsureCapacity(int primitiveCount, int reserveExtra = 0)
     {
+        if (primitiveCount < 1 || reserveExtra < 0)
+        { throw new Exception("primitive count must be at least one, reserve extra at least zero"); }
+
         if (nativeBuffer == null || Capacity < primitiveCount)
         {
             nativeBuffer?.Dispose();

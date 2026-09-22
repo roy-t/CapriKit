@@ -4,49 +4,93 @@ using Vortice.DXGI;
 
 namespace CapriKit.DirectX11.Buffers;
 
-/// <inheritdoc/>
-public sealed class IndexBufferU16 : IndexBuffer<ushort>
-{
-    public IndexBufferU16(Device device, string? nameHint = null) : base(device, Format.R16_UInt)
-    {
-        Name = DebugName.For(this, nameHint);
-    }
-
-    public override string Name { get; }
-}
-
-/// <inheritdoc/>
-public sealed class IndexBufferU32 : IndexBuffer<uint>
-{
-    public IndexBufferU32(Device device, string? nameHint = null) : base(device, Format.R32_UInt)
-    {
-        Name = DebugName.For(this, nameHint);
-    }
-
-    public override string Name { get; }
-}
-
-/// <summary>
-/// Allows for indexed drawing techniques. The GPU reads the indices one by one, each index refers to a specific vertex in the vertex buffer.
-/// Vertices are usually much larger than a single int or short and are connected to multiple triangles. Using an index buffer means we have
-/// to use less GPU memory and have better data locality.
-/// </summary>
-public abstract class IndexBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>
+public interface IIndexBuffer<T> : IImmutableDeviceBuffer<T>
     where T : unmanaged
 {
-    private static readonly BufferDescription BufferDescription = new()
+    internal Format Format { get; }
+}
+
+
+public static class IndexBuffers
+{
+    private static readonly BufferDescription MutableBufferDescription = new()
     {
         Usage = ResourceUsage.Dynamic,
         BindFlags = BindFlags.IndexBuffer,
         CPUAccessFlags = CpuAccessFlags.Write,
+        MiscFlags = ResourceOptionFlags.None,
     };
 
-
-    internal IndexBuffer(Device device, Format format)
-        : base(device, BufferDescription)
+    public static IndexBuffer<ushort> CreateU16(Device device, string? hintName = null)
     {
-        Format = format;
+        var description = MutableBufferDescription;
+        description.ByteWidth = 0;
+        description.StructureByteStride = sizeof(ushort);
+
+        return new IndexBuffer<ushort>(device, description, Format.R16_UInt, hintName);
     }
 
-    internal Format Format { get; }
+    public static IndexBuffer<uint> CreateU32(Device device, string? hintName = null)
+    {
+        var description = MutableBufferDescription;
+        description.ByteWidth = 0;
+        description.StructureByteStride = sizeof(uint);
+
+        return new IndexBuffer<uint>(device, description, Format.R32_UInt, hintName);
+    }
+
+    private static readonly BufferDescription ImmutableBufferDescription = new()
+    {
+        Usage = ResourceUsage.Immutable,
+        BindFlags = BindFlags.IndexBuffer,
+        CPUAccessFlags = CpuAccessFlags.None,
+        MiscFlags = ResourceOptionFlags.None,
+    };
+
+    public static ImmutableIndexBuffer<ushort> CreateU16Immutable(Device device, ReadOnlySpan<ushort> data, string? hintName = null)
+    {
+        return new ImmutableIndexBuffer<ushort>(device, data, ImmutableBufferDescription, Format.R16_UInt, hintName);
+    }
+
+    public static ImmutableIndexBuffer<uint> CreateU32Immutable(Device device, ReadOnlySpan<uint> data, string? hintName = null)
+    {
+        return new ImmutableIndexBuffer<uint>(device, data, ImmutableBufferDescription, Format.R32_UInt, hintName);
+    }
+}
+
+/// <summary>
+/// Index buffer for the indirect referencing and reusing of vertices
+/// </summary>
+public sealed class IndexBuffer<T> : DeviceBuffer<T>, IIndexBuffer<T>, ICpuWriteToBuffer<T>
+    where T : unmanaged
+{
+    private readonly Format InternalFormat;
+
+    internal IndexBuffer(Device device, BufferDescription description, Format format, string? hintName = null)
+        : base(device, description)
+    {
+        InternalFormat = format;
+        Name = DebugName.For(this, hintName);
+    }
+
+    public override string Name { get; }
+
+    Format IIndexBuffer<T>.Format => InternalFormat;
+}
+
+/// <summary>
+/// Immutable index buffer for the indirect referencing and reusing of vertices
+/// </summary>
+public sealed class ImmutableIndexBuffer<T> : ImmutableDeviceBuffer<T>, IIndexBuffer<T>
+    where T : unmanaged
+{
+    private readonly Format InternalFormat;
+
+    internal ImmutableIndexBuffer(Device device, ReadOnlySpan<T> data, BufferDescription description, Format format, string? hintName = null)
+        : base(device, description, data, DebugName.For<ImmutableIndexBuffer<T>>(hintName))
+    {
+        InternalFormat = format;
+    }
+
+    Format IIndexBuffer<T>.Format => InternalFormat;
 }

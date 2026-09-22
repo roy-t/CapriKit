@@ -12,7 +12,7 @@ public sealed class RWStructuredBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<
 {
     private static readonly BufferDescription BufferDescription = new()
     {
-        Usage = ResourceUsage.Default,
+        Usage = ResourceUsage.Dynamic,
         BindFlags = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
         CPUAccessFlags = CpuAccessFlags.Read | CpuAccessFlags.Write,
         MiscFlags = ResourceOptionFlags.BufferStructured,
