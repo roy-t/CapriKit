@@ -85,7 +85,7 @@ public static class BufferExtensions
         var description = new ShaderResourceViewDescription()
         {
             Buffer = bufferDescription,
-            Format = Format.Unknown,
+            Format = Format.Unknown, // TODO: does creating an SRV with an unknow format work or do buffers need to keep their format around?
             ViewDimension = Vortice.Direct3D.ShaderResourceViewDimension.Buffer
         };
 
@@ -124,7 +124,6 @@ public static class BufferExtensions
             Format = Format.Unknown,
             ViewDimension = UnorderedAccessViewDimension.Buffer
         };
-
 
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
         var nativeUav = device.ID3D11Device.CreateUnorderedAccessView(nativeBuffer, description);

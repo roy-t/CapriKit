@@ -6,7 +6,7 @@ namespace CapriKit.DirectX11.Buffers;
 /// <summary>
 /// Constant buffers are buffers optimized to let the CPU write a small piece of information to the GPU every frame.
 /// For example, the camera position. For more flexible use see <seealso cref="StructuredBuffer{T}"/>.
-/// Note: The structures used in constant buffers must match the packing described here:
+/// Note: The structures used in constant buffers must match the packing rules described in
 /// https://docs.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-packing-rules
 /// </summary>
 public sealed class ConstantBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>

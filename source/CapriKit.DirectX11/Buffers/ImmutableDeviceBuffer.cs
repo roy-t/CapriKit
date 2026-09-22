@@ -4,7 +4,7 @@ namespace CapriKit.DirectX11.Buffers;
 
 /// <summary>
 /// A buffer that the is instantiated with the given data and can then
-/// no longer be accessed by the CPU.
+/// no longer be accessed by the CPU or changed by the GPU.
 /// </summary>
 public abstract class ImmutableDeviceBuffer<T> : IImmutableDeviceBuffer<T>, IDisposable
     where T : unmanaged

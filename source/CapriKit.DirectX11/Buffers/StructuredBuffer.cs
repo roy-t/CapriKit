@@ -4,7 +4,7 @@ using Vortice.Direct3D11;
 namespace CapriKit.DirectX11.Buffers;
 
 /// <summary>
-/// Send structs to the GPU so the shader can read them
+/// Send structs to the GPU so the shader can read them.
 /// </summary>
 public sealed class StructuredBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>, IShaderReadFromBuffer<T>
     where T : unmanaged

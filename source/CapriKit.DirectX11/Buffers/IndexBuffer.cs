@@ -10,7 +10,6 @@ public interface IIndexBuffer<T> : IImmutableDeviceBuffer<T>
     internal Format Format { get; }
 }
 
-
 public static class IndexBuffers
 {
     private static readonly BufferDescription MutableBufferDescription = new()
@@ -59,7 +58,7 @@ public static class IndexBuffers
 }
 
 /// <summary>
-/// Index buffer for the indirect referencing and reusing of vertices
+/// Index buffer for the indirect referencing and reusing of vertices.
 /// </summary>
 public sealed class IndexBuffer<T> : DeviceBuffer<T>, IIndexBuffer<T>, ICpuWriteToBuffer<T>
     where T : unmanaged
@@ -79,7 +78,7 @@ public sealed class IndexBuffer<T> : DeviceBuffer<T>, IIndexBuffer<T>, ICpuWrite
 }
 
 /// <summary>
-/// Immutable index buffer for the indirect referencing and reusing of vertices
+/// Immutable index buffer for the indirect referencing and reusing of vertices.
 /// </summary>
 public sealed class ImmutableIndexBuffer<T> : ImmutableDeviceBuffer<T>, IIndexBuffer<T>
     where T : unmanaged

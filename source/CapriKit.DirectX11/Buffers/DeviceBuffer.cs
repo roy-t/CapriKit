@@ -30,12 +30,11 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
 
     ID3D11Buffer? IImmutableDeviceBuffer<T>.ID3D11Buffer => nativeBuffer;
 
-    [MemberNotNull(nameof(nativeBuffer))]
-
     /// <summary>
     /// Grows or shrinks the capacity of the buffer to the exact primitive count, discarding all existing data.
     /// If the buffer was already the right capacity, nothing happens.
     /// </summary>
+    [MemberNotNull(nameof(nativeBuffer))]
     public void SetCapacity(int primitiveCount)
     {
         if (primitiveCount < 1)
@@ -61,6 +60,7 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     /// discarding all existing data.
     /// If the buffer could already fit at least primitiveCount items, nothing happens.
     /// </summary>
+    [MemberNotNull(nameof(nativeBuffer))]
     public void EnsureCapacity(int primitiveCount, int reserveExtra = 0)
     {
         if (primitiveCount < 1 || reserveExtra < 0)
