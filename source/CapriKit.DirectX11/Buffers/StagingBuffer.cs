@@ -5,13 +5,11 @@ using Vortice.Direct3D11;
 namespace CapriKit.DirectX11.Buffers;
 
 /// <summary>
-/// Used to read back data from GPU buffers by first copying them to a buffer that is CPU readable.
+/// Used to read back data from GPU buffers by copying them to a buffer that is CPU readable.
 /// </summary>
 public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
     where T : unmanaged
 {
-    // TODO: Figure out what we need to do to also read back texture data. Can we just read that directly if mapped?
-
     private static readonly BufferDescription BufferDescription = new()
     {
         Usage = ResourceUsage.Staging,
@@ -30,9 +28,9 @@ public sealed class StagingBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>
     /// </summary>    
     public void CopyResourceToStagingBuffer(DeviceContext context, IDeviceBuffer<T> source)
     {
-        // Note: no overload for IImmutableDeviceBuffer since nothing on the GPU can have generated that data .
-        // TODO: this method should later get overloads for other resources, like render targets/textures.
-        SetCapacity(source.Capacity); // match full buffer otherwise copying fails because of dimensions mismatches!
+        // Ensure the dimensions of the staging buffer match those of the buffer we want to copy from.
+        SetCapacity(source.Capacity);
+
         context.ID3D11DeviceContext.CopyResource(nativeBuffer, source.ID3D11Buffer);
     }
 

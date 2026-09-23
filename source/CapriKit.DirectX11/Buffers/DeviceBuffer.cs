@@ -20,6 +20,7 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
             PrimitiveSizeInBytes = (uint)sizeof(T);
         }
     }
+
     public uint PrimitiveSizeInBytes { get; }
 
     public int Capacity { get; private set; }
@@ -37,22 +38,13 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     [MemberNotNull(nameof(nativeBuffer))]
     public void SetCapacity(int primitiveCount)
     {
-        if (primitiveCount < 1)
-        { throw new Exception("primitive count must be at least one, reserve extra at least zero"); }
+        if (primitiveCount < 1) { throw new ArgumentException("Must be at least one", nameof(primitiveCount)); }
 
         if (nativeBuffer == null || Capacity != primitiveCount)
         {
-            nativeBuffer?.Dispose();
-            Capacity = primitiveCount;
-            Length = (int)primitiveCount;
-
-            var bufferSize = Capacity * PrimitiveSizeInBytes;
-
-            nativeBuffer = CreateBuffer((uint)bufferSize);
-#if DEBUG
-            nativeBuffer.DebugName = Name;
-#endif
+            RecreateBuffer(primitiveCount);
         }
+        Length = primitiveCount;
     }
 
     /// <summary>
@@ -63,31 +55,30 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     [MemberNotNull(nameof(nativeBuffer))]
     public void EnsureCapacity(int primitiveCount, int reserveExtra = 0)
     {
-        if (primitiveCount < 1 || reserveExtra < 0)
-        { throw new Exception("primitive count must be at least one, reserve extra at least zero"); }
+        if (primitiveCount < 1) { throw new ArgumentException("Must be at least one", nameof(primitiveCount)); }
+        if (reserveExtra < 0) { throw new ArgumentException("Must be at least zero", nameof(reserveExtra)); }
 
         if (nativeBuffer == null || Capacity < primitiveCount)
         {
-            nativeBuffer?.Dispose();
-            Capacity = primitiveCount + reserveExtra;
-            Length = (int)primitiveCount;
-
-            var bufferSize = Capacity * PrimitiveSizeInBytes;
-
-            nativeBuffer = CreateBuffer((uint)bufferSize);
-#if DEBUG
-            nativeBuffer.DebugName = Name;
-#endif
+            RecreateBuffer(primitiveCount + reserveExtra);
         }
+        Length = primitiveCount;
     }
 
-    private ID3D11Buffer CreateBuffer(uint sizeInBytes)
+    [MemberNotNull(nameof(nativeBuffer))]
+    private void RecreateBuffer(int capacity)
     {
         var resizedBufferDescription = BufferDescription;
-        resizedBufferDescription.ByteWidth = sizeInBytes;
+        resizedBufferDescription.ByteWidth = PrimitiveSizeInBytes * (uint)capacity;
         resizedBufferDescription.StructureByteStride = PrimitiveSizeInBytes;
 
-        return Device.CreateBuffer(resizedBufferDescription);
+        var buffer = Device.CreateBuffer(resizedBufferDescription);
+        nativeBuffer?.Dispose();
+        nativeBuffer = buffer;
+        Capacity = capacity;
+#if DEBUG
+        nativeBuffer.DebugName = Name;
+#endif
     }
 
     public virtual void Dispose()

@@ -4,18 +4,17 @@ using Vortice.Direct3D11;
 namespace CapriKit.DirectX11.Buffers;
 
 /// <summary>
-/// A specific structured buffer that the shader can also write to, so the CPU can read back the data. To incidentally read back data from other buffers use a
-/// <seealso cref="StagingBuffer{T}"/>.
+/// A specific structured buffer that shaders can read and write to. See <seealso cref="StagingBuffer{T}"/>. For
+/// transferring the data back to the CPU.
 /// </summary>
-public sealed class RWStructuredBuffer<T> : DeviceBuffer<T>, ICpuReadFromBuffer<T>, ICpuWriteToBuffer<T>, IShaderReadFromBuffer<T>, IShaderWriteToBuffer<T>
+public sealed class RWStructuredBuffer<T> : DeviceBuffer<T>, IShaderReadFromBuffer<T>, IShaderWriteToBuffer<T>
     where T : unmanaged
 {
-    // TODO: ago — no usage supports both a UAV and a CPU Map write????
     private static readonly BufferDescription BufferDescription = new()
     {
         Usage = ResourceUsage.Default,
         BindFlags = BindFlags.UnorderedAccess | BindFlags.ShaderResource,
-        CPUAccessFlags = CpuAccessFlags.Read | CpuAccessFlags.Write,
+        CPUAccessFlags = CpuAccessFlags.None,
         MiscFlags = ResourceOptionFlags.BufferStructured,
     };
 

@@ -15,11 +15,9 @@ public abstract class ImmutableDeviceBuffer<T> : IImmutableDeviceBuffer<T>, IDis
     {
         if (data.Length < 1)
         {
-            throw new ArgumentException("Span is empty", nameof(data));
+            throw new ArgumentException("Span cannot be empty", nameof(data));
         }
 
-        Length = data.Length;
-        Name = name;
         unsafe
         {
             PrimitiveSizeInBytes = (uint)sizeof(T);
@@ -27,13 +25,14 @@ public abstract class ImmutableDeviceBuffer<T> : IImmutableDeviceBuffer<T>, IDis
         description.ByteWidth = ((uint)data.Length) * PrimitiveSizeInBytes;
         description.StructureByteStride = PrimitiveSizeInBytes;
         nativeBuffer = device.ID3D11Device.CreateBuffer(data, description);
+        Length = data.Length;
+        Name = name;
 #if DEBUG
         nativeBuffer.DebugName = name;
 #endif
     }
 
     public uint PrimitiveSizeInBytes { get; }
-
     public string Name { get; }
     public int Length { get; }
     ID3D11Buffer? IImmutableDeviceBuffer<T>.ID3D11Buffer => nativeBuffer;

@@ -21,21 +21,13 @@ public static class IndexBuffers
     };
 
     public static IndexBuffer<ushort> CreateU16(Device device, string? hintName = null)
-    {
-        var description = MutableBufferDescription;
-        description.ByteWidth = 0;
-        description.StructureByteStride = sizeof(ushort);
-
-        return new IndexBuffer<ushort>(device, description, Format.R16_UInt, hintName);
+    {        
+        return new IndexBuffer<ushort>(device, MutableBufferDescription, Format.R16_UInt, hintName);
     }
 
     public static IndexBuffer<uint> CreateU32(Device device, string? hintName = null)
     {
-        var description = MutableBufferDescription;
-        description.ByteWidth = 0;
-        description.StructureByteStride = sizeof(uint);
-
-        return new IndexBuffer<uint>(device, description, Format.R32_UInt, hintName);
+        return new IndexBuffer<uint>(device, MutableBufferDescription, Format.R32_UInt, hintName);
     }
 
     private static readonly BufferDescription ImmutableBufferDescription = new()

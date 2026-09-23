@@ -20,17 +20,17 @@ internal class GenericBufferTests
         var context = device.ImmediateDeviceContext;
 
         // Create a structured buffer to upload four prime numbers to the GPU
-        using var uploadBuffer = new StructuredBuffer<float>(device, "uploadBuffer");
-        uploadBuffer.Write(context, [2.0f, 3.0f, 5.0f, 7.0f]);
-        using var srv = uploadBuffer.CreateShaderResourceView(device);
+        using var structuredBuffer = new StructuredBuffer<float>(device, "uploadBuffer");
+        structuredBuffer.Write(context, [2.0f, 3.0f, 5.0f, 7.0f]);
+        using var srv = structuredBuffer.CreateShaderResourceView(device);
 
-        // Create RW structured buffer the shader can write to and CPU can read from
-        using var downloadBuffer = new RWStructuredBuffer<float>(device, "downloadBuffer");
-        downloadBuffer.EnsureCapacity(4);
-        using var uav = downloadBuffer.CreateUnorderedAccessView(device);
+        // Create RW structured buffer the shader can write to
+        using var rwBuffer = new RWStructuredBuffer<float>(device, "downloadBuffer");
+        rwBuffer.EnsureCapacity(4);
+        using var uav = rwBuffer.CreateUnorderedAccessView(device);
 
-        // Run the shader that reads data from the upload buffer
-        // and stores a modified version of that data in the download buffer
+        // Run the shader that reads data from the structured buffer
+        // and stores a modified version of that data in the rw structured buffer
         using var shader = Create(device);
         context.CS.SetShaderResource(0, srv);
         context.CS.SetUnorderedAccessView(0, uav);
@@ -39,23 +39,9 @@ internal class GenericBufferTests
         var (dx, dy, dz) = shader.GetDispatchSize(4, 1, 1);
         context.CS.Dispatch(dx, dy, dz);
 
-        // Read back the data to prove that both buffer types work
-        var rwTarget = new float[4];
-        using (var reader = downloadBuffer.OpenReader(context))
-        {
-            reader.Read(0, 4, rwTarget);
-        }
-
-        await Assert.That(rwTarget[0]).IsEqualTo(2.0f);
-        await Assert.That(rwTarget[1]).IsEqualTo(6.0f);
-        await Assert.That(rwTarget[2]).IsEqualTo(15.0f);
-        await Assert.That(rwTarget[3]).IsEqualTo(28.0f);
-
-        // Not all GPU buffers are directly readable by the CPU. In those cases
-        // you can use a staging buffer to copy GPU data to a GPU buffer that is
-        // CPU readable.
+        // Use a staging buffer to read back the data
         using var stagingBuffer = new StagingBuffer<float>(device, "stagingBuffer");
-        stagingBuffer.CopyResourceToStagingBuffer(context, downloadBuffer);
+        stagingBuffer.CopyResourceToStagingBuffer(context, rwBuffer);
 
         var stagingTarget = new float[4];
         using (var reader = stagingBuffer.OpenReader(context))
@@ -63,7 +49,7 @@ internal class GenericBufferTests
             reader.Read(0, 4, stagingTarget);
         }
 
-        await Assert.That(stagingTarget).IsEquivalentTo(rwTarget, CollectionOrdering.Matching);
+        await Assert.That(stagingTarget).IsEquivalentTo([2.0f, 6.0f, 15.0f, 28.0f], CollectionOrdering.Matching);
     }
 
 
