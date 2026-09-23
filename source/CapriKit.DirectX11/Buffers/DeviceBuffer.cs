@@ -38,7 +38,7 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     [MemberNotNull(nameof(nativeBuffer))]
     public void SetCapacity(int primitiveCount)
     {
-        if (primitiveCount < 1) { throw new ArgumentException("Must be at least one", nameof(primitiveCount)); }
+        ArgumentOutOfRangeException.ThrowIfLessThan(primitiveCount, 1, nameof(primitiveCount));
 
         if (nativeBuffer == null || Capacity != primitiveCount)
         {
@@ -55,8 +55,8 @@ public abstract class DeviceBuffer<T> : IDeviceBuffer<T>, IDisposable
     [MemberNotNull(nameof(nativeBuffer))]
     public void EnsureCapacity(int primitiveCount, int reserveExtra = 0)
     {
-        if (primitiveCount < 1) { throw new ArgumentException("Must be at least one", nameof(primitiveCount)); }
-        if (reserveExtra < 0) { throw new ArgumentException("Must be at least zero", nameof(reserveExtra)); }
+        ArgumentOutOfRangeException.ThrowIfLessThan(primitiveCount, 1, nameof(primitiveCount));
+        ArgumentOutOfRangeException.ThrowIfNegative(reserveExtra, nameof(reserveExtra));
 
         if (nativeBuffer == null || Capacity < primitiveCount)
         {

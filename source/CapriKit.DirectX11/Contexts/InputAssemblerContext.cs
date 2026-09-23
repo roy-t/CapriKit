@@ -22,7 +22,7 @@ public sealed class InputAssemblerContext : DeviceContextPart
         ID3D11DeviceContext.IASetVertexBuffer(0, buffer.ID3D11Buffer, stride, offset);
     }
 
-    public void SetIndexBuffer<T>(IIndexBuffer<T> buffer)
+    public void SetIndexBuffer<T>(IIndexBuffer<T> buffer, uint indexOffset = 0)
         where T : unmanaged
     {
         if (buffer.ID3D11Buffer == null)
@@ -30,7 +30,8 @@ public sealed class InputAssemblerContext : DeviceContextPart
             throw new Exception($"Failed to set uninitialized index buffer {buffer.Name}");
         }
 
-        ID3D11DeviceContext.IASetIndexBuffer(buffer.ID3D11Buffer, buffer.Format, 0);
+        var offset = indexOffset * buffer.PrimitiveSizeInBytes;
+        ID3D11DeviceContext.IASetIndexBuffer(buffer.ID3D11Buffer, buffer.Format, offset);
     }
 
     public void SetInputLayout(IInputLayout? inputLayout)

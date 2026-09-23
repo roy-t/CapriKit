@@ -1,5 +1,8 @@
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Buffers;
+using CapriKit.DirectX11.Contexts;
+using CapriKit.DirectX11.Resources.Views;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using Vortice.Mathematics;
@@ -23,9 +26,11 @@ public readonly record struct CKTMaterial(Color3 BaseColor, float Metallic, floa
 /// <param name="VertexCount">Number of vertices in this mesh.</param>
 /// <param name="IndexOffset">Offset to the first index of this mesh in the indices array.</param>
 /// <param name="IndexCount">Number of indices in this mesh.</param>
+/// <param name="TriangleOffset">Offset to the first triangle of this mesh in the triangles array</param>
+/// <param name="TriangleCount">Number of triangles in this mesh</param>
 /// <param name="BoundsMin"></param>
 /// <param name="BoundsMax"></param>
-public readonly record struct CKTMesh(int VertexOffset, int VertexCount, int IndexOffset, int IndexCount, Vector3 BoundsMin, Vector3 BoundsMax);
+public readonly record struct CKTMesh(int VertexOffset, int VertexCount, int IndexOffset, int IndexCount, int TriangleOffset, int TriangleCount, Vector3 BoundsMin, Vector3 BoundsMax);
 
 /// <summary>
 /// A vertex with a position and normal
@@ -46,7 +51,7 @@ public readonly record struct CKTTriangle(int MaterialIndex);
 [InlineArray(26)]
 public struct FileTypeIdentifier
 {
-    public char[] Magic;
+    public char Character;
 }
 
 public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTypeVersion, string Name, int Materials, int Meshes, int Vertices, int Triangles);
@@ -59,54 +64,122 @@ public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTyp
 /// </summary>
 public sealed class CKTModelData
 {
+    public CKTModelData(CKTHeader header, CKTMesh[] meshes, CKTMaterial[] materials, CKTVertex[] vertices, uint[] indices, CKTTriangle[] triangles)
+    {
+        Header = header;
+        Meshes = meshes;
+        Materials = materials;
+        Vertices = vertices;
+        Indices = indices;
+        Triangles = triangles;
+    }
+
     public CKTHeader Header { get; }
 
     /// <summary>
-    /// All meshes in the model. Each mesh represent a different Level-Of-Detail (LOD).
+    /// The individual meshes in the model. Each mesh represent a different Level-Of-Detail (LOD).
     /// Meshes are ordered from highest to lowest detail.
     /// </summary>
     public CKTMesh[] Meshes { get; }
 
     /// <summary>
-    /// All materials in the model.
+    /// The materials used in the model. Materials are shared between meshes so when rendering a mesh you need
+    /// access to the entire array.
     /// </summary>
     public CKTMaterial[] Materials { get; }
 
-    /// <summary>
-    /// The vertices. All the vertices that belong to one mesh are unique in the combined value of (Position, Normal).
-    /// Multiple vertices with the same position but with a different normal can exist to facilitate sharp corners.
-    /// Vertices is one contiguous array of all vertices of all meshes, but vertices are not shared between meshes.
+    /// <summary>    
+    /// The vertices used by each mesh laid out in one larger array. Slices of this array give you
+    /// the vertices needed to render individual meshes. Within such a slice all vertices are unique.
     /// </summary>
     public CKTVertex[] Vertices { get; }
 
     /// <summary>
-    /// The indices that define triangles. Each triangle is defined by three indices.
-    /// Indices is one contiguous array of all indices of all meshes, but indices are not shared between meshes.
-    /// Index values are relative towards the first vertex that belongs to the model.
-    /// Each triangle is defined by three indices, (no triangle fans or other tricks)
+    /// The indices used by each mesh laid out in one larger array. Slices of this array give you 
+    /// the indices needed to render individual meshes. Indices are in the triangle list format.
+    /// Index values are relative offsets into the slice of vertices that belong to the mesh,
+    /// not absolute indexes into the entire vertices array.
     /// </summary>
     public uint[] Indices { get; }
 
     /// <summary>
-    /// Provides extra information for each triangle. For every three indices there is exactly one entry in triangles.
-    /// Indices at Indices[3], Indices[4], Indices[5] all refer to the triangle at Triangles[1].
+    /// Extra per-triangle data for each mesh, laid out in one larger array. Slices of this array give you
+    /// the data needed to render individual meshes. For every three indices there is exactly one entry in triangles.
+    /// Use SV_PrimitiveID in your shader and add the offset appropriate for the mesh you are rendering.
     /// </summary>
     public CKTTriangle[] Triangles { get; }
 }
 
-public sealed class CKTModel
+public sealed class CKTModel : IDisposable
 {
-    private readonly ImmutableStructuredBuffer<CKTMaterial> Materials;
-    private readonly ImmutableStructuredBuffer<CKTTriangle> Triangles;
-    private readonly ImmutableVertexBuffer<CKTVertex> Vertices;
-    private readonly ImmutableIndexBuffer<uint> Indices;
+    private ImmutableStructuredBuffer<CKTMaterial> materials;
+    private ImmutableStructuredBuffer<CKTTriangle> triangles;
+    private ImmutableVertexBuffer<CKTVertex> vertices;
+    private ImmutableIndexBuffer<uint> indices;
+
+    private IShaderResourceView materialsView;
+    private IShaderResourceView trianglesView;
+
+    private CKTMesh[] meshes;
 
     public CKTModel(Device device, CKTModelData data)
     {
-        var name = data.Header.Name;
-        Materials = new ImmutableStructuredBuffer<CKTMaterial>(device, data.Materials, $"{name}_materials");
-        Triangles = new ImmutableStructuredBuffer<CKTTriangle>(device, data.Triangles, $"{name}_triangles");
-        Vertices = new ImmutableVertexBuffer<CKTVertex>(device, data.Vertices, $"{name}_vertices");
-        Indices = IndexBuffers.CreateU32Immutable(device, data.Indices, $"{name}_indices");
+        Name = data.Header.Name;
+        Initialize(device, data);
+    }
+
+    public string Name { get; }
+
+    public void Draw(DeviceContext context, int lod)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(lod, meshes.Length);
+        ArgumentOutOfRangeException.ThrowIfNegative(lod);
+
+        // TODO: instead of actually drawing here make the information easy to access.
+        var mesh = meshes[lod];
+
+        var vertexOffset = mesh.VertexOffset;
+        var indexOffset = mesh.IndexOffset;
+        var indexCount = mesh.IndexCount;
+        var triangleOffset = mesh.TriangleOffset;
+
+        context.IA.SetVertexBuffer(vertices);
+        context.IA.SetIndexBuffer(indices);
+        context.PS.SetShaderResource(0, materialsView);
+        context.PS.SetShaderResource(1, trianglesView);
+
+        // TODO: set triangleOffset in the shader's cbuffer so that material lookup is materials[triangles[SV_PrimitiveID + triangleOffset]
+        // pass mesh.VertexOffset so that an index with value 0 points at vertex[0 + vertexOffset] points to the first vertex that belongs to this mesh
+        // not the first vertex in the entire vertex array.
+        context.DrawIndexed((uint)indexCount, (uint)indexOffset, vertexOffset);
+    }
+
+    internal void HotReload(Device device, CKTModelData data)
+    {
+        Dispose();
+        Initialize(device, data);
+    }
+
+    [MemberNotNull(nameof(materials), nameof(triangles), nameof(vertices), nameof(indices), nameof(meshes), nameof(materialsView), nameof(trianglesView))]
+    private void Initialize(Device device, CKTModelData data)
+    {
+        materials = new ImmutableStructuredBuffer<CKTMaterial>(device, data.Materials, $"{Name}_materials");
+        triangles = new ImmutableStructuredBuffer<CKTTriangle>(device, data.Triangles, $"{Name}_triangles");
+        vertices = new ImmutableVertexBuffer<CKTVertex>(device, data.Vertices, $"{Name}_vertices");
+        indices = IndexBuffers.CreateU32Immutable(device, data.Indices, $"{Name}_indices");
+        materialsView = materials.CreateShaderResourceView(device);
+        trianglesView = triangles.CreateShaderResourceView(device);
+        meshes = data.Meshes;
+    }
+
+    public void Dispose()
+    {
+        materialsView.Dispose();
+        trianglesView.Dispose();
+        materials.Dispose();
+        triangles.Dispose();
+        vertices.Dispose();
+        indices.Dispose();
+        meshes = [];
     }
 }
