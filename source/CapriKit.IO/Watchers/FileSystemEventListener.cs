@@ -28,6 +28,7 @@ public sealed class FileSystemEventListener : IVirtualFileSystemWatcher, IDispos
         Watcher.Created += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Created));
         Watcher.Changed += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Changed));
         Watcher.Deleted += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Deleted));
+        Watcher.Renamed += (s, e) => onFileChanged?.Invoke(s, new VirtualFileSystemEvent(FileSystem.GetFilePath(e.FullPath), FileSystemChangeKind.Renamed));
     }
 
     public event VirtualFileSystemEventHandler? OnFileChanged

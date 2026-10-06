@@ -28,8 +28,7 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
     output.position = mul(ProjectionMatrix, float4(input.position.xy, 0.0f, 1.0f));
-    //output.color = ToLinear(input.color);
-    output.color = input.color;
+    output.color = ToLinear(input.color);
     return output;
 }
 

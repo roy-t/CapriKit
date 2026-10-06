@@ -46,15 +46,25 @@ public readonly record struct CKTVertex(Vector3 Position, Vector3 Normal);
 public readonly record struct CKTTriangle(int MaterialIndex);
 
 /// <summary>
-/// Should always spell "CapriKit.Textureless.Model" for valid files.
+/// Should always spell "CapriKit.Textureless.Model" for valid files in ASCII bytes.
 /// </summary>
 [InlineArray(26)]
 public struct FileTypeIdentifier
 {
-    public char Character;
+    private byte Elements;
+
+    public static FileTypeIdentifier Create()
+    {
+        var id = new FileTypeIdentifier();
+        Expected.CopyTo(id);
+        return id;
+    }
+
+    private static ReadOnlySpan<byte> Expected => "CapriKit.Textureless.Model"u8;
+    public readonly bool IsValid => Expected.SequenceEqual(this);
 }
 
-public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTypeVersion, string Name, int Materials, int Meshes, int Vertices, int Triangles);
+public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTypeVersion, string Name, int MaterialCount, int MeshCount, int VertexCount, int IndexCount, int TriangleCount);
 
 /// <summary>
 /// Data for a CapriKit Textureless Model. A 3D model with 1..n LODs where each triangle is assigned a material instead of a texture.
@@ -77,16 +87,16 @@ public sealed class CKTModelData
     public CKTHeader Header { get; }
 
     /// <summary>
-    /// The individual meshes in the model. Each mesh represent a different Level-Of-Detail (LOD).
-    /// Meshes are ordered from highest to lowest detail.
-    /// </summary>
-    public CKTMesh[] Meshes { get; }
-
-    /// <summary>
     /// The materials used in the model. Materials are shared between meshes so when rendering a mesh you need
     /// access to the entire array.
     /// </summary>
     public CKTMaterial[] Materials { get; }
+
+    /// <summary>
+    /// The individual meshes in the model. Each mesh represent a different Level-Of-Detail (LOD).
+    /// Meshes are ordered from highest to lowest detail.
+    /// </summary>
+    public CKTMesh[] Meshes { get; }
 
     /// <summary>    
     /// The vertices used by each mesh laid out in one larger array. Slices of this array give you
