@@ -106,7 +106,7 @@ public sealed class RasterizerStates : IDisposable
     {
         return new RasterizerDescription()
         {
-            CullMode = CullMode.Front,
+            CullMode = CullMode.Back,
             FillMode = FillMode.Solid,
             FrontCounterClockwise = false,
             DepthBias = DefaultDepthBias,
@@ -123,7 +123,7 @@ public sealed class RasterizerStates : IDisposable
     {
         return new RasterizerDescription()
         {
-            CullMode = CullMode.Back,
+            CullMode = CullMode.Front,
             FillMode = FillMode.Solid,
             FrontCounterClockwise = false,
             DepthBias = DefaultDepthBias,

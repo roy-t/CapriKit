@@ -18,7 +18,7 @@ internal sealed class MainScene : IScene, IDisposable
     public void Update(DeviceContext context, float elapsed)
     {
         UpdateMenu();
-        CurrentTest?.Render(context);
+        CurrentTest?.Render(context, elapsed);
     }
 
     private void UpdateMenu()

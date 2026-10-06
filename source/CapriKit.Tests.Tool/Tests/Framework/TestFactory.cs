@@ -5,7 +5,7 @@ namespace CapriKit.Tests.Tool.Tests.Framework;
 
 internal interface ITestFactory : IDisposable
 {
-    public bool TryCreate(IServiceProvider provider, List<ITestScreen> tests);
+    public void Create(IServiceProvider provider, List<ITestScreen> tests);
 
     public string Name { get; }
     public int Total { get; }
@@ -25,13 +25,12 @@ internal sealed class TestFactory<TTest>(string name) : ITestFactory
     public int Loaded => 0;
     public AssetId? LastCompletedItem { get; }
 
-    public bool TryCreate(IServiceProvider provider, List<ITestScreen> tests)
+    public void Create(IServiceProvider provider, List<ITestScreen> tests)
     {
-        if (created) { return true; }
+        if (created) { return; }
         var instance = Activate(provider, []);
         tests.Add(instance);
         created = true;
-        return created;
     }
 
     public void Dispose() { }
@@ -58,9 +57,9 @@ internal sealed class TestFactory<TTest, TBundle> : ITestFactory
     public int Loaded => Bundle.Loaded;
     public AssetId? LastCompletedItem => Bundle.LastCompletedItem;
 
-    public bool TryCreate(IServiceProvider provider, List<ITestScreen> tests)
+    public void Create(IServiceProvider provider, List<ITestScreen> tests)
     {
-        if (created) { return true; }
+        if (created) { return; }
 
         if (Bundle.IsReady(out var contents))
         {
@@ -68,8 +67,6 @@ internal sealed class TestFactory<TTest, TBundle> : ITestFactory
             tests.Add(test);
             created = true;
         }
-
-        return created;
     }
 
     public void Dispose()

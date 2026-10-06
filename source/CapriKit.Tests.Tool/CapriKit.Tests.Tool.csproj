@@ -11,6 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <AdditionalFiles Include="Assets\ModelShader.hlsl" />
     <AdditionalFiles Include="Assets\BasicShader.hlsl" />
     <AdditionalFiles Include="CapriKit.Generators.HLSL.json" />
   </ItemGroup>

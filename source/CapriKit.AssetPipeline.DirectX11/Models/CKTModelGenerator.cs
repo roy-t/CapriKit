@@ -5,6 +5,15 @@ namespace CapriKit.AssetPipeline.DirectX11.Models;
 
 public static class CKTModelGenerator
 {
+    private static Color3 ToLinearColor(byte byteR, byte byteG, byte byteB)
+    {
+        const float gamma = 2.2f;
+        var r = MathF.Pow(byteR / (float)byte.MaxValue, gamma);
+        var g = MathF.Pow(byteG / (float)byte.MaxValue, gamma);
+        var b = MathF.Pow(byteB / (float)byte.MaxValue, gamma);
+        return new Color3(r, g, b);
+    }
+
     public static CKTModelData CreateUnitCube()
     {
         var forward = new Vector3(0, 0, -1);
@@ -69,13 +78,18 @@ public static class CKTModelGenerator
             indices[i + 4] = 3 + v;
             indices[i + 5] = 0 + v;
 
-            triangles[t + 0] = new CKTTriangle(0);
-            triangles[t + 1] = new CKTTriangle(0);
+            triangles[t + 0] = new CKTTriangle(face);
+            triangles[t + 1] = new CKTTriangle(face);
         }
 
         var materials = new CKTMaterial[]
         {
-            new(new Color3(1.0f, 0.0f, 0.0f), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f)
+            new(ToLinearColor(255, 28, 11), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // red
+            new(ToLinearColor(191, 18, 195), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // purple
+            new(ToLinearColor(7, 7, 255), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // blue
+            new(ToLinearColor(35, 216, 1), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // green
+            new(ToLinearColor(253, 255, 22), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // yellow
+            new(ToLinearColor(255, 140, 27), 0.0f, 1.0f, new Color3(0, 0, 0), 0.0f), // orange
         };
 
         var meshes = new CKTMesh[]

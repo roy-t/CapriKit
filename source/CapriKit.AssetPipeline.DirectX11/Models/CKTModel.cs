@@ -43,7 +43,7 @@ public readonly record struct CKTVertex(Vector3 Position, Vector3 Normal);
 /// A triangle with an assigned material.
 /// </summary>
 /// <param name="MaterialIndex">Index into the materials array</param>
-public readonly record struct CKTTriangle(int MaterialIndex);
+public readonly record struct CKTTriangle(uint MaterialIndex);
 
 /// <summary>
 /// Should always spell "CapriKit.Textureless.Model" for valid files in ASCII bytes.

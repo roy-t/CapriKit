@@ -6,5 +6,5 @@ internal interface ITestScreen : IDisposable
 {
     public string Title { get; }
 
-    public void Render(DeviceContext context);
+    public void Render(DeviceContext context, float elapsed);
 }

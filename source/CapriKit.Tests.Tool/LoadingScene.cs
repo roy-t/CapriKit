@@ -70,12 +70,15 @@ internal sealed class LoadingScene : IScene
             List<ITestScreen> tests = [];
             foreach (var factory in Factories)
             {
-                if (!factory.TryCreate(ServiceProvider, tests))
+                try
                 {
-                    throw new Exception("Factory completed but cannot construct");
+                    factory.Create(ServiceProvider, tests);
+                }
+                catch (Exception ex)
+                {
+                    throw new Exception($"Factory completed but cannot construct: {factory.Name}", ex);
                 }
             }
-
             var main = MainSceneFactory(ServiceProvider, [tests]);
             GameLoop.ChangeScene(main);
         }

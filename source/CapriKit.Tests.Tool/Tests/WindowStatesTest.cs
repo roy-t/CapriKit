@@ -14,7 +14,7 @@ internal sealed class WindowStatesTest(Win32Window window) : ITestScreen
         return new TestFactory<WindowStatesTest>("Window States Test");
     }
 
-    public void Render(DeviceContext _)
+    public void Render(DeviceContext _, float __)
     {
         if (ImGui.Begin(Title))
         {

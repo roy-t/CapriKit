@@ -55,7 +55,7 @@ internal sealed class ShaderTest : ITestScreen
 
     public string Title => "Basic Shader";
 
-    public void Render(DeviceContext context)
+    public void Render(DeviceContext context, float _)
     {
         UploadData(context);
         context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
