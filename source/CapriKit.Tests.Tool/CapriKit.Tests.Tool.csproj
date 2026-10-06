@@ -30,6 +30,7 @@
     <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
+    <ProjectReference Include="..\CapriKit.Geometry\CapriKit.Geometry.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
 

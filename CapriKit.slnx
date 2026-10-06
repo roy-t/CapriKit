@@ -51,6 +51,9 @@
   <Project Path="source/CapriKit.DirectX11/CapriKit.DirectX11.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="source/CapriKit.Geometry/CapriKit.Geometry.csproj" Id="48bb6ac9-ccc5-4c46-81d7-c1eeab49c253">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="source/CapriKit.IO/CapriKit.IO.csproj">
     <Platform Project="x64" />
   </Project>

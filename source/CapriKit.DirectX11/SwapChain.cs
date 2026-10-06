@@ -42,6 +42,8 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
     public bool VSync { get; set; } = true;
     public bool AllowTearing { get; private set; }
 
+    public float AspectRatio => Width / (float)Height;
+
     public void Clear(DeviceContext context)
     {
         context.ID3D11DeviceContext.ClearRenderTargetView(BackBufferView, Colors.CornflowerBlue);

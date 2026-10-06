@@ -156,7 +156,7 @@ public sealed partial class AssetManager : IDisposable
     {
         // Check if the asset can be loaded from an up-to-date build
         var build = await AssetDecoder.TryDecodeBuildMetaData(id, transcoder, OutputFileSystem);
-        if (build != default && IsUpToDate(transcoder, settings, build, OutputFileSystem))
+        if (build != default && IsUpToDate(transcoder, settings, build, InputFileSystem))
         {
             var upToDateAsset = await AssetDecoder.Decode(id, transcoder, OutputFileSystem);
             Incoming.Write(Result.Success(id, () => TrackAndTakeLease(upToDateAsset, transcoder)));
@@ -339,7 +339,7 @@ public sealed partial class AssetManager : IDisposable
                 {
                     return false;
                 }
-            }
+            }          
         }
 
         return true;

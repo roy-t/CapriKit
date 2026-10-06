@@ -12,7 +12,8 @@ internal sealed class MainScene : IScene, IDisposable
     public MainScene(IEnumerable<ITestScreen> tests)
     {
         Tests = tests;
-        CurrentTest = tests.FirstOrDefault();
+        CurrentTest = tests.FirstOrDefault(t => t.Title == "Model Test");
+        //CurrentTest = tests.FirstOrDefault();
     }
 
     public void Update(DeviceContext context, float elapsed)

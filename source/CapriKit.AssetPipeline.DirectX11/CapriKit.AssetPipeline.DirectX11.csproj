@@ -5,6 +5,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.AssetPipeline\CapriKit.AssetPipeline.csproj" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
+    <ProjectReference Include="..\CapriKit.Geometry\CapriKit.Geometry.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.SuperCompressed\CapriKit.SuperCompressed.csproj" />
   </ItemGroup>
