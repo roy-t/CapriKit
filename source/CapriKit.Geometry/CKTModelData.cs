@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 
 namespace CapriKit.Geometry;
 
-
 /// <summary>
 /// Material properties.
 /// </summary>
@@ -64,7 +63,8 @@ public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTyp
 /// <summary>
 /// Data for a CapriKit Textureless Model. A 3D model with 1..n LODs where each triangle is assigned a material instead of a texture.
 /// Assumes:
-/// - Y is up
+/// - The coordinate system is right handed, (X+ is right, Y+ is up, Z+ is closer)
+/// - Triangles are defined in clockwise order
 /// - Units are in meters
 /// </summary>
 public sealed class CKTModelData
@@ -110,7 +110,8 @@ public sealed class CKTModelData
     /// <summary>
     /// Extra per-triangle data for each mesh, laid out in one larger array. Slices of this array give you
     /// the data needed to render individual meshes. For every three indices there is exactly one entry in triangles.
-    /// Use SV_PrimitiveID in your shader and add the offset appropriate for the mesh you are rendering.
+    /// The first three vertices in the vertices slice of your LOD should use the triangle data from the first triangle
+    /// struct in the slice for this LOD. Use SV_PrimitiveID in your shader and use a sliced SRV (or an offset).
     /// </summary>
     public CKTTriangle[] Triangles { get; }
 }
