@@ -1,5 +1,6 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace CapriKit.Geometry;
 
@@ -42,9 +43,11 @@ public readonly record struct CKTTriangle(uint MaterialIndex);
 /// <summary>
 /// Should always spell "CapriKit.Textureless.Model" for valid files in ASCII bytes.
 /// </summary>
-[InlineArray(26)]
+[InlineArray(FileTypeIdentifier.Length)]
 public struct FileTypeIdentifier
 {
+    public const int Length = 26;
+
     private byte Elements;
 
     public static FileTypeIdentifier Create()
@@ -56,6 +59,11 @@ public struct FileTypeIdentifier
 
     private static ReadOnlySpan<byte> Expected => "CapriKit.Textureless.Model"u8;
     public readonly bool IsValid => Expected.SequenceEqual(this);
+
+    public readonly override string ToString()
+    {
+        return Encoding.ASCII.GetString(this);
+    }
 }
 
 public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTypeVersion, string Name, int MaterialCount, int MeshCount, int VertexCount, int IndexCount, int TriangleCount);
@@ -69,11 +77,11 @@ public readonly record struct CKTHeader(FileTypeIdentifier FileType, int FileTyp
 /// </summary>
 public sealed class CKTModelData
 {
-    public CKTModelData(CKTHeader header, CKTMesh[] meshes, CKTMaterial[] materials, CKTVertex[] vertices, uint[] indices, CKTTriangle[] triangles)
+    public CKTModelData(CKTHeader header, CKTMaterial[] materials, CKTMesh[] meshes, CKTVertex[] vertices, uint[] indices, CKTTriangle[] triangles)
     {
         Header = header;
-        Meshes = meshes;
         Materials = materials;
+        Meshes = meshes;
         Vertices = vertices;
         Indices = indices;
         Triangles = triangles;

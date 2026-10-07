@@ -71,11 +71,13 @@ def find_lod_collections(name):
 def create_depsgraph(collections):
     # Objects in excluded or unlinked collections, or disabled in viewports, are not evaluated so their modifiers
     # would be silently skipped. A temporary scene sidesteps collection state. The .blend file is never saved.
+    # all_objects is a cache that is rebuilt (and yields None) when it is modified while iterating, so copy it first
+    objects = {obj for collection in collections for obj in collection.all_objects}
     scene = bpy.data.scenes.new("ckt_export")
     for collection in collections:
         scene.collection.children.link(collection)
-        for obj in collection.all_objects:
-            obj.hide_viewport = False
+    for obj in objects:
+        obj.hide_viewport = False
 
     with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
         return bpy.context.evaluated_depsgraph_get()

@@ -1,5 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <Folder Include="Blender\" />
+    <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
   </ItemGroup>
 </Project>

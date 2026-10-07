@@ -1,5 +1,7 @@
 using System.Buffers;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CapriKit.IO.Streams;
@@ -91,6 +93,52 @@ public static class SequenceReaderExtensions
         return value;
     }
 
+    public static uint ReadUInt32(this ref SequenceReader<byte> reader)
+    {
+        return unchecked((uint)reader.ReadInt32());
+    }
+
+    public static float ReadSingle(this ref SequenceReader<byte> reader)
+    {
+        return BitConverter.Int32BitsToSingle(reader.ReadInt32());
+    }
+
+    public static Vector2 ReadVector2(this ref SequenceReader<byte> reader)
+    {
+        return new Vector2(reader.ReadSingle(), reader.ReadSingle());
+    }
+
+    public static Vector3 ReadVector3(this ref SequenceReader<byte> reader)
+    {
+        return new Vector3(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+    }
+
+    public static Vector4 ReadVector4(this ref SequenceReader<byte> reader)
+    {
+        return new Vector4(reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+    }
+
+    /// <summary>
+    /// Reads 16 floats stored row by row (M11, M12, M13, M14, M21, ...).
+    /// This is the same layout <see cref="Matrix4x4"/> has in memory.
+    /// </summary>
+    public static Matrix4x4 ReadMatrix4x4RowMajor(this ref SequenceReader<byte> reader)
+    {
+        return new Matrix4x4(
+            reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(),
+            reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(),
+            reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(),
+            reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle(), reader.ReadSingle());
+    }
+
+    /// <summary>
+    /// Reads 16 floats stored column by column (M11, M21, M31, M41, M12, ...).
+    /// </summary>
+    public static Matrix4x4 ReadMatrix4x4ColumnMajor(this ref SequenceReader<byte> reader)
+    {
+        return Matrix4x4.Transpose(reader.ReadMatrix4x4RowMajor());
+    }
+
     public static long ReadInt64(this ref SequenceReader<byte> reader)
     {
         if (!reader.TryReadLittleEndian(out long value))
@@ -111,6 +159,25 @@ public static class SequenceReaderExtensions
 
         reader.Advance(bytes.Length);
         return new Guid(bytes, bigEndian: false);
+    }
+
+    /// <summary>
+    /// Blits an array of unmanaged structs. Assumes that struct's
+    /// in-memory layout and endianness match the data's layout and endianness.
+    /// </summary>    
+    public static T[] BlitArray<T>(this ref SequenceReader<byte> reader, int count)
+        where T : unmanaged
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count, nameof(count));
+
+        var array = GC.AllocateUninitializedArray<T>(count);
+        var bytes = MemoryMarshal.AsBytes(array.AsSpan());
+        if (!reader.TryCopyTo(bytes))
+        {
+            throw new EndOfStreamException();
+        }
+        reader.Advance(bytes.Length);
+        return array;
     }
 
     public static byte[] ReadBytes(this ref SequenceReader<byte> reader, int length)

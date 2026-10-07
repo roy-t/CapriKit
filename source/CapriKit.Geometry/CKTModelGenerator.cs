@@ -98,6 +98,6 @@ public static class CKTModelGenerator
 
         var header = new CKTHeader(FileTypeIdentifier.Create(), 1, "UnitCube", materials.Length, meshes.Length, vertices.Length, indices.Length, triangles.Length);
 
-        return new CKTModelData(header, meshes, materials, vertices, indices, triangles);
+        return new CKTModelData(header, materials, meshes, vertices, indices, triangles);
     }
 }
