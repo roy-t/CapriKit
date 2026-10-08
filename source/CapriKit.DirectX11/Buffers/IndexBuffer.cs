@@ -21,7 +21,7 @@ public static class IndexBuffers
     };
 
     public static IndexBuffer<ushort> CreateU16(Device device, string? hintName = null)
-    {        
+    {
         return new IndexBuffer<ushort>(device, MutableBufferDescription, Format.R16_UInt, hintName);
     }
 

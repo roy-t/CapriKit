@@ -6,11 +6,10 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Generators/">
-    <Project Path="source/CapriKit.Generators.AssetHandles/CapriKit.Generators.AssetHandles.csproj" Id="b8f182b0-a8e7-4ce4-af6b-f678309b9ae4">
-      <Platform Project="x64" />
-    </Project>
+    <Project Path="source/CapriKit.Generators.AssetHandles/CapriKit.Generators.AssetHandles.csproj" />
     <Project Path="source/CapriKit.Generators.HLSL/CapriKit.Generators.HLSL.csproj" />
     <Project Path="source/CapriKit.Generators.PrecisionVariants/CapriKit.Generators.PrecisionVariants.csproj" />
+    <Project Path="source/CapriKit.Generators.Shared/CapriKit.Generators.Shared.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
@@ -20,6 +19,7 @@
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="Generators.Build.props" />
+    <File Path="Generators.Shared.targets" />
     <File Path="global.json" />
     <File Path="PLANNING.md" />
     <File Path="README.md" />
@@ -36,7 +36,7 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
-  <Project Path="source/CapriKit.AssetLibrary/CapriKit.AssetLibrary.csproj" Id="d3a8a5ea-4b0c-4fa0-a727-b6dbbd55aa60">
+  <Project Path="source/CapriKit.AssetLibrary/CapriKit.AssetLibrary.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.AssetPipeline.DirectX11/CapriKit.AssetPipeline.DirectX11.csproj">
@@ -48,7 +48,7 @@
   <Project Path="source/CapriKit.Build/CapriKit.Build.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="source/CapriKit.Collections/CapriKit.Collections.csproj" Id="b660dbe6-c228-4538-a223-81186a16917d">
+  <Project Path="source/CapriKit.Collections/CapriKit.Collections.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.Concurrency/CapriKit.Concurrency.csproj">
@@ -57,7 +57,7 @@
   <Project Path="source/CapriKit.DirectX11/CapriKit.DirectX11.csproj">
     <Platform Project="x64" />
   </Project>
-  <Project Path="source/CapriKit.Geometry/CapriKit.Geometry.csproj" Id="48bb6ac9-ccc5-4c46-81d7-c1eeab49c253">
+  <Project Path="source/CapriKit.Geometry/CapriKit.Geometry.csproj">
     <Platform Project="x64" />
   </Project>
   <Project Path="source/CapriKit.IO/CapriKit.IO.csproj">

@@ -1,6 +1,6 @@
-using CapriKit.Generators.HLSL.Builder;
+using CapriKit.Generators.Shared;
 
-namespace CapriKit.Tests.Generators.HLSL.Builder;
+namespace CapriKit.Tests.Generators.Shared;
 
 internal class SourceCodeBuilderTests
 {

@@ -339,7 +339,7 @@ public sealed partial class AssetManager : IDisposable
                 {
                     return false;
                 }
-            }          
+            }
         }
 
         return true;

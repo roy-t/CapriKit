@@ -24,7 +24,7 @@ public sealed class CKTModel : IDisposable
         Initialize(device, data);
     }
 
-    public string Name { get; }   
+    public string Name { get; }
 
     public void DrawIndexed(DeviceContext context, uint materialSRVSlot, uint triangleSRVSlot, int lod = 0)
     {

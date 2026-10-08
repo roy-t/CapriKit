@@ -1,8 +1,9 @@
 using CapriKit.Generators.HLSL.Parser;
+using CapriKit.Generators.Shared;
 using Microsoft.CodeAnalysis.Text;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using static CapriKit.Generators.HLSL.Builder.SourceCodeUtils;
+using static CapriKit.Generators.Shared.SourceCodeUtils;
 
 namespace CapriKit.Generators.HLSL.Builder;
 

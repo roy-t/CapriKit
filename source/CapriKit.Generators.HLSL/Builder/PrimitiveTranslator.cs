@@ -1,3 +1,5 @@
+using CapriKit.Generators.Shared;
+
 namespace CapriKit.Generators.HLSL.Builder;
 
 internal static class PrimitiveTranslator

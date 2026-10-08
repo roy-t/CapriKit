@@ -1,6 +1,7 @@
 using CapriKit.Generators.HLSL.Builder;
 using CapriKit.Generators.HLSL.Parser;
 using CapriKit.Generators.HLSL.Tokenizer;
+using CapriKit.Generators.Shared;
 
 namespace CapriKit.Tests.Generators.HLSL.Builder;
 

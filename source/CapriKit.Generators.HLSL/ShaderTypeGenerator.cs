@@ -1,13 +1,14 @@
 using CapriKit.Generators.HLSL.Builder;
 using CapriKit.Generators.HLSL.Parser;
 using CapriKit.Generators.HLSL.Tokenizer;
+using CapriKit.Generators.Shared;
 using Microsoft.CodeAnalysis;
-using static CapriKit.Generators.HLSL.ConfigUtils;
+using static CapriKit.Generators.Shared.ConfigUtils;
 
 namespace CapriKit.Generators.HLSL;
 
 /// <summary>
-/// Generates metadata that describe the shader, its entrypoints and slots and generates struct for types used.
+/// Generates metadata that describe the shader, its entry points and slots and generates struct for types used.
 /// </summary>
 [Generator]
 internal sealed class ShaderTypeGenerator : IIncrementalGenerator
@@ -27,7 +28,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
 
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var configurationProvider = CreateConfigurationProvider(context);
+        var configurationProvider = CreateConfigurationProvider<GeneratorConfiguration>(context, ConfigTypeGenerator.GeneratorConfigurationFile);
 
         var shadersProvider = context.AdditionalTextsProvider
             .Where(static file => file.Path.EndsWith(".hlsl", StringComparison.OrdinalIgnoreCase))
@@ -39,7 +40,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
         {
             if (input.Right.Configuration == null || input.Right.Error != ConfigError.None)
             {
-                ReportConfigDiagnostic(context, input.Right);
+                ReportConfigDiagnostic(context, input.Right, ConfigTypeGenerator.GeneratorConfigurationFile);
                 return;
             }
 
@@ -49,7 +50,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
                 return;
             }
 
-            var config = input.Right.Configuration;
+            var config = PatchConfig(input.Right);
             var includeResolver = new IncludeResolver(input.Left);
 
 
@@ -67,6 +68,14 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
                 }
             }
         });
+    }
+
+    private static GeneratorConfiguration PatchConfig(ConfigResult<GeneratorConfiguration> result)
+    {
+        var config = result.Configuration ?? throw new NullReferenceException(nameof(result.Configuration));
+        var configDirectory = Path.GetDirectoryName(result.ConfigPath);
+        var absoluteConfigRoot = Path.Combine(configDirectory, config.ContentRoot);
+        return config with { AbsoluteContentRoot = absoluteConfigRoot };
     }
 
     private static void ReportNoOp(SourceProductionContext context)

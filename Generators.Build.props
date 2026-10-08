@@ -5,7 +5,10 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <Platforms>AnyCPU</Platforms>
     <ImplicitUsings>true</ImplicitUsings>
-		<LangVersion>Latest</LangVersion>    
+		<LangVersion>Latest</LangVersion>
+    <!-- Not on by default for netstandard2.0, without it MSBuildWorkspace (dotnet format, IDEs)
+         cannot match project references between generator projects -->
+    <ProduceReferenceAssembly>true</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -15,6 +18,17 @@
     <IsRoslynComponent>true</IsRoslynComponent>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
+
+  <!-- Pack the generator as an analyzer instead of as a regular library. Generators that depend on
+       other assemblies must also pack those into analyzers/dotnet/cs -->
+  <PropertyGroup>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />

@@ -1,0 +1,10 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <Import Project="..\..\Generators.Build.props" />
+
+  <PropertyGroup>
+    <!-- A helper library for generators, not a generator itself -->
+    <IsRoslynComponent>false</IsRoslynComponent>
+    <!-- Not shipped as its own package, generators pack this assembly next to their own assembly -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

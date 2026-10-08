@@ -1,9 +1,9 @@
 using System.Text;
 
-namespace CapriKit.Generators.HLSL.Builder;
+namespace CapriKit.Generators.Shared;
 
 [Flags]
-internal enum Modifiers
+public enum Modifiers
 {
     None,
     Private = 1,
@@ -18,7 +18,7 @@ internal enum Modifiers
     Fixed = 512
 }
 
-internal sealed class SourceCodeBuilder
+public sealed class SourceCodeBuilder
 {
     private readonly StringBuilder builder = new();
     private int level = 0;
@@ -115,13 +115,13 @@ internal sealed class SourceCodeBuilder
         return builder.ToString();
     }
 
-    internal void WriteLine(string text)
+    public void WriteLine(string text)
     {
         builder.Append(' ', level * 4)
                .AppendLine(text);
     }
 
-    internal void Write(string text)
+    public void Write(string text)
     {
         builder.Append(' ', level * 4)
                .Append(text);

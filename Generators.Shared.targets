@@ -1,0 +1,25 @@
+﻿<Project>
+  <!-- Import in source generators that use CapriKit.Generators.Shared. The compiler only loads the
+       dependencies of a generator when they sit next to it, these settings ensure that they do -->
+  <ItemGroup>
+    <!-- PrivateAssets prevents a NuGet dependency on the (unpublished) CapriKit.Generators.Shared package -->
+    <ProjectReference Include="$(MSBuildThisFileDirectory)source\CapriKit.Generators.Shared\CapriKit.Generators.Shared.csproj" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Packaged generators: pack the dependency next to the generator -->
+  <ItemGroup>
+    <None Include="$(OutputPath)CapriKit.Generators.Shared.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <!-- Projects that consume the generator via a ProjectReference with OutputItemType="Analyzer" only
+       receive the generator's TargetPath, add the dependency so that the compiler can load it as well -->
+  <PropertyGroup>
+    <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetGeneratorsSharedTargetPath</GetTargetPathDependsOn>
+  </PropertyGroup>
+
+  <Target Name="GetGeneratorsSharedTargetPath">
+    <ItemGroup>
+      <TargetPathWithTargetPlatformMoniker Include="$(OutputPath)CapriKit.Generators.Shared.dll" IncludeRuntimeDependency="false" />
+    </ItemGroup>
+  </Target>
+</Project>

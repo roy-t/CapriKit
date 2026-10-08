@@ -1,5 +1,6 @@
 using CapriKit.Generators.HLSL.Parser;
-using static CapriKit.Generators.HLSL.Builder.SourceCodeUtils;
+using CapriKit.Generators.Shared;
+using static CapriKit.Generators.Shared.SourceCodeUtils;
 
 namespace CapriKit.Generators.HLSL.Builder;
 
