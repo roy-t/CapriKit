@@ -7,16 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="CapriKit.Generators.HLSL.json" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="Assets\ModelShader.hlsl" />
-    <AdditionalFiles Include="Assets\BasicShader.hlsl" />
-    <AdditionalFiles Include="CapriKit.Generators.HLSL.json" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="ImGui.NET" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
@@ -25,10 +15,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\CapriKit.AssetLibrary\CapriKit.AssetLibrary.csproj" />
     <ProjectReference Include="..\CapriKit.AssetPipeline.DirectX11\CapriKit.AssetPipeline.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.AssetPipeline\CapriKit.AssetPipeline.csproj" />
     <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
-    <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
     <ProjectReference Include="..\CapriKit.Geometry\CapriKit.Geometry.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />

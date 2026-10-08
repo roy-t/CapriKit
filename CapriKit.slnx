@@ -6,6 +6,9 @@
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/Generators/">
+    <Project Path="source/CapriKit.Generators.AssetHandles/CapriKit.Generators.AssetHandles.csproj" Id="b8f182b0-a8e7-4ce4-af6b-f678309b9ae4">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="source/CapriKit.Generators.HLSL/CapriKit.Generators.HLSL.csproj" />
     <Project Path="source/CapriKit.Generators.PrecisionVariants/CapriKit.Generators.PrecisionVariants.csproj" />
   </Folder>
@@ -33,6 +36,9 @@
       <Platform Project="x64" />
     </Project>
   </Folder>
+  <Project Path="source/CapriKit.AssetLibrary/CapriKit.AssetLibrary.csproj" Id="d3a8a5ea-4b0c-4fa0-a727-b6dbbd55aa60">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="source/CapriKit.AssetPipeline.DirectX11/CapriKit.AssetPipeline.DirectX11.csproj">
     <Platform Project="x64" />
   </Project>

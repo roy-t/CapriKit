@@ -6,10 +6,10 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.Geometry;
-using CapriKit.Tests.Tool.Shaders;
+using CapriKit.AssetLibrary.Shaders;
 using CapriKit.Tests.Tool.Tests.Framework;
 using System.Numerics;
-using static CapriKit.Tests.Tool.Shaders.ModelShader;
+using static CapriKit.AssetLibrary.Shaders.ModelShader;
 
 namespace CapriKit.Tests.Tool.Tests;
 
