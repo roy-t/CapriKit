@@ -20,7 +20,8 @@ internal sealed class ConfigTypeGenerator()
         builder.OpenClass(Modifiers.Internal | Modifiers.Static, "Configuration");
         builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "TargetNamespace", ToLiteral(config.TargetNamespace));
         builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "ContentRoot", ToLiteral(config.ContentRoot));
-        builder.WriteField(Modifiers.Public | Modifiers.ReadOnly, "IReadOnlyList<string>", "IncludedExtensions", ToLiteralCollection(config.IncludedExtensions));
+        builder.WriteField(Modifiers.Public | Modifiers.Static | Modifiers.ReadOnly, "IReadOnlyList<string>", "IncludedExtensions", ToLiteralCollection(config.IncludedExtensions));
+        builder.CloseBlock();
         return SourceText.From(builder.Build(), Encoding.UTF8);
     }
 }

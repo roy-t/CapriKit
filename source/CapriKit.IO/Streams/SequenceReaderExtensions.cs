@@ -164,7 +164,7 @@ public static class SequenceReaderExtensions
     /// <summary>
     /// Blits an array of unmanaged structs. Assumes that struct's
     /// in-memory layout and endianness match the data's layout and endianness.
-    /// </summary>    
+    /// </summary>
     public static T[] BlitArray<T>(this ref SequenceReader<byte> reader, int count)
         where T : unmanaged
     {

@@ -40,13 +40,13 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
         {
             if (input.Right.Configuration == null || input.Right.Error != ConfigError.None)
             {
-                ReportConfigDiagnostic(context, input.Right, ConfigTypeGenerator.GeneratorConfigurationFile);
+                Reporters.ReportConfigDiagnostic(context, input.Right, ConfigTypeGenerator.GeneratorConfigurationFile);
                 return;
             }
 
             if (input.Left.Length == 0)
             {
-                ReportNoOp(context);
+                Reporters.ReportNoOp(context, "Please double check that your .hlsl files are added to your project: `<ItemGroup><AdditionalFiles Include=\"shader.hlsl\"/></ItemGroup>`");
                 return;
             }
 
@@ -64,7 +64,9 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
                 }
                 else
                 {
-                    ReportFailure(context, path);
+                    Reporters.ReportFailure(context, "STG500",
+                                $"Failed to Generate Shader Type",
+                                $"Could not generate shader type for: {path}");
                 }
             }
         });
@@ -74,37 +76,7 @@ internal sealed class ShaderTypeGenerator : IIncrementalGenerator
     {
         var config = result.Configuration ?? throw new NullReferenceException(nameof(result.Configuration));
         var configDirectory = Path.GetDirectoryName(result.ConfigPath);
-        var absoluteConfigRoot = Path.Combine(configDirectory, config.ContentRoot);
-        return config with { AbsoluteContentRoot = absoluteConfigRoot };
-    }
-
-    private static void ReportNoOp(SourceProductionContext context)
-    {
-        var description = new DiagnosticDescriptor
-                            (
-                                "STG004",
-                                $"No input files found",
-                                $"Please double check that your .hlsl files are added to your project: `<ItemGroup><AdditionalFiles Include=\"shader.hlsl\"/></ItemGroup>`",
-                                "SourceGeneration",
-                                DiagnosticSeverity.Warning,
-                                true
-                            );
-        var diagnostic = Diagnostic.Create(description, null);
-        context.ReportDiagnostic(diagnostic);
-    }
-
-    private static void ReportFailure(SourceProductionContext context, string path)
-    {
-        var description = new DiagnosticDescriptor
-                            (
-                                "STG004",
-                                $"Failed to Generate Shader Type",
-                                $"Could not generate shader type for: {path}",
-                                "SourceGeneration",
-                                DiagnosticSeverity.Warning,
-                                true
-                            );
-        var diagnostic = Diagnostic.Create(description, null);
-        context.ReportDiagnostic(diagnostic);
+        var contentRoot = Path.Combine(configDirectory, config.ContentRoot);
+        return config with { AbsoluteContentRoot = contentRoot };
     }
 }

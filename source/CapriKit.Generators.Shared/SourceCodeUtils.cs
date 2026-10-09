@@ -8,7 +8,7 @@ public static class SourceCodeUtils
     public static string ToLiteral(string value) => SymbolDisplay.FormatLiteral(value, true);
     public static string ToLiteral(uint value) => SymbolDisplay.FormatPrimitive(value, true, false) ?? throw new Exception($"Failed to format literal, type: {value.GetType().FullName}, value: {value}.");
     public static string ToLiteral(int value) => SymbolDisplay.FormatPrimitive(value, true, false) ?? throw new Exception($"Failed to format literal, type: {value.GetType().FullName}, value: {value}.");
-    public static string ToLiteralCollection(params IEnumerable<string> values) => $"[ {string.Join(", ", values.Select(ToLiteral))} ];";
+    public static string ToLiteralCollection(params IEnumerable<string> values) => $"[ {string.Join(", ", values.Select(ToLiteral))} ]";
 
     public static string CreateValidVariableIdentifier(string name)
     {

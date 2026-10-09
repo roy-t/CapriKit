@@ -53,9 +53,9 @@ public static class BufferWriterExtensions
 
     public static void Write(this IBufferWriter<byte> writer, float value)
     {
-        var span = writer.GetSpan(sizeof(long));
+        var span = writer.GetSpan(sizeof(float));
         BinaryPrimitives.WriteSingleLittleEndian(span, value);
-        writer.Advance(sizeof(long));
+        writer.Advance(sizeof(float));
     }
 
     public static void Write(this IBufferWriter<byte> writer, long value)

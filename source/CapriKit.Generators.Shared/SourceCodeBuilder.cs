@@ -15,7 +15,7 @@ public enum Modifiers
     Sealed = 64,
     ReadOnly = 128,
     Const = 256,
-    Fixed = 512
+    Fixed = 512,
 }
 
 public sealed class SourceCodeBuilder

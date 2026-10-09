@@ -28,46 +28,7 @@ public static class ConfigUtils
                     .Select((files, _) => Parse<T>(files));
     }
 
-    public static void ReportConfigDiagnostic<T>(SourceProductionContext context, ConfigResult<T> result, string configurationFile)
-        where T : class
-    {
-        var descriptor = result.Error switch
-        {
-            ConfigError.Missing => new DiagnosticDescriptor
-            (
-                "STG001",
-                $"Missing configuration file '{configurationFile}'",
-                $"To be able to use this generator you need to add exactly one configuration file to your project: `<ItemGroup><AdditionalFiles Include=\"{configurationFile}\"/></ItemGroup> " +
-                "to describe the namespace to generate files in and which folder to use as your asset root folder",
-                "SourceGeneration",
-                DiagnosticSeverity.Error,
-                true
-            ),
-            ConfigError.Malformed => new DiagnosticDescriptor
-            (
-                "STG002",
-                $"Configuration file '{configurationFile}' is malformed",
-                "Exception: {0}",
-                "SourceGeneration",
-                DiagnosticSeverity.Error,
-                true
-            ),
-            _ => new DiagnosticDescriptor
-            (
-                "STG003",
-                $"Unexpected error parsing configuration file '{configurationFile}'",
-                "Exception: {0}",
-                "SourceGeneration",
-                DiagnosticSeverity.Error,
-                true
-            ),
-        };
-
-        if (descriptor is not null)
-        {
-            context.ReportDiagnostic(Diagnostic.Create(descriptor, null, result.Message));
-        }
-    }
+    
 
     private static ConfigResult<T> Parse<T>(ImmutableArray<(string Path, SourceText? Text)> files)
         where T : class

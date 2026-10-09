@@ -7,9 +7,9 @@ internal class CKTModelParserTests
     [Test]
     public async Task Parse()
     {
-        // TODO: temp hardcoded path
-        var path = "C:\\projects\\csharp\\CapriKit\\assets\\Container.1TUE.ckt";
-        using var stream = File.OpenRead(path);
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", CapriKit.AssetHandles.Models.Container1tue.ckt);
+        var stream = File.OpenRead(path);
+
         var model = await CKTModelParser.Parse(stream, true);
 
         await Assert.That(model.Header.FileType.IsValid).IsTrue();

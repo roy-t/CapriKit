@@ -24,7 +24,7 @@ public abstract class ConfigTypeGenerator<T>(string ConfigurationFile) : IIncrem
             }
             else
             {
-                ReportConfigDiagnostic(context, result, ConfigurationFile);
+                Reporters.ReportConfigDiagnostic(context, result, ConfigurationFile);
             }
         });
     }

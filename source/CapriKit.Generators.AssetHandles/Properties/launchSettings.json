@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Generate handles for CapriKit.AssetLibrary": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\CapriKit.AssetLibrary\\CapriKit.AssetLibrary.csproj"
+    }
+  }
+}
