@@ -1,5 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CapriKit.Generators.AssetHandles\CapriKit.Generators.AssetHandles.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="CapriKit.Generators.AssetHandles.json" />
+    <AdditionalFiles Include="Blender/export_ckt.py" CopyToOutputDirectory="Always"/>
   </ItemGroup>
 </Project>

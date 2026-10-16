@@ -3,6 +3,10 @@
     "Generate handles for CapriKit.AssetLibrary": {
       "commandName": "DebugRoslynComponent",
       "targetProject": "..\\CapriKit.AssetLibrary\\CapriKit.AssetLibrary.csproj"
+    },
+    "Generate handles for CapriKit.Geometry": {
+      "commandName": "DebugRoslynComponent",
+      "targetProject": "..\\CapriKit.Geometry\\CapriKit.Geometry.csproj"
     }
   }
 }

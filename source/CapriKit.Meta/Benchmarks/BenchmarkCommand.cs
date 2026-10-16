@@ -10,7 +10,7 @@ namespace CapriKit.Meta.Benchmarks;
 
 internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
 {
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var startTime = DateTime.Now;
 
@@ -99,7 +99,7 @@ internal sealed class BenchmarkCommand : Command<BenchmarkCommand.Settings>
         return 0;
     }
 
-    private static IReadOnlyList<BenchmarkEntry> ParseBenchmarkResults(SemVer version, DateTime timestamp, string directory)
+    private static List<BenchmarkEntry> ParseBenchmarkResults(SemVer version, DateTime timestamp, string directory)
     {
         var entries = new List<BenchmarkEntry>();
         var info = new DirectoryInfo(directory);

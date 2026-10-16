@@ -1,3 +1,4 @@
+using CapriKit.AssetLibrary.Shaders;
 using CapriKit.AssetPipeline;
 using CapriKit.AssetPipeline.DirectX11.Models;
 using CapriKit.DirectX11;
@@ -6,7 +7,7 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.Geometry;
-using CapriKit.AssetLibrary.Shaders;
+using CapriKit.Mathematics;
 using CapriKit.Tests.Tool.Tests.Framework;
 using System.Numerics;
 using static CapriKit.AssetLibrary.Shaders.ModelShader;
@@ -55,7 +56,7 @@ internal sealed class ModelTest : ITestScreen
         const float speed = 0.5f;
         var world = Matrix4x4.CreateRotationY(accumulator * speed) * Matrix4x4.CreateRotationX(accumulator * speed);
         var view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 1.0f, -1.0f), Vector3.Zero, Vector3.UnitY);
-        var projection = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2, SwapChain.AspectRatio, 0.01f, 1000.0f);
+        var projection = Matrix4x4.CreatePerspectiveFieldOfViewReverseZ(MathF.PI / 2, SwapChain.AspectRatio, 0.01f);
 
         var constants = new Constants()
         {
@@ -64,7 +65,7 @@ internal sealed class ModelTest : ITestScreen
         };
         ConstantBuffer.Write(context, [constants]);
 
-        context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.Opaque, context.DepthStencilStates.None);
+        context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.Opaque, context.DepthStencilStates.ReverseZ);
         context.VS.SetConstantBuffer(0, ConstantBuffer);
         context.PS.SetConstantBuffer(0, ConstantBuffer);
         context.PS.SetSampler(0, context.SamplerStates.LinearWrap);

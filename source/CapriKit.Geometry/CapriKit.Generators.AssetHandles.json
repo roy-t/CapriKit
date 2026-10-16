@@ -1,0 +1,5 @@
+{
+  "targetNamespace": "CapriKit.Geometry.Blender",
+  "contentRoot": "Blender",
+  "includedExtensions": [".py"]
+}

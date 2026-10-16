@@ -31,6 +31,44 @@ public static class CKTModelParser
         return new CKTModelData(header, materials, meshes, vertices, indices, triangles);
     }
 
+    public static CKTModelData Parse(ref SequenceReader<byte> reader, bool validateData = false)
+    {
+        var header = ReadHeader(ref reader);
+        ValidateHeader(header);
+
+        var materials = reader.BlitArray<CKTMaterial>(header.MaterialCount);
+        if (validateData) { ValidateMaterials(header, materials); }
+
+        var meshes = reader.BlitArray<CKTMesh>(header.MeshCount);
+        if (validateData) { ValidateMeshes(header, meshes); }
+
+        var vertices = reader.BlitArray<CKTVertex>(header.VertexCount);
+        if (validateData) { ValidateVertices(header, meshes, vertices); }
+
+        var indices = reader.BlitArray<uint>(header.IndexCount);
+        if (validateData) { ValidateIndices(header, meshes, indices); }
+
+        var triangles = reader.BlitArray<CKTTriangle>(header.TriangleCount);
+        if (validateData) { ValidateTriangles(header, triangles); }
+
+        return new CKTModelData(header, materials, meshes, vertices, indices, triangles);
+    }
+
+    private static CKTHeader ReadHeader(ref SequenceReader<byte> reader)
+    {
+        var id = new FileTypeIdentifier();
+        reader.ReadBytes(FileTypeIdentifier.Length).CopyTo(id);
+        var version = reader.ReadInt32();
+        var name = reader.ReadString();
+        var materialCount = reader.ReadInt32();
+        var meshCount = reader.ReadInt32();
+        var vertexCount = reader.ReadInt32();
+        var indexCount = reader.ReadInt32();
+        var triangleCount = reader.ReadInt32();
+
+        return new CKTHeader(id, version, name, materialCount, meshCount, vertexCount, indexCount, triangleCount);
+    }
+
     private static CKTHeader ReadHeader(BinaryReader reader)
     {
         var id = ReadFileTypeIdentifier(reader);

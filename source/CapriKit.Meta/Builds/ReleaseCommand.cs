@@ -18,7 +18,7 @@ internal sealed class ReleaseCommand : Command<ReleaseCommand.Settings>
         public string ApiKey { get; init; } = string.Empty;
     }
 
-    protected override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
+    public override int Execute(CommandContext context, Settings release, CancellationToken cancellationToken)
     {
         var solutionPath = Config.SolutionPath;
         var pacakgeDirectory = Config.Outputs.PackageDirectory;

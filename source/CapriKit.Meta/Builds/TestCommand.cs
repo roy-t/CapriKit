@@ -8,7 +8,7 @@ namespace CapriKit.Meta.Builds;
 
 internal sealed class TestCommand : Command<TestCommand.Settings>
 {
-    protected override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
+    public override int Execute(CommandContext context, Settings settings, CancellationToken cancellationToken)
     {
         var startTime = DateTime.Now;
 
@@ -73,7 +73,7 @@ internal sealed class TestCommand : Command<TestCommand.Settings>
 
     private record TestResult(string Class, string Test, bool Passed, TimeSpan Duration);
 
-    private List<TestResult> ParseTrxFile(string filePath)
+    private static List<TestResult> ParseTrxFile(string filePath)
     {
         var results = new List<TestResult>();
         var testRun = TrxDeserializer.Deserialize(filePath);

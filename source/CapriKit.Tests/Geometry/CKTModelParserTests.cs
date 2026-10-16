@@ -1,4 +1,5 @@
 using CapriKit.Geometry;
+using CapriKit.IO.Streams;
 
 namespace CapriKit.Tests.Geometry;
 
@@ -32,5 +33,32 @@ internal class CKTModelParserTests
         await Assert.That(model.Triangles.Count).IsEqualTo(model.Header.TriangleCount);
 
         await Assert.That(stream.Position).IsEqualTo(stream.Length);
+    }
+
+    [Test]
+    public async Task Parse_SequenceReader()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", CapriKit.AssetHandles.Models.Container1tue.ckt);
+        var bytes = await File.ReadAllBytesAsync(path);
+        var expected = await CKTModelParser.Parse(new MemoryStream(bytes));
+
+        var (model, remaining) = ParseFromSequence(bytes);
+
+        await Assert.That(model.Header.FileType.IsValid).IsTrue();
+        await Assert.That(model.Header.Name).IsEqualTo(expected.Header.Name);
+        await Assert.That(model.Materials).IsEquivalentTo(expected.Materials);
+        await Assert.That(model.Meshes).IsEquivalentTo(expected.Meshes);
+        await Assert.That(model.Vertices).IsEquivalentTo(expected.Vertices);
+        await Assert.That(model.Indices).IsEquivalentTo(expected.Indices);
+        await Assert.That(model.Triangles).IsEquivalentTo(expected.Triangles);
+        await Assert.That(remaining).IsEqualTo(0L);
+    }
+
+    // SequenceReader cannot be passed by ref inside an async method
+    private static (CKTModelData, long) ParseFromSequence(byte[] bytes)
+    {
+        var reader = SequenceReaders.Create(bytes, 0, bytes.Length);
+        var model = CKTModelParser.Parse(ref reader, true);
+        return (model, reader.Remaining);
     }
 }

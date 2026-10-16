@@ -44,9 +44,13 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
 
     public float AspectRatio => Width / (float)Height;
 
-    public void Clear(DeviceContext context)
+    /// <summary>
+    /// Clears the back buffer and depth stencil.Note that the default clear value is 0.0f, which is only suited for a ReverseZ buffer.
+    /// </summary>
+    public void Clear(DeviceContext context, IDepthStencilView depth, float clearValue = 0.0f)
     {
         context.ID3D11DeviceContext.ClearRenderTargetView(BackBufferView, Colors.CornflowerBlue);
+        context.ID3D11DeviceContext.ClearDepthStencilView(depth.ID3D11DepthStencilView, DepthStencilClearFlags.Depth, clearValue, 0);
     }
 
     public void Resize(Device device, int width, int height)

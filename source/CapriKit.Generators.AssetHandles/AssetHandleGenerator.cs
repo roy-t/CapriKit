@@ -55,7 +55,7 @@ internal sealed class AssetHandleGenerator : IIncrementalGenerator
             {
                 var example = group.First();
                 var builder = new SourceCodeBuilder();
-                var ns = $"{config.TargetNamespace}.{SourceCodeUtils.CreateValidNamespace(example.Directory)}";
+                var ns = SourceCodeUtils.CreateValidNamespace($"{config.TargetNamespace}.{example.Directory}");
                 builder.WriteNamespace(ns);
 
                 foreach (var item in group)

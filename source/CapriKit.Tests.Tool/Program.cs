@@ -26,7 +26,8 @@ internal sealed class Program
         services.AddSingleton(Win32Application.Mouse);
         services.AddDirectX11();
         services.AddAssetPipeline(GetArg("--content-input"), GetArg("--content-output"));
-        services.AddDirectX11AssetTranscoders();
+        services.AddDirectX11ShaderTranscoders();
+        services.AddDirectX11ModelTranscoders();
 
         services.AddSingleton<GameLoop>();
         services.AddSingleton<LoadingScene>();
@@ -51,6 +52,7 @@ internal sealed class Program
     {
         services.AddSingleton(provider => ShaderTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
         services.AddSingleton(provider => ModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
+        services.AddSingleton(provider => BlenderModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
         services.AddSingleton(_ => WindowStatesTest.CreateFactory());
     }
 

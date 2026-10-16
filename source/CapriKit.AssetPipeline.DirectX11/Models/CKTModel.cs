@@ -44,10 +44,21 @@ public sealed class CKTModel : IDisposable
         context.DrawIndexed(indexCount, indexOffset, (int)vertexOffset);
     }
 
-    internal void HotReload(Device device, CKTModelData data)
+    /// <summary>
+    /// Disposes the current GPU resources and takes ownership of the GPU resources of <paramref name="newParts"/>.
+    /// Do not use or dispose <paramref name="newParts"/> afterwards.
+    /// </summary>
+    internal void HotSwap(CKTModel newParts)
     {
         Dispose();
-        Initialize(device, data);
+
+        materials = newParts.materials;
+        triangles = newParts.triangles;
+        vertices = newParts.vertices;
+        indices = newParts.indices;
+        materialsView = newParts.materialsView;
+        triangleViews = newParts.triangleViews;
+        meshes = newParts.meshes;
     }
 
     [MemberNotNull(nameof(materials), nameof(triangles), nameof(vertices), nameof(indices), nameof(meshes), nameof(materialsView), nameof(triangleViews))]

@@ -18,6 +18,8 @@ internal sealed class GameLoop
     private readonly AssetManager AssetManager;
     private readonly RenderDoc? RenderDoc;
 
+    private DepthStencilBuffer depth;
+
     private IScene currentScene;
     private IScene? nextScene;
 
@@ -32,6 +34,8 @@ internal sealed class GameLoop
         currentScene = new DefaultScene();
         RenderDoc = renderDoc;
         nextScene = null;
+
+        depth = new DepthStencilBuffer(device, swapChain.Width, swapChain.Height);
     }
 
     public void Run()
@@ -58,8 +62,8 @@ internal sealed class GameLoop
             AssetManager.Update();
 
             // Set render output
-            SwapChain.Clear(context);
-            context.OM.SetRenderTargetToBackBuffer(SwapChain);
+            SwapChain.Clear(context, depth);
+            context.OM.SetRenderTargetToBackBuffer(SwapChain, depth);
             context.RS.SetViewport(SwapChain.Viewport);
             context.RS.SetScissorRect(SwapChain.Viewport);
 
@@ -80,6 +84,7 @@ internal sealed class GameLoop
             timespan = Stopwatch.GetElapsedTime(timestamp);
             timestamp = Stopwatch.GetTimestamp();
         }
+        depth.Dispose();
         currentScene.Dispose();
         AnalyzeRenderDocCaptures();
     }
@@ -109,6 +114,9 @@ internal sealed class GameLoop
         {
             SwapChain.Resize(Device, Window.Width, Window.Height);
             Gui.Resize(Window.Width, Window.Height);
+
+            depth.Dispose();
+            depth = new DepthStencilBuffer(Device, Window.Width, Window.Height);
         }
     }
 
