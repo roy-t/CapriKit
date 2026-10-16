@@ -41,20 +41,10 @@
     />
   </Target>
 
-  <!-- Versioning-->
-  <Target Name="ReadVersion" BeforeTargets="BeforeBuild;GenerateNuspec">
-    <ReadLinesFromFile File="$(MSBuildThisFileDirectory)version.txt">
-      <Output TaskParameter="Lines" ItemName="VersionLines" />
-    </ReadLinesFromFile>
-    <Message Importance="High"
-      Text="Using version %(VersionLines.Identity) from $(MSBuildThisFileDirectory)version.txt for $(MSBuildProjectName)" />
-    <PropertyGroup>
-      <Version>%(VersionLines.Identity)</Version>
-      <PackageVersion>%(VersionLines.Identity)</PackageVersion>
-      <FileVersion>%(VersionLines.Identity)</FileVersion>
-      <AssemblyInformationalVersion>%(VersionLines.Identity)</AssemblyInformationalVersion >
-    </PropertyGroup>
-  </Target>
+  <!-- PackageVersion, AssemblyVersion, FileVersion and InformationalVersion are automatically derived from Version. -->
+  <PropertyGroup>
+    <Version>$([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)version.txt').Trim())</Version>
+  </PropertyGroup>
 
   <!-- Documentation -->
   <PropertyGroup>
@@ -93,9 +83,8 @@
 
   <!-- Supressions-->
   <PropertyGroup>
-    <!-- 7035: Ignore the MSBuild warning when using the prerelease and build meta data fields in a semantic version -->
     <!-- 1591: When generating documentation, do not require each public property/method/class to have documentation-->
-    <NoWarn>7035;1591</NoWarn>
+    <NoWarn>1591</NoWarn>
   </PropertyGroup>
 
   <!-- Test support-->
