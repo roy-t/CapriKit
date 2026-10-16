@@ -5,14 +5,20 @@ Use Export-CKTModel.ps1, or run Blender directly:
     blender --background <file.blend> --python-exit-code 1 --python export_ckt.py -- <collection> <output file>
 
 Collection "<name>" becomes LOD 0, collections named "<name>.lod.<n>" become LOD n. Extra LODs are optional,
-but must be numbered consecutively starting at 1. Every mesh object in a LOD collection (including nested
-collections) is exported, regardless of its visibility. Modifiers are applied.
+but must be numbered consecutively starting at 1.
+
+Blender's built-in OBJ exporter evaluates each LOD collection the way it is rendered: modifiers (render settings),
+collection instances, geometry nodes instances, curves and text are all included, objects and collections disabled
+for rendering are not. The view layer state of the LOD collections (excluded, hidden) is ignored. This script only
+converts the OBJ and MTL files to CKT, triangulating faces the exporter left as polygons and skipping objects
+the exporter wrote twice.
 
 Conversion from Blender:
 - Blender is right-handed Z-up, CKT is right-handed Y-up: (x, y, z) -> (x, z, -y). Blender's front (-Y) becomes +Z.
-- Blender front faces are counter-clockwise, CKT front faces are clockwise, so the winding is reversed.
+- OBJ front faces are counter-clockwise, CKT front faces are clockwise, so the winding is reversed.
 - Positions are in world space, converted to meters using the scene's unit scale.
-- Material properties come from the first Principled BSDF node. Linked inputs (textures) are ignored.
+- Materials come from the MTL file: Kd (base color), Pm (metallic), Pr (roughness) and Ke (emission color
+  multiplied by its strength). Textures are ignored. Triangles without a material use DEFAULT_MATERIAL.
 
 File layout, little-endian, in the field order of the C# records:
 - header:    26 bytes ASCII file type, int32 version, name (as BinaryWriter.Write(string): 7-bit encoded
@@ -25,12 +31,15 @@ File layout, little-endian, in the field order of the C# records:
 - triangles: uint32 (material index)
 """
 
+import os
 import re
 import struct
 import sys
+import tempfile
 
 import bpy
 from mathutils import Vector
+from mathutils.geometry import tessellate_polygon
 
 FILE_TYPE = b"CapriKit.Textureless.Model"
 FILE_TYPE_VERSION = 1
@@ -68,51 +77,98 @@ def find_lod_collections(name):
     return [base] + [lods[lod] for lod in expected]
 
 
-def create_depsgraph(collections):
-    # Objects in excluded or unlinked collections, or disabled in viewports, are not evaluated so their modifiers
-    # would be silently skipped. A temporary scene sidesteps collection state. The .blend file is never saved.
-    # all_objects is a cache that is rebuilt (and yields None) when it is modified while iterating, so copy it first
-    objects = {obj for collection in collections for obj in collection.all_objects}
+def export_obj(collection, path, unit_scale):
+    # The exporter skips collections that are excluded from, or not linked to, the active view layer.
+    # A temporary scene with only this collection sidesteps that. The .blend file is never saved.
     scene = bpy.data.scenes.new("ckt_export")
-    for collection in collections:
-        scene.collection.children.link(collection)
-    for obj in objects:
-        obj.hide_viewport = False
-
+    scene.collection.children.link(collection)
     with bpy.context.temp_override(scene=scene, view_layer=scene.view_layers[0]):
-        return bpy.context.evaluated_depsgraph_get()
+        result = bpy.ops.wm.obj_export(
+            filepath=path, collection=collection.name, export_eval_mode='DAG_EVAL_RENDER', apply_modifiers=True,
+            forward_axis='NEGATIVE_Z', up_axis='Y', global_scale=unit_scale, export_triangulated_mesh=True,
+            export_normals=True, export_uv=False, export_materials=True, export_pbr_extensions=True,
+            export_object_groups=True)
+    bpy.data.scenes.remove(scene)
+
+    if result != {'FINISHED'} or not os.path.exists(path):
+        raise ValueError(f"Collection '{collection.name}' contains nothing that is rendered")
 
 
-def read_material(material):
-    if material is None:
-        return DEFAULT_MATERIAL
+def read_obj(path):
+    """Returns the triangles as [((position, normal) x 3, material name or None)] and the MTL file name"""
+    positions, normals, groups = [], [], [[]]
+    material, library = None, None
+    with open(path, encoding="utf-8") as file:
+        for line in file:
+            kind, _, rest = line.strip().partition(" ")
+            if kind == "v":
+                positions.append(tuple(float(c) for c in rest.split()))
+            elif kind == "vn":
+                normals.append(tuple(float(c) for c in rest.split()))
+            elif kind == "g":
+                groups.append([])
+                # Objects without a material have no usemtl, so they would inherit the previous object's material
+                material = None
+            elif kind == "usemtl":
+                material = rest or None
+            elif kind == "mtllib":
+                library = rest
+            elif kind == "f":
+                corners = []
+                for token in rest.split():
+                    position, _, normal = token.split("/")
+                    corners.append((positions[int(position) - 1], normals[int(normal) - 1]))
+                groups[-1].extend((triangle, material) for triangle in triangulate(corners))
 
-    principled = None
-    if material.node_tree is not None:
-        principled = next((n for n in material.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
-
-    if principled is None:
-        r, g, b, _ = material.diffuse_color
-        return (r, g, b, material.metallic, material.roughness, 0.0, 0.0, 0.0, 0.0)
-
-    inputs = principled.inputs
-    names = ("Base Color", "Metallic", "Roughness", "Emission Color", "Emission Strength")
-    linked = [n for n in names if inputs[n].is_linked]
-    if linked:
-        print(f"Warning: material '{material.name}' has linked inputs {linked}, using their unlinked values")
-
-    # Blender stores colors in linear space, like CKT
-    base = inputs["Base Color"].default_value
-    emission = inputs["Emission Color"].default_value
-    return (base[0], base[1], base[2],
-            inputs["Metallic"].default_value,
-            inputs["Roughness"].default_value,
-            emission[0], emission[1], emission[2],
-            inputs["Emission Strength"].default_value)
+    # The exporter writes curve objects twice, once as polygons and once as triangles. Groups that use exactly
+    # the same vertex positions as an earlier group are coincident, and thus invisible, so they are skipped.
+    triangles, seen = [], set()
+    for group in groups:
+        key = frozenset(position for corners, _ in group for position, _ in corners)
+        if key not in seen:
+            seen.add(key)
+            triangles.extend(group)
+    return triangles, library
 
 
-def to_y_up(v):
-    return (v.x, v.z, -v.y)
+def triangulate(corners):
+    """Triangulates faces the exporter did not triangulate, such as those of curve objects, keeping their winding"""
+    if len(corners) == 3:
+        return [corners]
+
+    points = [Vector(position) for position, _ in corners]
+    # Newell's method gives the face normal, also for concave faces
+    normal = sum((a.cross(b) for a, b in zip(points, points[1:] + points[:1])), Vector())
+    result = []
+    for i, j, k in tessellate_polygon([points]):
+        if (points[j] - points[i]).cross(points[k] - points[i]).dot(normal) < 0.0:
+            j, k = k, j
+        result.append([corners[i], corners[j], corners[k]])
+    return result
+
+
+def read_mtl(path):
+    materials = {}
+    values = None
+    with open(path, encoding="utf-8") as file:
+        for line in file:
+            kind, _, rest = line.strip().partition(" ")
+            if kind == "newmtl":
+                values = materials[rest] = {}
+            elif values is not None and kind in ("Kd", "Pm", "Pr", "Ke"):
+                values[kind] = [float(c) for c in rest.split()]
+    return {name: to_ckt_material(values) for name, values in materials.items()}
+
+
+def to_ckt_material(values):
+    base = values.get("Kd", DEFAULT_MATERIAL[0:3])
+    metallic = values.get("Pm", [DEFAULT_MATERIAL[3]])[0]
+    roughness = values.get("Pr", [DEFAULT_MATERIAL[4]])[0]
+    # Ke is the emission color multiplied by its strength, split it again so the color stays in [0..1]
+    emission = values.get("Ke", [0.0, 0.0, 0.0])
+    strength = max(emission)
+    color = [c / strength for c in emission] if strength > 0.0 else [0.0, 0.0, 0.0]
+    return (*base, metallic, roughness, *color, strength)
 
 
 class ModelBuilder:
@@ -124,33 +180,34 @@ class ModelBuilder:
         self.indices = []
         self.triangles = []
 
-    def material_index(self, material):
-        key = material.name_full if material is not None else None
-        index = self.material_lookup.get(key)
+    def material_index(self, name, materials):
+        index = self.material_lookup.get(name)
         if index is None:
             index = len(self.materials)
-            self.material_lookup[key] = index
-            self.materials.append(read_material(material))
+            self.material_lookup[name] = index
+            self.materials.append(materials[name] if name is not None else DEFAULT_MATERIAL)
         return index
 
-    def add_lod(self, collection, depsgraph, unit_scale):
-        objects = [o for o in collection.all_objects if o.type == 'MESH']
-        if not objects:
-            raise ValueError(f"Collection '{collection.name}' contains no mesh objects")
-
+    def add_lod(self, triangles, materials):
         vertex_offset = len(self.vertices)
         index_offset = len(self.indices)
         triangle_offset = len(self.triangles)
 
         # Vertices are deduplicated per LOD so that indices stay relative to the LOD's slice
         vertex_lookup = {}
-        for obj in objects:
-            evaluated = obj.evaluated_get(depsgraph)
-            mesh = evaluated.to_mesh()
-            try:
-                self._add_mesh(obj, evaluated.matrix_world, mesh, unit_scale, vertex_lookup)
-            finally:
-                evaluated.to_mesh_clear()
+        for corners, material in triangles:
+            indices = []
+            for vertex in corners:
+                index = vertex_lookup.get(vertex)
+                if index is None:
+                    index = len(vertex_lookup)
+                    vertex_lookup[vertex] = index
+                    self.vertices.append(vertex)
+                indices.append(index)
+
+            # Counter-clockwise (OBJ) to clockwise (CKT)
+            self.indices.extend((indices[0], indices[2], indices[1]))
+            self.triangles.append(self.material_index(material, materials))
 
         lod_vertices = self.vertices[vertex_offset:]
         bounds_min = [min(v[0][axis] for v in lod_vertices) for axis in range(3)]
@@ -161,33 +218,6 @@ class ModelBuilder:
             index_offset, len(self.indices) - index_offset,
             triangle_offset, len(self.triangles) - triangle_offset,
             bounds_min, bounds_max))
-
-    def _add_mesh(self, obj, matrix_world, mesh, unit_scale, vertex_lookup):
-        mesh.calc_loop_triangles()
-        normal_matrix = matrix_world.to_3x3().inverted_safe().transposed()
-        # A mirroring transform (negative scale) already reverses the winding
-        mirrored = matrix_world.determinant() < 0.0
-        slots = [slot.material for slot in obj.material_slots]
-
-        for triangle in mesh.loop_triangles:
-            corners = []
-            for vertex_index, split_normal in zip(triangle.vertices, triangle.split_normals):
-                position = to_y_up(matrix_world @ mesh.vertices[vertex_index].co * unit_scale)
-                normal = to_y_up((normal_matrix @ Vector(split_normal)).normalized())
-                key = (position, normal)
-                index = vertex_lookup.get(key)
-                if index is None:
-                    index = len(vertex_lookup)
-                    vertex_lookup[key] = index
-                    self.vertices.append(key)
-                corners.append(index)
-
-            if not mirrored:
-                corners[1], corners[2] = corners[2], corners[1]
-            self.indices.extend(corners)
-
-            material = slots[triangle.material_index] if triangle.material_index < len(slots) else None
-            self.triangles.append(self.material_index(material))
 
 
 def write_string(file, text):
@@ -222,11 +252,17 @@ def main():
     name, output = parse_arguments()
     collections = find_lod_collections(name)
     unit_scale = bpy.context.scene.unit_settings.scale_length
-    depsgraph = create_depsgraph(collections)
 
     model = ModelBuilder()
-    for collection in collections:
-        model.add_lod(collection, depsgraph, unit_scale)
+    with tempfile.TemporaryDirectory() as directory:
+        for lod, collection in enumerate(collections):
+            path = os.path.join(directory, f"lod{lod}.obj")
+            export_obj(collection, path, unit_scale)
+            triangles, library = read_obj(path)
+            if not triangles:
+                raise ValueError(f"Collection '{collection.name}' contains no faces that are rendered")
+            materials = read_mtl(os.path.join(directory, library)) if library else {}
+            model.add_lod(triangles, materials)
 
     write_model(output, name, model)
     print(f"Exported '{name}' to '{output}': {len(model.meshes)} LOD(s), {len(model.materials)} material(s), "

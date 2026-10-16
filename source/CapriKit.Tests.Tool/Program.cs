@@ -32,6 +32,7 @@ internal sealed class Program
         services.AddSingleton<GameLoop>();
         services.AddSingleton<LoadingScene>();
         services.AddSingleton<MainScene>();
+        services.AddSingleton<TurnTableCamera>();
         AddTestFactories(services);
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

@@ -33,16 +33,16 @@ internal sealed class BlenderModelTest : ITestScreen
     private readonly ConstantBuffer<Constants> ConstantBuffer;
     private readonly CKTModel Model;
     private readonly SwapChain SwapChain;
+    private readonly TurnTableCamera Camera;
 
-    private float accumulator;
-
-    public BlenderModelTest(Device device, SwapChain swapChain, BlenderModelTestBundle bundle)
+    public BlenderModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, BlenderModelTestBundle bundle)
     {
         SwapChain = swapChain;
         VertexShader = bundle.VertexShader;
         PixelShader = bundle.PixelShader;
         InputLayout = VertexShader.CreateInputLayout(device, VsInputElementDescription);
         ConstantBuffer = new ConstantBuffer<Constants>(device, nameof(ShaderTest));
+        Camera = camera;
         Model = bundle.Model;
     }
 
@@ -50,12 +50,10 @@ internal sealed class BlenderModelTest : ITestScreen
 
     public void Render(DeviceContext context, float elapsed)
     {
-        accumulator += elapsed;
+        Camera.Update();
 
-        const int lod = 0;
-        const float speed = 0.1f;
-        var world = Matrix4x4.CreateRotationY(accumulator * speed);
-        var view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 3.0f, -3.0f), Vector3.Zero, Vector3.UnitY);
+        var world = Matrix4x4.Identity;
+        var view = Camera.GetViewMatrix();// Matrix4x4.CreateLookAt(new Vector3(0.0f, 3.0f, -3.0f), Vector3.Zero, Vector3.UnitY);
         var projection = Matrix4x4.CreatePerspectiveFieldOfViewReverseZ(MathF.PI / 2, SwapChain.AspectRatio, 0.01f);
 
         var constants = new Constants()
@@ -70,6 +68,7 @@ internal sealed class BlenderModelTest : ITestScreen
         context.PS.SetConstantBuffer(0, ConstantBuffer);
         context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
+        const int lod = 0;
         Model.DrawIndexed(context, 0, 1, lod);
     }
 

@@ -8,7 +8,7 @@ using System.Diagnostics;
 namespace CapriKit.AssetPipeline.DirectX11.Models;
 
 public sealed class CKTModelTranscoder(Device device, BlenderConfiguration config) :
-    NoSettingsTranscoder<CKTModel>(Guid.Parse("{0EAB33E4-853C-4659-A26C-CCC86B8E7EF0}"), 1)
+    NoSettingsTranscoder<CKTModel>(Guid.Parse("{0EAB33E4-853C-4659-A26C-CCC86B8E7EF0}"), 2)
 {
     public override async Task Encode(AssetId id, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
     {
