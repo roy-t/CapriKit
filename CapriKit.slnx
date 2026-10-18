@@ -24,6 +24,7 @@
     <File Path="PLANNING.md" />
     <File Path="README.md" />
     <File Path="RESPONSIBLE_USE_OF_AI.md" />
+    <File Path="version.txt" />
   </Folder>
   <Folder Name="/Tests/">
     <Project Path="source/CapriKit.Benchmarks/CapriKit.Benchmarks.csproj">

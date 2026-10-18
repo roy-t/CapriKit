@@ -7,6 +7,11 @@ using System.Diagnostics;
 
 namespace CapriKit.AssetPipeline.DirectX11.Models;
 
+// TODO: what if this transcoder just imports a .obj and .mtl file and converts it to a serialized version of a CKTModel?
+// it would fit much cleaner in the design and if we get rid of the LODDING .obj and .mtl have all the info we need.
+// MiniEngine already has a serviceable .obj/mtl importer. For Blender we could write a plugin that auto exports on save
+// and does something per collection or something like that. Then later a 'LoddedModel<T>' or something like that could
+// grab multiple assets and do the lodding administration.
 public sealed class CKTModelTranscoder(Device device, BlenderConfiguration config) :
     NoSettingsTranscoder<CKTModel>(Guid.Parse("{0EAB33E4-853C-4659-A26C-CCC86B8E7EF0}"), 2)
 {
