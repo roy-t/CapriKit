@@ -205,7 +205,6 @@ public sealed class AssetBundle<TContent> : AssetBundle
     private readonly Func<AssetResolver, TContent> Factory;
     private TContent? contents;
 
-
     public AssetBundle(Guid id, AssetManager manager, IReadOnlySet<AssetId> requested, Func<AssetResolver, TContent> factory)
         : base(id, manager, requested)
     {
