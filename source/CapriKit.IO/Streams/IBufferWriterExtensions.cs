@@ -44,6 +44,13 @@ public static class BufferWriterExtensions
         writer.Advance(written);
     }
 
+    public static void Write(this IBufferWriter<byte> writer, byte value)
+    {
+        var span = writer.GetSpan(sizeof(byte));
+        span[0] = value;
+        writer.Advance(sizeof(byte));
+    }
+
     public static void Write(this IBufferWriter<byte> writer, int value)
     {
         var span = writer.GetSpan(sizeof(int));

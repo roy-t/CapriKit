@@ -64,7 +64,7 @@ public static class SequenceReaderExtensions
         var result = 0u;
         for (var shift = 0; shift < MaxBytesWithoutOverflow * 7; shift += 7)
         {
-            var current = ReadByte(ref reader);
+            var current = reader.ReadByte();
             result |= (current & 0x7Fu) << shift;
             if (current <= 0x7Fu)
             {
@@ -73,7 +73,7 @@ public static class SequenceReaderExtensions
         }
 
         // The fifth byte can only hold the 4 remaining bits of a 32 bit integer
-        var last = ReadByte(ref reader);
+        var last = reader.ReadByte();
         if (last > 0b_1111u)
         {
             throw new FormatException("Invalid 7 bit encoded integer");
@@ -190,7 +190,7 @@ public static class SequenceReaderExtensions
         return sequence.ToArray();
     }
 
-    public static byte ReadByte(ref SequenceReader<byte> reader)
+    public static byte ReadByte(this ref SequenceReader<byte> reader)
     {
         if (!reader.TryRead(out var value))
         {

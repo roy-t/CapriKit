@@ -240,6 +240,21 @@ internal class SequenceReaderExtensionsTests
         await Assert.That(end).IsTrue();
     }
 
+    [Test]
+    public async Task ReadByte()
+    {
+        byte b = 123;
+        var writer = new ArrayBufferWriter<byte>();
+        writer.Write(b);
+
+        var reader = new SequenceReader<byte>(new ReadOnlySequence<byte>(writer.WrittenMemory));
+        var value = reader.ReadByte();
+        var end = reader.End;
+
+        await Assert.That(value).IsEqualTo(b);
+        await Assert.That(end).IsTrue();
+    }
+
     private static SequenceReader<byte> CreateReader(params float[] values)
     {
         using var stream = new MemoryStream();

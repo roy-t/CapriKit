@@ -9,7 +9,7 @@ using System.Numerics;
 
 namespace CapriKit.AssetPipeline.DirectX11.Textures;
 
-public enum TextureUsage
+public enum TextureUsage : byte
 {
     /// <summary>
     /// A regular image optimized for perceptual quality.
@@ -28,10 +28,9 @@ public enum TextureUsage
     /// Encoding and decoding does not make any optimizations based on what the data might mean.
     /// </summary>
     Linear,
-
 }
 
-public enum MipMapGeneration
+public enum MipMapGeneration : byte
 {
     /// <summary>
     /// Do not generate mip maps for this image.
@@ -50,13 +49,14 @@ public enum MipMapGeneration
 public sealed record Texture2DSettings(TextureUsage Usage, MipMapGeneration MipMaps);
 public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Texture2D, Texture2DSettings>
 {
-    public Guid Id => Guid.Parse("{12AC6151-6655-43E5-9898-4ADB80E08EE1}");
+    public Guid Id { get; } = Guid.Parse("{12AC6151-6655-43E5-9898-4ADB80E08EE1}");
     public int Version => 1;
 
     public async Task Encode(AssetId id, Texture2DSettings settings, IReadOnlyVirtualFileSystem fileSystem, IBufferWriter<byte> writer)
     {
         var source = await fileSystem.ReadAllBytes(id.Path);
         var image = Image.Load(source);
+        ValidateDimensions(id, image, settings);
 
         if (settings.Usage == TextureUsage.NormalMap)
         {
@@ -67,6 +67,16 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
         var bytes = Ktx2Encoder.Encode(image, format, quality: 100, flags: flags);
         writer.Write(bytes.Length);
         writer.Write(bytes);
+    }
+
+    private static void ValidateDimensions(AssetId id, Image image, Texture2DSettings settings)
+    {
+        var (_, format, _) = ToDecoderSettings(settings);
+        if (image.Width % format.BlockWidth != 0 || image.Height % format.BlockHeight != 0)
+        {
+            throw new InvalidOperationException($"The dimensions of texture {id.Path}: {image.Width}x{image.Height} " +
+                $"need to be a multiple of {format.BlockWidth}x{format.BlockHeight}");
+        }
     }
 
     private static (BasisTexFormat, CompressionFlags) ToEncoderSettings(Texture2DSettings settings)
@@ -107,7 +117,8 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
         image.Pixels.CopyTo(rgba);
         for (var i = 0; i < rgba.Length; i += 4)
         {
-            var n = Vector3.Normalize((new Vector3(rgba[i], rgba[i + 1], rgba[i + 2]) / 127.5f) - Vector3.One);
+            var vector = (new Vector3(rgba[i], rgba[i + 1], rgba[i + 2]) / 127.5f) - Vector3.One;
+            var n = vector.LengthSquared() > 0.25f ? Vector3.Normalize(vector) : Vector3.UnitZ;
             var x = (byte)MathF.Round((n.X + 1.0f) * 127.5f);
             var y = (byte)MathF.Round((n.Y + 1.0f) * 127.5f);
             rgba[i] = rgba[i + 1] = rgba[i + 2] = x;
@@ -123,11 +134,11 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
         var bytes = reader.ReadBytes(length);
         using var handle = Ktx2Transcoder.Open(bytes);
 
-        var width = Ktx2Transcoder.GetWidth(handle);
-        var height = Ktx2Transcoder.GetHeight(handle);
+        var width = (int)Ktx2Transcoder.GetWidth(handle);
+        var height = (int)Ktx2Transcoder.GetHeight(handle);
 
-        var isRgb = Ktx2Transcoder.IsSrgb(handle);
-        Debug.Assert(isRgb == (settings.Usage == TextureUsage.SRgb));
+        var isSrgb = Ktx2Transcoder.IsSrgb(handle);
+        Debug.Assert(isSrgb == (settings.Usage == TextureUsage.SRgb));
 
         var layers = Ktx2Transcoder.GetLayers(handle);
         Debug.Assert(layers <= 1);
@@ -137,8 +148,9 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
 
         var (transcodeFormat, textureFormat, flags) = ToDecoderSettings(settings);
 
-        // WARN: For textures with multiple layers or faces the ordering of these arrays
-        // does not map to how DirectX expects it.
+        // For textures with multiple layers or faces the ordering of these elements
+        // does not map to how DirectX expects it. Fine for the current use case of a simple
+        // 2D texture (with mipmaps).
         var levels = Ktx2Transcoder.TranscodeAll(handle, transcodeFormat, flags);
         var mipLevels = new MipLevel[levels.Length];
         for (var i = 0; i < levels.Length; i++)
@@ -176,13 +188,17 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
         instance.HotSwap(newParts);
     }
 
-    public Texture2DSettings ReadSettings(ref SequenceReader<byte> reader)
-    {
-        throw new NotImplementedException();
-    }
-
     public void WriteSettings(Texture2DSettings settings, IBufferWriter<byte> writer)
     {
-        throw new NotImplementedException();
+        writer.Write((byte)settings.Usage);
+        writer.Write((byte)settings.MipMaps);
+    }
+
+    public Texture2DSettings ReadSettings(ref SequenceReader<byte> reader)
+    {
+        var usage = (TextureUsage)reader.ReadByte();
+        var mipMaps = (MipMapGeneration)reader.ReadByte();
+
+        return new Texture2DSettings(usage, mipMaps);
     }
 }
