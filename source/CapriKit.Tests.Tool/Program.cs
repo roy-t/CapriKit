@@ -52,8 +52,8 @@ internal sealed class Program
     private static void AddTestFactories(ServiceCollection services)
     {
         services.AddSingleton(provider => ShaderTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
-        services.AddSingleton(provider => ModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
-        services.AddSingleton(provider => BlenderModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
+        services.AddSingleton(provider => RenderModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
+        services.AddSingleton(provider => RenderInstancedModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
         services.AddSingleton(_ => WindowStatesTest.CreateFactory());
     }
 

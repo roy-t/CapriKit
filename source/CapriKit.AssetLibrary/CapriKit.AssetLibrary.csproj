@@ -10,10 +10,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="Assets\Models\Parts.blend" CopyToOutputDirectory="Always"/>
-    <AdditionalFiles Include="Assets\Models\Container.1TUE.ckt" CopyToOutputDirectory="Always"/>
-    <AdditionalFiles Include="Assets\Shaders\BasicShader.hlsl" CopyToOutputDirectory="Always"/>
-    <AdditionalFiles Include="Assets\Shaders\ModelShader.hlsl" CopyToOutputDirectory="Always"/>
+    <AdditionalFiles Include="Assets\Models\Parts.blend" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Models\Container.1TUE.ckt" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\BasicShader.hlsl" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </AdditionalFiles>
+    <AdditionalFiles Include="Assets\Shaders\ModelShader.hlsl" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>

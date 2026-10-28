@@ -26,6 +26,10 @@ public sealed class CKTModel : IDisposable
 
     public string Name { get; }
 
+    /// <summary>
+    /// Sets the vertex buffer, index buffer and shader resources for this models materials and triangle data, then issues the draw call.
+    /// You have to configure the device and bind the other buffers your shader requires (like the constant buffers) yourself before calling this function.
+    /// </summary>
     public void DrawIndexed(DeviceContext context, uint materialSRVSlot, uint triangleSRVSlot, int lod = 0)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(lod, meshes.Length);
@@ -42,6 +46,28 @@ public sealed class CKTModel : IDisposable
         context.PS.SetShaderResource(triangleSRVSlot, triangleViews[lod]);
 
         context.DrawIndexed(indexCount, indexOffset, (int)vertexOffset);
+    }
+
+    /// <summary>
+    /// Sets the vertex buffer, index buffer and shader resources for this models materials and triangle data, then issues the draw call.
+    /// You have to configure the device and bind the other buffers your shader requires (like the constant  and instance buffers) yourself before calling this function.
+    /// </summary>
+    public void DrawIndexedInstanced(DeviceContext context, uint instanceCount, uint materialSRVSlot, uint triangleSRVSlot, int lod = 0)
+    {
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(lod, meshes.Length);
+        ArgumentOutOfRangeException.ThrowIfNegative(lod);
+
+        var mesh = meshes[lod];
+        var vertexOffset = mesh.VertexOffset;
+        var indexOffset = mesh.IndexOffset;
+        var indexCount = mesh.IndexCount;
+
+        context.IA.SetVertexBuffer(vertices);
+        context.IA.SetIndexBuffer(indices);
+        context.PS.SetShaderResource(materialSRVSlot, materialsView);
+        context.PS.SetShaderResource(triangleSRVSlot, triangleViews[lod]);
+
+        context.DrawIndexedInstanced(indexCount, instanceCount, indexOffset, (int)vertexOffset);
     }
 
     /// <summary>

@@ -30,5 +30,5 @@ public sealed class VertexShaderContext : DeviceContextPart
     public void SetShaderResource(uint slot, IShaderResourceView view)
     {
         ID3D11DeviceContext.VSSetShaderResource(slot, view.ID3D11ShaderResourceView);
-    }
+    }    
 }
