@@ -13,6 +13,12 @@ _Roy Triesscheijn's collection of code libraries_
 > ```pwsh
 > git submodule update --init --recursive
 > ```
+> And build the native basisu code once using:
+> ```pwsh
+> & .\source\CapriKit.SuperCompressed\basis_universal\build.ps1
+> ```
+
+
 
 ## Goal
 
