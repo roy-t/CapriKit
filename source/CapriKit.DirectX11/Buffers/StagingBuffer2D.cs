@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Vortice.Direct3D11;
 
@@ -9,14 +10,14 @@ public sealed class StagingBuffer2D<T> : IDisposable
 {
     private readonly ID3D11Texture2D Buffer;
 
-    internal StagingBuffer2D(Device device, Texture2DDescription description, string? nameHint = null)
+    internal StagingBuffer2D(Device device, Texture2DDescription description, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         description.BindFlags = BindFlags.None;
         description.CPUAccessFlags = CpuAccessFlags.Read;
         description.Usage = ResourceUsage.Staging;
         Buffer = device.ID3D11Device.CreateTexture2D(description);
 #if DEBUG
-        Buffer.DebugName = DebugName.For(this, nameHint);
+        Buffer.DebugName = DebugName.For(this, caller: caller, callerFile: callerFile, callerLine: callerLine);
 #endif
     }
 

@@ -25,7 +25,7 @@ internal sealed class RenderModelTest : AModelTest
     public RenderModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, GenericModelTestBundle bundle)
         : base(device, swapChain, camera, bundle, VsInputElementDescription)
     {
-        ConstantBuffer = new ConstantBuffer<Constants>(device, nameof(RenderModelTest));
+        ConstantBuffer = new ConstantBuffer<Constants>(device);
     }
 
     public override string Title => "Render Model";
@@ -40,12 +40,12 @@ internal sealed class RenderModelTest : AModelTest
         ConstantBuffer.Write(context, [constants]);
 
         context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.Opaque, context.DepthStencilStates.ReverseZ);
-        context.VS.SetConstantBuffer(0, ConstantBuffer);
-        context.PS.SetConstantBuffer(0, ConstantBuffer);
+        context.VS.SetConstantBuffer(ModelShader.ConstantsRegister, ConstantBuffer);
+        context.PS.SetConstantBuffer(ModelShader.ConstantsRegister, ConstantBuffer);
         context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
         const int lod = 0;
-        Model.DrawIndexed(context, 0, 1, lod);
+        Model.DrawIndexed(context, ModelShader.Materials, ModelShader.Triangles, lod);
     }
 
     public override void Dispose()

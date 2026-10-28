@@ -42,6 +42,17 @@ internal sealed class ParserBuilder<TAccumulator>
     }
 
     /// <summary>
+    /// Expect and parse a type, including any (nested) type arguments such as `A&lt;B, C&lt;D&gt;&gt;`.    
+    /// </summary>
+    public ParserBuilder<TAccumulator> RequiredType(
+        Accumulator<TAccumulator>? accumulator = null,
+        [CallerArgumentExpression(nameof(accumulator))] string accumulatorText = "")
+    {
+        Steps.Add(new TypeParseStep<TAccumulator>(accumulator, Describe("AnyType", accumulatorText)));
+        return this;
+    }
+
+    /// <summary>
     /// Consumes everything, up-to-EXCLUDING the requested token
     /// </summary>
     public ParserBuilder<TAccumulator> SkipToBefore(
@@ -53,7 +64,9 @@ internal sealed class ParserBuilder<TAccumulator>
     }
 
     /// <summary>
-    /// Consumes everything (including the delimiters) delimited by the two requested tokens
+    /// Consumes everything (including the delimiters) delimited by the two requested tokens.
+    /// Use <seealso cref="RequiredType(Accumulator{TAccumulator}?, string)"/> for parsing complex
+    /// types instead of this method with matchers for &lt; and &gt;.
     /// </summary>
     public ParserBuilder<TAccumulator> RequiredBlock(
         Matcher open,

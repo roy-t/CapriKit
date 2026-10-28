@@ -45,7 +45,7 @@ internal class StagingBuffer2DTests
         using var renderTargetView = device.ID3D11Device.CreateRenderTargetView(source);
         context.ID3D11DeviceContext.ClearRenderTargetView(renderTargetView, new Color4(1.0f, 0.0f, 0.0f, 1.0f));
 
-        using var stagingBuffer = new StagingBuffer2D<uint>(device, description, "stagingBuffer");
+        using var stagingBuffer = new StagingBuffer2D<uint>(device, description);
         var pixels = stagingBuffer.CopySurfaceDataToSpan(context.ID3D11DeviceContext, source);
 
         await Assert.That(pixels.Length).IsEqualTo((int)(width * height));

@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 
@@ -20,14 +21,16 @@ public static class IndexBuffers
         MiscFlags = ResourceOptionFlags.None,
     };
 
-    public static IndexBuffer<ushort> CreateU16(Device device, string? hintName = null)
+    public static IndexBuffer<ushort> CreateU16(Device device, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
-        return new IndexBuffer<ushort>(device, MutableBufferDescription, Format.R16_UInt, hintName);
+        var name = DebugName.For<IndexBuffer<ushort>>(caller: caller, callerFile: callerFile, callerLine: callerLine);
+        return new IndexBuffer<ushort>(device, MutableBufferDescription, Format.R16_UInt, name);
     }
 
-    public static IndexBuffer<uint> CreateU32(Device device, string? hintName = null)
+    public static IndexBuffer<uint> CreateU32(Device device, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
-        return new IndexBuffer<uint>(device, MutableBufferDescription, Format.R32_UInt, hintName);
+        var name = DebugName.For<IndexBuffer<uint>>(caller: caller, callerFile: callerFile, callerLine: callerLine);
+        return new IndexBuffer<uint>(device, MutableBufferDescription, Format.R32_UInt, name);
     }
 
     private static readonly BufferDescription ImmutableBufferDescription = new()
@@ -38,14 +41,16 @@ public static class IndexBuffers
         MiscFlags = ResourceOptionFlags.None,
     };
 
-    public static ImmutableIndexBuffer<ushort> CreateU16Immutable(Device device, ReadOnlySpan<ushort> data, string? hintName = null)
+    public static ImmutableIndexBuffer<ushort> CreateU16Immutable(Device device, ReadOnlySpan<ushort> data, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
-        return new ImmutableIndexBuffer<ushort>(device, data, ImmutableBufferDescription, Format.R16_UInt, hintName);
+        var name = DebugName.For<ImmutableIndexBuffer<ushort>>(caller: caller, callerFile: callerFile, callerLine: callerLine);
+        return new ImmutableIndexBuffer<ushort>(device, data, ImmutableBufferDescription, Format.R16_UInt, name);
     }
 
-    public static ImmutableIndexBuffer<uint> CreateU32Immutable(Device device, ReadOnlySpan<uint> data, string? hintName = null)
+    public static ImmutableIndexBuffer<uint> CreateU32Immutable(Device device, ReadOnlySpan<uint> data, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
-        return new ImmutableIndexBuffer<uint>(device, data, ImmutableBufferDescription, Format.R32_UInt, hintName);
+        var name = DebugName.For<ImmutableIndexBuffer<uint>>(caller: caller, callerFile: callerFile, callerLine: callerLine);
+        return new ImmutableIndexBuffer<uint>(device, data, ImmutableBufferDescription, Format.R32_UInt, name);
     }
 }
 
@@ -57,11 +62,11 @@ public sealed class IndexBuffer<T> : DeviceBuffer<T>, IIndexBuffer<T>, ICpuWrite
 {
     private readonly Format InternalFormat;
 
-    internal IndexBuffer(Device device, BufferDescription description, Format format, string? hintName = null)
+    internal IndexBuffer(Device device, BufferDescription description, Format format, string name)
         : base(device, description)
     {
         InternalFormat = format;
-        Name = DebugName.For(this, hintName);
+        Name = name;
     }
 
     public override string Name { get; }
@@ -77,8 +82,8 @@ public sealed class ImmutableIndexBuffer<T> : ImmutableDeviceBuffer<T>, IIndexBu
 {
     private readonly Format InternalFormat;
 
-    internal ImmutableIndexBuffer(Device device, ReadOnlySpan<T> data, BufferDescription description, Format format, string? hintName = null)
-        : base(device, description, data, DebugName.For<ImmutableIndexBuffer<T>>(hintName))
+    internal ImmutableIndexBuffer(Device device, ReadOnlySpan<T> data, BufferDescription description, Format format, string name)
+        : base(device, description, data, name)
     {
         InternalFormat = format;
     }

@@ -20,12 +20,12 @@ internal class GenericBufferTests
         var context = device.ImmediateDeviceContext;
 
         // Create a structured buffer to upload four prime numbers to the GPU
-        using var structuredBuffer = new StructuredBuffer<float>(device, "uploadBuffer");
+        using var structuredBuffer = new StructuredBuffer<float>(device);
         structuredBuffer.Write(context, [2.0f, 3.0f, 5.0f, 7.0f]);
         using var srv = structuredBuffer.CreateShaderResourceView(device);
 
         // Create RW structured buffer the shader can write to
-        using var rwBuffer = new RWStructuredBuffer<float>(device, "downloadBuffer");
+        using var rwBuffer = new RWStructuredBuffer<float>(device);
         rwBuffer.EnsureCapacity(4);
         using var uav = rwBuffer.CreateUnorderedAccessView(device);
 
@@ -40,7 +40,7 @@ internal class GenericBufferTests
         context.CS.Dispatch(dx, dy, dz);
 
         // Use a staging buffer to read back the data
-        using var stagingBuffer = new StagingBuffer<float>(device, "stagingBuffer");
+        using var stagingBuffer = new StagingBuffer<float>(device);
         stagingBuffer.CopyResourceToStagingBuffer(context, rwBuffer);
 
         var stagingTarget = new float[4];

@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
@@ -25,10 +26,10 @@ public sealed class VertexBuffer<T> : DeviceBuffer<T>, ICpuWriteToBuffer<T>, IVe
         CPUAccessFlags = CpuAccessFlags.Write,
     };
 
-    public VertexBuffer(Device device, string? nameHint = null)
+    public VertexBuffer(Device device, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         : base(device, BufferDescription)
     {
-        Name = DebugName.For(this, nameHint);
+        Name = DebugName.For(this, caller: caller, callerFile: callerFile, callerLine: callerLine);
     }
 
     public override string Name { get; }
@@ -48,7 +49,7 @@ public sealed class ImmutableVertexBuffer<T> : ImmutableDeviceBuffer<T>, IVertex
         MiscFlags = ResourceOptionFlags.None,
     };
 
-    public ImmutableVertexBuffer(Device device, ReadOnlySpan<T> data, string? nameHint = null)
-        : base(device, BufferDescription, data, DebugName.For<ImmutableVertexBuffer<T>>(nameHint)) { }
+    public ImmutableVertexBuffer(Device device, ReadOnlySpan<T> data, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
+        : base(device, BufferDescription, data, DebugName.For<ImmutableVertexBuffer<T>>(caller: caller, callerFile: callerFile, callerLine: callerLine)) { }
 
 }

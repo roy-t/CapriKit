@@ -1,13 +1,14 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts.States;
 
 public sealed class BlendState : IDisposable
 {
-    internal BlendState(ID3D11BlendState state, string nameHint)
+    internal BlendState(ID3D11BlendState state, string? label, string? caller, string? callerFile, int callerLine)
     {
-        Name = DebugName.For(this, nameHint);
+        Name = DebugName.For(this, label, caller, callerFile, callerLine);
         ID3D11BlendState = state;
         ID3D11BlendState.DebugName = Name;
     }
@@ -37,10 +38,10 @@ public sealed class BlendStates : IDisposable
     public BlendState Opaque { get; }
     public BlendState Additive { get; }
 
-    private static BlendState Create(ID3D11Device device, BlendDescription description, string name)
+    private static BlendState Create(ID3D11Device device, BlendDescription description, string label, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         var state = device.CreateBlendState(description);
-        return new BlendState(state, name);
+        return new BlendState(state, label, caller, callerFile, callerLine);
     }
 
     public void Dispose()

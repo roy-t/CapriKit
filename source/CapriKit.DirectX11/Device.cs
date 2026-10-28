@@ -80,11 +80,10 @@ public class Device : IDisposable
     /// context is not thread safe, instead each thread can create and own their own context, which still
     /// allows you to do multi-threaded rendering
     /// </summary>
-    public DeferredDeviceContext CreateDeferredContext(string? nameHint = null, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null)
+    public DeferredDeviceContext CreateDeferredContext([CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         var context = ID3D11Device.CreateDeferredContext();
-        context.DebugName = DebugName.For(context, nameHint, caller, callerFile);
-        return new DeferredDeviceContext(this, context);
+        return new DeferredDeviceContext(this, context, caller, callerFile, callerLine);
     }
 
     /// <summary>

@@ -1,6 +1,7 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
 using CapriKit.DirectX11.Resources.Views;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 
@@ -62,18 +63,18 @@ public static class BufferExtensions
         return length;
     }
 
-    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device)
+    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         where T : unmanaged
     {
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
         var nativeSrv = device.ID3D11Device.CreateShaderResourceView(nativeBuffer, null);
         var srv = new ShaderResourceView(nativeSrv);
-        nativeSrv.DebugName = DebugName.For(srv, buffer.Name);
+        nativeSrv.DebugName = DebugName.For(srv, buffer.Name, caller, callerFile, callerLine);
 
         return srv;
     }
 
-    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device, uint firstElement, uint numElements)
+    public static IShaderResourceView CreateShaderResourceView<T>(this IShaderReadFromBuffer<T> buffer, Device device, uint firstElement, uint numElements, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         where T : unmanaged
     {
         var bufferDescription = new BufferShaderResourceView()
@@ -92,23 +93,23 @@ public static class BufferExtensions
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
         var nativeSrv = device.ID3D11Device.CreateShaderResourceView(nativeBuffer, description);
         var srv = new ShaderResourceView(nativeSrv);
-        nativeSrv.DebugName = DebugName.For(srv, buffer.Name);
+        nativeSrv.DebugName = DebugName.For(srv, buffer.Name, caller, callerFile, callerLine);
 
         return srv;
     }
 
-    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device)
+    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         where T : unmanaged
     {
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
         var nativeUav = device.ID3D11Device.CreateUnorderedAccessView(nativeBuffer, null);
         var uav = new UnorderedAccessView(nativeUav);
-        nativeUav.DebugName = DebugName.For(uav, buffer.Name);
+        nativeUav.DebugName = DebugName.For(uav, buffer.Name, caller, callerFile, callerLine);
 
         return uav;
     }
 
-    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device, uint firstElement, uint numElements)
+    public static IUnorderedAccessView CreateUnorderedAccessView<T>(this IShaderWriteToBuffer<T> buffer, Device device, uint firstElement, uint numElements, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     where T : unmanaged
     {
         var bufferDescription = new BufferUnorderedAccessView()
@@ -128,7 +129,7 @@ public static class BufferExtensions
         var nativeBuffer = GetNativeBufferOrThrow(buffer);
         var nativeUav = device.ID3D11Device.CreateUnorderedAccessView(nativeBuffer, description);
         var uav = new UnorderedAccessView(nativeUav);
-        nativeUav.DebugName = DebugName.For(uav, buffer.Name);
+        nativeUav.DebugName = DebugName.For(uav, buffer.Name, caller, callerFile, callerLine);
 
         return uav;
     }

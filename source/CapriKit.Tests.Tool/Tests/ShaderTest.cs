@@ -1,10 +1,10 @@
+using CapriKit.AssetLibrary.Shaders;
 using CapriKit.AssetPipeline;
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Shaders;
-using CapriKit.AssetLibrary.Shaders;
 using CapriKit.Tests.Tool.Tests.Framework;
 using System.Numerics;
 using static CapriKit.AssetLibrary.Shaders.BasicShader;
@@ -39,9 +39,9 @@ internal sealed class ShaderTest : ITestScreen
         VertexShader = bundle.VertexShader;
         PixelShader = bundle.PixelShader;
         InputLayout = VertexShader.CreateInputLayout(device, VsInputElementDescription);
-        VertexBuffer = new VertexBuffer<VsInput>(device, nameof(ShaderTest));
-        IndexBuffer = IndexBuffers.CreateU16(device, nameof(ShaderTest));
-        ConstantBuffer = new ConstantBuffer<Constants>(device, nameof(ShaderTest));
+        VertexBuffer = new VertexBuffer<VsInput>(device);
+        IndexBuffer = IndexBuffers.CreateU16(device);
+        ConstantBuffer = new ConstantBuffer<Constants>(device);
         Indices = [0, 1, 2];
         Vertices =
         [
@@ -61,7 +61,7 @@ internal sealed class ShaderTest : ITestScreen
         context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.NonPreMultiplied, context.DepthStencilStates.None);
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
-        context.VS.SetConstantBuffer(0, ConstantBuffer);
+        context.VS.SetConstantBuffer(BasicShader.ConstantsRegister, ConstantBuffer);
         context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
         context.DrawIndexed(3);
@@ -76,7 +76,7 @@ internal sealed class ShaderTest : ITestScreen
 
             var constants = new Constants()
             {
-                ProjectionMatrix = System.Numerics.Matrix4x4.Identity
+                ProjectionMatrix = Matrix4x4.Identity
             };
             ConstantBuffer.Write(context, [constants]);
 
@@ -90,7 +90,5 @@ internal sealed class ShaderTest : ITestScreen
         IndexBuffer.Dispose();
         VertexBuffer.Dispose();
         InputLayout.Dispose();
-        PixelShader.Dispose();
-        VertexShader.Dispose();
     }
 }

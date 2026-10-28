@@ -3,6 +3,7 @@ using CapriKit.DirectX11.Debug;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Views;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 using Vortice.Mathematics;
 
@@ -10,10 +11,11 @@ namespace CapriKit.DirectX11.Contexts;
 
 public sealed class ImmediateDeviceContext : DeviceContext
 {
-    public ImmediateDeviceContext(Device device, ID3D11DeviceContext context)
+    public ImmediateDeviceContext(Device device, ID3D11DeviceContext context, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         : base(device, context)
     {
-        Name = DebugName.For(this);
+        Name = DebugName.For(this, caller: caller, callerFile: callerFile, callerLine: callerLine);
+        context.DebugName = Name;
     }
 
     public override string Name { get; }
@@ -32,18 +34,19 @@ public sealed class ImmediateDeviceContext : DeviceContext
 
 public sealed class DeferredDeviceContext : DeviceContext
 {
-    public DeferredDeviceContext(Device device, ID3D11DeviceContext context, string? nameHint = null)
+    public DeferredDeviceContext(Device device, ID3D11DeviceContext context, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
         : base(device, context)
     {
-        Name = DebugName.For(this, nameHint);
+        Name = DebugName.For(this, caller: caller, callerFile: callerFile, callerLine: callerLine);
+        context.DebugName = Name;
     }
 
     public override string Name { get; }
 
-    public ICommandList FinishCommandList()
+    public ICommandList FinishCommandList([CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         var commandList = ID3D11DeviceContext.FinishCommandList(false);
-        commandList.DebugName = DebugName.For(commandList, Name);
+        commandList.DebugName = DebugName.For(commandList, Name, caller, callerFile, callerLine);
         return new CommandList(commandList);
     }
 

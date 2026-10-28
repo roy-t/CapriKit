@@ -28,9 +28,9 @@ public sealed class ImGuiRenderer : IDisposable
     public ImGuiRenderer(Device device)
     {
         Device = device;
-        VertexBuffer = new VertexBuffer<ImDrawVert>(device, nameof(ImGuiRenderer));
-        IndexBuffer = IndexBuffers.CreateU16(device, nameof(ImGuiRenderer));
-        ConstantBuffer = new ConstantBuffer<Matrix4x4>(device, nameof(ImGuiRenderer));
+        VertexBuffer = new VertexBuffer<ImDrawVert>(device);
+        IndexBuffer = IndexBuffers.CreateU16(device);
+        ConstantBuffer = new ConstantBuffer<Matrix4x4>(device);
         Effect = new ImGuiEffect(device);
 
         var io = ImGui.GetIO();
@@ -41,7 +41,9 @@ public sealed class ImGuiRenderer : IDisposable
             var pitch = (int)format.GetBytesPerPixel();
             var pixelSpan = new ReadOnlySpan<byte>(pixels, width * height * pitch);
             FontTexture = Device.ID3D11Device.CreateTexture2D<byte>(pixelSpan, format, (uint)width, (uint)height);
+            FontTexture.DebugName = DebugName.For(FontTexture);
             FontTextureView = Device.ID3D11Device.CreateShaderResourceView(FontTexture);
+            FontTextureView.DebugName = DebugName.For(FontTextureView);
         }
         io.Fonts.TexID = FONT_TEXTURE_ID;
     }

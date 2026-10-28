@@ -31,7 +31,7 @@ internal class BufferCreationTests
         using var device = new Device(NullLoggerFactory.Instance);
 
         // The constructor sizes the buffer for exactly one T
-        using var buffer = new ConstantBuffer<Constants>(device, nameof(ConstantBuffer_Create));
+        using var buffer = new ConstantBuffer<Constants>(device);
 
         await AssertCreated(device, buffer, 1);
     }
@@ -41,7 +41,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new StructuredBuffer<Vertex>(device, nameof(StructuredBuffer_Create));
+        using var buffer = new StructuredBuffer<Vertex>(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -52,7 +52,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new RWStructuredBuffer<float>(device, nameof(RWStructuredBuffer_Create));
+        using var buffer = new RWStructuredBuffer<float>(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -63,7 +63,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new StagingBuffer<float>(device, nameof(StagingBuffer_Create));
+        using var buffer = new StagingBuffer<float>(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -74,7 +74,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new VertexBuffer<Vertex>(device, nameof(VertexBuffer_Create));
+        using var buffer = new VertexBuffer<Vertex>(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -85,7 +85,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = IndexBuffers.CreateU16(device, nameof(IndexBuffer_CreateU16));
+        using var buffer = IndexBuffers.CreateU16(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -96,7 +96,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = IndexBuffers.CreateU32(device, nameof(IndexBuffer_CreateU32));
+        using var buffer = IndexBuffers.CreateU32(device);
         buffer.EnsureCapacity(3);
 
         await AssertCreated(device, buffer, 3);
@@ -108,7 +108,7 @@ internal class BufferCreationTests
         using var device = new Device(NullLoggerFactory.Instance);
 
         // Immutable buffers take their data in the constructor, there is no later write path
-        using var buffer = new ImmutableStructuredBuffer<Vertex>(device, Vertices, nameof(ImmutableStructuredBuffer_Create));
+        using var buffer = new ImmutableStructuredBuffer<Vertex>(device, Vertices);
 
         await AssertCreated(device, buffer, Vertices.Length);
     }
@@ -118,7 +118,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new ImmutableVertexBuffer<Vertex>(device, Vertices, nameof(ImmutableVertexBuffer_Create));
+        using var buffer = new ImmutableVertexBuffer<Vertex>(device, Vertices);
 
         await AssertCreated(device, buffer, Vertices.Length);
     }
@@ -128,7 +128,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = IndexBuffers.CreateU16Immutable(device, [0, 1, 2], nameof(IndexBuffer_CreateU16Immutable));
+        using var buffer = IndexBuffers.CreateU16Immutable(device, [0, 1, 2]);
 
         await AssertCreated(device, buffer, 3);
     }
@@ -138,7 +138,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = IndexBuffers.CreateU32Immutable(device, [0, 1, 2], nameof(IndexBuffer_CreateU32Immutable));
+        using var buffer = IndexBuffers.CreateU32Immutable(device, [0, 1, 2]);
 
         await AssertCreated(device, buffer, 3);
     }
@@ -152,7 +152,7 @@ internal class BufferCreationTests
     {
         using var device = new Device(NullLoggerFactory.Instance);
 
-        using var buffer = new StructuredBuffer<Vertex>(device, nameof(SetCapacity_GrowsAndShrinks));
+        using var buffer = new StructuredBuffer<Vertex>(device);
         buffer.SetCapacity(8);
         await Assert.That(buffer.Capacity).IsEqualTo(8);
 

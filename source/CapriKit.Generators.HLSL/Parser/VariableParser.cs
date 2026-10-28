@@ -35,7 +35,7 @@ internal static class VariableParser
         // A full variable such as `static const float Pi = 3.14;`
         var parser = new ParserBuilder<VariableAccumulator>()
             .Repeat(AnyModifier, (a, t) => { a.Modifiers.Add(t.Value); return a; })
-            .Required(AnyType, (a, t) => a with { Type = t.Value })
+            .RequiredType((a, t) => a with { Type = t.Value })
             .Required(AnyIdentifier, (a, t) => a with { Name = t.Value })
             .Repeat(dimension) // repeat for 0..n dimensions
             .OptionalRegister((a, t) => a with { Register = ParseRegister(t.Value) })

@@ -1,4 +1,5 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Buffers;
@@ -17,7 +18,7 @@ public sealed class ImmutableStructuredBuffer<T> : ImmutableDeviceBuffer<T>, ISh
         MiscFlags = ResourceOptionFlags.BufferStructured,
     };
 
-    public ImmutableStructuredBuffer(Device device, ReadOnlySpan<T> data, string? nameHint = null)
-        : base(device, Description, data, DebugName.For<ImmutableStructuredBuffer<T>>(nameHint)) { }
+    public ImmutableStructuredBuffer(Device device, ReadOnlySpan<T> data, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
+        : base(device, Description, data, DebugName.For<ImmutableStructuredBuffer<T>>(caller: caller, callerFile: callerFile, callerLine: callerLine)) { }
 
 }

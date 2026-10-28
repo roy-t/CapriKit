@@ -90,7 +90,7 @@ public sealed class SwapChain : IRenderTargetView, IDisposable
         using var backBuffer = IDXGISwapChain.GetBuffer<ID3D11Texture2D1>(0);
         var view = new RenderTargetViewDescription(backBuffer, RenderTargetViewDimension.Texture2D, RenderTargetViewFormat);
         BackBufferView = device.ID3D11Device.CreateRenderTargetView(backBuffer, view);
-        BackBufferView.DebugName = DebugName.For(BackBufferView, nameof(BackBufferView));
+        BackBufferView.DebugName = DebugName.For(BackBufferView);
     }
 
     private static IDXGISwapChain1 CreateSwapChain(ID3D11Device device, SwapChainDescription1 description, nint windowHandle)

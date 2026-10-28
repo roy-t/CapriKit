@@ -12,7 +12,7 @@ internal sealed class MainScene : IScene, IDisposable
     public MainScene(IEnumerable<ITestScreen> tests)
     {
         Tests = tests.OrderBy(t => t.Title);
-        CurrentTest = tests.FirstOrDefault(t => t.Title == "Render Model Test");
+        CurrentTest = tests.FirstOrDefault(t => t.Title == "Render Instanced Model");
     }
 
     public void Update(DeviceContext context, float elapsed)

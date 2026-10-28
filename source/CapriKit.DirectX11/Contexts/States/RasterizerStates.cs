@@ -1,13 +1,14 @@
 using CapriKit.DirectX11.Debug;
+using System.Runtime.CompilerServices;
 using Vortice.Direct3D11;
 
 namespace CapriKit.DirectX11.Contexts.States;
 
 public sealed class RasterizerState : IDisposable
 {
-    internal RasterizerState(ID3D11RasterizerState state, string nameHint, RasterizerDescription description)
+    internal RasterizerState(ID3D11RasterizerState state, RasterizerDescription description, string? label, string? caller, string? callerFile, int callerLine)
     {
-        Name = DebugName.For(this, nameHint);
+        Name = DebugName.For(this, label, caller, callerFile, callerLine);
 
         State = state;
         State.DebugName = Name;
@@ -69,20 +70,21 @@ public sealed class RasterizerStates : IDisposable
     public RasterizerState CullCounterClockwiseNoDepthClip { get; }
     public RasterizerState CullClockwiseNoDepthClip { get; }
 
-    public static RasterizerState CreateBiased(Device device, RasterizerState template, int depthBias, float depthBiasClamp = 0.0f, float slopeScaledDepthBias = 0.0f)
+    public static RasterizerState CreateBiased(Device device, RasterizerState template, int depthBias, float depthBiasClamp = 0.0f, float slopeScaledDepthBias = 0.0f,
+        [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         var description = template.Description;
         description.DepthBias = depthBias;
         description.DepthBiasClamp = depthBiasClamp;
         description.SlopeScaledDepthBias = slopeScaledDepthBias;
-        return Create(device.ID3D11Device, description, string.Empty);
+        return Create(device.ID3D11Device, description, null, caller, callerFile, callerLine);
     }
 
-    private static RasterizerState Create(ID3D11Device device, RasterizerDescription description, string name)
+    private static RasterizerState Create(ID3D11Device device, RasterizerDescription description, string? label, [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         description.ScissorEnable = true;
         var state = device.CreateRasterizerState(description);
-        return new RasterizerState(state, name, description);
+        return new RasterizerState(state, description, label, caller, callerFile, callerLine);
     }
 
     private static RasterizerDescription CreateCullNoneNoDepthClip()

@@ -90,10 +90,10 @@ public sealed class CKTModel : IDisposable
     [MemberNotNull(nameof(materials), nameof(triangles), nameof(vertices), nameof(indices), nameof(meshes), nameof(materialsView), nameof(triangleViews))]
     private void Initialize(Device device, CKTModelData data)
     {
-        materials = new ImmutableStructuredBuffer<CKTMaterial>(device, data.Materials, $"{Name}_materials");
-        triangles = new ImmutableStructuredBuffer<CKTTriangle>(device, data.Triangles, $"{Name}_triangles");
-        vertices = new ImmutableVertexBuffer<CKTVertex>(device, data.Vertices, $"{Name}_vertices");
-        indices = IndexBuffers.CreateU32Immutable(device, data.Indices, $"{Name}_indices");
+        materials = new ImmutableStructuredBuffer<CKTMaterial>(device, data.Materials);
+        triangles = new ImmutableStructuredBuffer<CKTTriangle>(device, data.Triangles);
+        vertices = new ImmutableVertexBuffer<CKTVertex>(device, data.Vertices);
+        indices = IndexBuffers.CreateU32Immutable(device, data.Indices);
         materialsView = materials.CreateShaderResourceView(device);
 
         triangleViews = new IShaderResourceView[data.Meshes.Length];

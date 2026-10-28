@@ -33,7 +33,6 @@ struct PS_INPUT
 cbuffer Constants : register(b0)
 {
     float4x4 ViewProjection;
-    float4x4 World;
 };
 
 StructuredBuffer<Material> Materials : register(t0);
@@ -41,12 +40,14 @@ StructuredBuffer<Triangle> Triangles : register(t1);
 StructuredBuffer<Instance> Instances : register(t2);
 
 #pragma VertexShader
-PS_INPUT VS(VS_INPUT input)
+PS_INPUT VS(VS_INPUT input, uint instanceId : SV_InstanceID)
 {
     PS_INPUT output;
-    float4x4 wvp = mul(ViewProjection, World);
+
+    float4x4 world = Instances[instanceId].world;
+    float4x4 wvp = mul(ViewProjection, world);
     output.position = mul(wvp, float4(input.position, 1.0f));
-    output.normal = mul((float3x3) World, input.normal);
+    output.normal = mul((float3x3) world, input.normal);
 
     return output;
 }
