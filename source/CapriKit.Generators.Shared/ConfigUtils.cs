@@ -28,7 +28,7 @@ public static class ConfigUtils
                     .Select((files, _) => Parse<T>(files));
     }
 
-    
+
 
     private static ConfigResult<T> Parse<T>(ImmutableArray<(string Path, SourceText? Text)> files)
         where T : class

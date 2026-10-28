@@ -10,6 +10,8 @@
     <!-- Override the version of workspace package used in SourceGenerators.Testing to enable testing of newer source generators.
          See: https://github.com/dotnet/roslyn-sdk/issues/1241#issuecomment-3730711290 -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" PrivateAssets="all" />
+    <!-- Override the vulnerable version of System.Security.Cryptography.Pkcs used in SourceGenerators.Testing -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" PrivateAssets="all" />
   </ItemGroup>
   <ItemGroup>    
     <PackageReference Include="TUnit" />
@@ -22,6 +24,7 @@
     <ProjectReference Include="..\CapriKit.Collections\CapriKit.Collections.csproj" />
     <ProjectReference Include="..\CapriKit.Concurrency\CapriKit.Concurrency.csproj" />
     <ProjectReference Include="..\CapriKit.DirectX11\CapriKit.DirectX11.csproj" />
+    <ProjectReference Include="..\CapriKit.Generators.AssetHandles\CapriKit.Generators.AssetHandles.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.PrecisionVariants\CapriKit.Generators.PrecisionVariants.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.HLSL\CapriKit.Generators.HLSL.csproj" />
     <ProjectReference Include="..\CapriKit.Generators.Shared\CapriKit.Generators.Shared.csproj" />

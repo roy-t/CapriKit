@@ -16,7 +16,7 @@ internal sealed class ConfigTypeGenerator()
     protected override SourceText GenerateConfigType(GeneratorConfiguration config)
     {
         var builder = new SourceCodeBuilder();
-        builder.WriteNamespace("CapriKit.Generators.AssetHandles");
+        builder.WriteNamespace("CapriKit.Generators.HLSL");
         builder.OpenClass(Modifiers.Internal | Modifiers.Static, "Configuration");
         builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "TargetNamespace", ToLiteral(config.TargetNamespace));
         builder.WriteField(Modifiers.Public | Modifiers.Const, "string", "ContentRoot", ToLiteral(config.ContentRoot));

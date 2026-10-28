@@ -9,10 +9,10 @@ public static class Matrix4x4Extensions
         /// <summary>
         /// Maps the Z element from [0..1] to [1..0]
         /// </summary>
-        public static Matrix4x4 ReverseZ => new( 1,  0,  0,  0,
-                                                 0,  1,  0,  0,
-                                                 0,  0, -1,  0,
-                                                 0,  0,  1,  1);
+        public static Matrix4x4 ReverseZ => new(1, 0, 0, 0,
+                                                 0, 1, 0, 0,
+                                                 0, 0, -1, 0,
+                                                 0, 0, 1, 1);
 
         /// <summary>
         /// Creates a perspective projection matrix with an infinite far plane that maps the near plane to depth 1 and the far plane to depth 0.
