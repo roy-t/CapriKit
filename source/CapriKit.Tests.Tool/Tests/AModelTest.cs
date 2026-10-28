@@ -12,22 +12,24 @@ using Vortice.Direct3D11;
 
 namespace CapriKit.Tests.Tool.Tests;
 
-internal sealed record GenericModelTestBundle(CKTModel Model, IVertexShader VertexShader, IPixelShader PixelShader);
+internal sealed record GenericModelTestBundle(CKTModel Model, IVertexShader VertexShader, IPixelShader PixelShader)
+{
+    public static Func<AssetManager, AssetBundle<GenericModelTestBundle>> CreateFactory(AssetId modelId, AssetId vertexShaderId, AssetId pixelShaderId,
+     [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
+    {
+        return assets =>
+        {
+            var builder = new AssetBundleBuilder<GenericModelTestBundle>(assets, file, line);
+            var model = builder.Request<CKTModel>(modelId);
+            var vertexShader = builder.Request<IVertexShader>(vertexShaderId);
+            var pixelShader = builder.Request<IPixelShader>(pixelShaderId);
+            return builder.Build(r => new GenericModelTestBundle(r.Get(model), r.Get(vertexShader), r.Get(pixelShader)));
+        };
+    }
+}
 
 internal abstract class AModelTest : ITestScreen
 {
-    public static ITestFactory CreateFactory<TTest>(AssetManager assets, string name, AssetId modelId, AssetId vertexShaderId, AssetId pixelShaderId,
-         [CallerFilePath] string file = "", [CallerLineNumber] int line = 0)
-        where TTest : AModelTest
-    {
-        var builder = new AssetBundleBuilder<GenericModelTestBundle>(assets, file, line);
-        var model = builder.Request<CKTModel>(modelId);
-        var vertexShader = builder.Request<IVertexShader>(vertexShaderId);
-        var pixelShader = builder.Request<IPixelShader>(pixelShaderId);
-        var bundle = builder.Build(r => new GenericModelTestBundle(r.Get(model), r.Get(vertexShader), r.Get(pixelShader)));
-        return new TestFactory<TTest, GenericModelTestBundle>(name, bundle);
-    }
-
     protected readonly IVertexShader VertexShader;
     protected readonly IPixelShader PixelShader;
     protected readonly IInputLayout InputLayout;

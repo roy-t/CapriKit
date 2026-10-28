@@ -4,7 +4,7 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
-using CapriKit.Tests.Tool.Tests.Framework;
+using Microsoft.Extensions.DependencyInjection;
 using System.Numerics;
 using static CapriKit.AssetLibrary.Shaders.ModelShader;
 
@@ -12,17 +12,17 @@ namespace CapriKit.Tests.Tool.Tests;
 
 internal sealed class RenderModelTest : AModelTest
 {
-    public static ITestFactory CreateFactory(AssetManager assetManager)
+    public static Func<AssetManager, AssetBundle<GenericModelTestBundle>> CreateBundleFactory()
     {
         var modelId = new AssetId(CapriKit.AssetHandles.Models.Parts.blend, "Container.1TUE");
         var vertexShaderId = new AssetId(ModelShader.Path, ModelShader.Vs);
         var pixelShaderId = new AssetId(ModelShader.Path, ModelShader.Ps);
-        return CreateFactory<RenderModelTest>(assetManager, nameof(RenderModelTest), modelId, vertexShaderId, pixelShaderId);
+        return GenericModelTestBundle.CreateFactory(modelId, vertexShaderId, pixelShaderId);
     }
 
     private readonly ConstantBuffer<Constants> ConstantBuffer;
 
-    public RenderModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, GenericModelTestBundle bundle)
+    public RenderModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, [FromKeyedServices(nameof(RenderModelTest))] GenericModelTestBundle bundle)
         : base(device, swapChain, camera, bundle, VsInputElementDescription)
     {
         ConstantBuffer = new ConstantBuffer<Constants>(device);

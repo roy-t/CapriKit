@@ -6,6 +6,7 @@ using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Shaders;
 using CapriKit.Tests.Tool.Tests.Framework;
+using Microsoft.Extensions.DependencyInjection;
 using System.Numerics;
 using static CapriKit.AssetLibrary.Shaders.BasicShader;
 
@@ -15,14 +16,17 @@ internal sealed record ShaderTestBundle(IVertexShader VertexShader, IPixelShader
 
 internal sealed class ShaderTest : ITestScreen
 {
-    public static ITestFactory CreateFactory(AssetManager assetManager)
+    public static Func<AssetManager, AssetBundle<ShaderTestBundle>> CreateBundleFactory()
     {
-        var builder = new AssetBundleBuilder<ShaderTestBundle>(assetManager);
-        var vs = builder.Request<IVertexShader>(new AssetId(BasicShader.Path, BasicShader.Vs));
-        var ps = builder.Request<IPixelShader>(new AssetId(BasicShader.Path, BasicShader.Ps));
-        var bundle = builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
-        return new TestFactory<ShaderTest, ShaderTestBundle>("Shader Test", bundle);
+        return assetManager =>
+        {
+            var builder = new AssetBundleBuilder<ShaderTestBundle>(assetManager);
+            var vs = builder.Request<IVertexShader>(new AssetId(BasicShader.Path, BasicShader.Vs));
+            var ps = builder.Request<IPixelShader>(new AssetId(BasicShader.Path, BasicShader.Ps));
+            return builder.Build(r => new ShaderTestBundle(r.Get(vs), r.Get(ps)));
+        };
     }
+
     private readonly IVertexShader VertexShader;
     private readonly IPixelShader PixelShader;
     private readonly IInputLayout InputLayout;
@@ -34,7 +38,7 @@ internal sealed class ShaderTest : ITestScreen
     private readonly ushort[] Indices;
     private bool isDirty;
 
-    public ShaderTest(Device device, ShaderTestBundle bundle)
+    public ShaderTest(Device device, [FromKeyedServices(nameof(ShaderTest))] ShaderTestBundle bundle)
     {
         VertexShader = bundle.VertexShader;
         PixelShader = bundle.PixelShader;

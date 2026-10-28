@@ -1,6 +1,5 @@
 using CapriKit.AssetPipeline;
 using CapriKit.DirectX11.Contexts;
-using CapriKit.Tests.Tool.Tests.Framework;
 using ImGuiNET;
 using Microsoft.Extensions.DependencyInjection;
 using System.Numerics;
@@ -25,19 +24,17 @@ internal sealed class LoadingScene : IScene
         ImGuiWindowFlags.NoNavInputs;
     private readonly IServiceProvider ServiceProvider;
     private readonly GameLoop GameLoop;
-    private readonly IEnumerable<ITestFactory> Factories;
+    private readonly IEnumerable<AssetBundle> Bundles;
     private readonly HashSet<AssetId> Seen;
     private readonly List<string> Completed;
-    private readonly ObjectFactory<MainScene> MainSceneFactory;
 
-    public LoadingScene(IServiceProvider provider, GameLoop gameLoop, IEnumerable<ITestFactory> factories)
+    public LoadingScene(IServiceProvider provider, GameLoop gameLoop, IEnumerable<AssetBundle> bundles)
     {
         ServiceProvider = provider;
         GameLoop = gameLoop;
-        Factories = factories;
+        Bundles = bundles;
         Seen = [];
-        Completed = new List<string>(VisibleAssets + 1);
-        MainSceneFactory = ActivatorUtilities.CreateFactory<MainScene>([typeof(List<ITestScreen>)]);
+        Completed = new(VisibleAssets + 1);
     }
 
     public float Progress { get; set; } = 0.0f;
@@ -47,12 +44,12 @@ internal sealed class LoadingScene : IScene
     {
         var total = 0;
         var loaded = 0;
-        foreach (var factory in Factories)
+        foreach (var bundle in Bundles)
         {
-            total += factory.Total;
-            loaded += factory.Loaded;
+            total += bundle.Total;
+            loaded += bundle.Loaded;
 
-            var candidate = factory.LastCompletedItem;
+            var candidate = bundle.LastCompletedItem;
             if (candidate != null && Seen.Add(candidate))
             {
                 Completed.Insert(0, candidate.ToString());
@@ -67,13 +64,7 @@ internal sealed class LoadingScene : IScene
 
         if (loaded == total)
         {
-            List<ITestScreen> tests = [];
-            foreach (var factory in Factories)
-            {
-                factory.Create(ServiceProvider, tests);
-            }
-            var main = MainSceneFactory(ServiceProvider, [tests]);
-            GameLoop.ChangeScene(main);
+            GameLoop.ChangeScene(ServiceProvider.GetRequiredService<MainScene>());
         }
     }
 

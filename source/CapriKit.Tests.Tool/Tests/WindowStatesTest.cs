@@ -9,11 +9,6 @@ internal sealed class WindowStatesTest(Win32Window window) : ITestScreen
 {
     public string Title => "Window States";
 
-    public static ITestFactory CreateFactory()
-    {
-        return new TestFactory<WindowStatesTest>("Window States Test");
-    }
-
     public void Render(DeviceContext _, float __)
     {
         if (ImGui.Begin(Title))

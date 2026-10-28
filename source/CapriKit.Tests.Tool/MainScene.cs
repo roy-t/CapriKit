@@ -1,24 +1,43 @@
 using CapriKit.DirectX11.Contexts;
 using CapriKit.Tests.Tool.Tests.Framework;
+using CapriKit.Win32.Input;
 using ImGuiNET;
 
 namespace CapriKit.Tests.Tool;
 
 internal sealed class MainScene : IScene, IDisposable
 {
-    private readonly IEnumerable<ITestScreen> Tests;
-    private ITestScreen? CurrentTest;
+    private readonly IReadOnlyList<ITestScreen> Tests;
+    private readonly Keyboard Keyboard;
+    private int currentTestIndex;
 
-    public MainScene(IEnumerable<ITestScreen> tests)
+    public MainScene(Keyboard keyboard, IEnumerable<ITestScreen> tests)
     {
-        Tests = tests.OrderBy(t => t.Title);
-        CurrentTest = tests.FirstOrDefault(t => t.Title == "Render Instanced Model");
+        Tests = [.. tests.OrderBy(t => t.Title)];
+        currentTestIndex = 0;
+        Keyboard = keyboard;
     }
 
     public void Update(DeviceContext context, float elapsed)
     {
         UpdateMenu();
-        CurrentTest?.Render(context, elapsed);
+        HandleInput();
+        if (currentTestIndex >= 0 && currentTestIndex < Tests.Count)
+        {
+            Tests[currentTestIndex].Render(context, elapsed);
+        }
+    }
+    private void HandleInput()
+    {
+        if (Keyboard.Pressed(VirtualKeyCode.VK_OEM_4)) // [
+        {
+            currentTestIndex = (currentTestIndex - 1 + Tests.Count) % Tests.Count;
+        }
+        if (Keyboard.Pressed(VirtualKeyCode.VK_OEM_6)) // ]
+        {
+            currentTestIndex = (currentTestIndex + 1) % Tests.Count;
+
+        }
     }
 
     private void UpdateMenu()
@@ -28,11 +47,12 @@ internal sealed class MainScene : IScene, IDisposable
         {
             if (ImGui.BeginMenu("Tests"))
             {
-                foreach (var test in Tests)
+                for (var i = 0; i < Tests.Count; i++)
                 {
-                    if (ImGui.MenuItem($"{test.Title}", string.Empty, CurrentTest == test))
+                    var test = Tests[i];
+                    if (ImGui.MenuItem($"{test.Title}", string.Empty, i == currentTestIndex))
                     {
-                        CurrentTest = test;
+                        currentTestIndex = i;
                     }
                 }
 

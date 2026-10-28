@@ -5,7 +5,7 @@ using CapriKit.DirectX11.Buffers;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Resources;
 using CapriKit.DirectX11.Resources.Views;
-using CapriKit.Tests.Tool.Tests.Framework;
+using Microsoft.Extensions.DependencyInjection;
 using System.Numerics;
 using static CapriKit.AssetLibrary.Shaders.InstancedModelShader;
 
@@ -13,12 +13,12 @@ namespace CapriKit.Tests.Tool.Tests;
 
 internal class RenderInstancedModelTest : AModelTest
 {
-    public static ITestFactory CreateFactory(AssetManager assetManager)
+    public static Func<AssetManager, AssetBundle<GenericModelTestBundle>> CreateBundleFactory()
     {
         var modelId = new AssetId(CapriKit.AssetHandles.Models.Parts.blend, "Container.1TUE");
         var vertexShaderId = new AssetId(InstancedModelShader.Path, InstancedModelShader.Vs);
         var pixelShaderId = new AssetId(InstancedModelShader.Path, InstancedModelShader.Ps);
-        return CreateFactory<RenderInstancedModelTest>(assetManager, nameof(RenderInstancedModelTest), modelId, vertexShaderId, pixelShaderId);
+        return GenericModelTestBundle.CreateFactory(modelId, vertexShaderId, pixelShaderId);
     }
 
     private readonly ConstantBuffer<Constants> ConstantBuffer;
@@ -28,7 +28,7 @@ internal class RenderInstancedModelTest : AModelTest
     private bool isDirty = true;
     private uint instanceCount = 0;
 
-    public RenderInstancedModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, GenericModelTestBundle bundle)
+    public RenderInstancedModelTest(Device device, SwapChain swapChain, TurnTableCamera camera, [FromKeyedServices(nameof(RenderInstancedModelTest))] GenericModelTestBundle bundle)
        : base(device, swapChain, camera, bundle, VsInputElementDescription)
     {
         ConstantBuffer = new ConstantBuffer<Constants>(device);

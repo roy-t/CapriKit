@@ -4,6 +4,7 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Debug;
 using CapriKit.IO;
 using CapriKit.Tests.Tool.Tests;
+using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -33,7 +34,11 @@ internal sealed class Program
         services.AddSingleton<LoadingScene>();
         services.AddSingleton<MainScene>();
         services.AddSingleton<TurnTableCamera>();
-        AddTestFactories(services);
+
+        services.AddTest<RenderInstancedModelTest, GenericModelTestBundle>(RenderInstancedModelTest.CreateBundleFactory());
+        services.AddTest<RenderModelTest, GenericModelTestBundle>(RenderModelTest.CreateBundleFactory());
+        services.AddTest<ShaderTest, ShaderTestBundle>(ShaderTest.CreateBundleFactory());
+        services.AddTest<WindowStatesTest>();
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions
         {
@@ -47,14 +52,6 @@ internal sealed class Program
         gameLoop.Run();
 
         UnloadRenderDoc(provider);
-    }
-
-    private static void AddTestFactories(ServiceCollection services)
-    {
-        services.AddSingleton(provider => ShaderTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
-        services.AddSingleton(provider => RenderModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
-        services.AddSingleton(provider => RenderInstancedModelTest.CreateFactory(provider.GetRequiredService<AssetManager>()));
-        services.AddSingleton(_ => WindowStatesTest.CreateFactory());
     }
 
     private static void LoadRenderDoc(ServiceCollection services)
