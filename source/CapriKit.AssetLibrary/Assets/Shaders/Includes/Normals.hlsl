@@ -36,7 +36,7 @@ float3 PerturbNormal(float3 texNormal, float3 geomNormal, float3 worldPosition, 
     float3x3 tbn = CotangentFrame(geomNormal, worldPosition, uv);
     return normalize(mul(texNormal, tbn));
 }
-    
+
 // Normal points in the direction of the viewer if the vertices are given in clock wise order
 float3 GetTriangleNormal(float4 t0, float4 t1, float4 t2)
 {

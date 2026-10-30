@@ -57,7 +57,7 @@ internal sealed class TextureTest : ITestScreen
     private readonly Texture2D Diffuse;
     private readonly Texture2D Normal;
 
-    public string Title => "Texture";
+    public string Title => "Render Texture with Normal Map";
 
     private bool isDirty;
 

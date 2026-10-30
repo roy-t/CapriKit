@@ -29,7 +29,7 @@ internal static class AssetEncoder
             WriteHeader(writer, encoder);
             WriteSettings(writer, encoder, settings);
             await WritePayload(writer, id, encoder, settings, spy);
-            WriteDependencies(id, writer, spy);
+            WriteDependencies(writer, spy);
 
             await writer.FlushAsync();
             await writer.CompleteAsync();
@@ -66,13 +66,18 @@ internal static class AssetEncoder
         writer.Write(payload.WrittenSpan);
     }
 
-    private static void WriteDependencies(AssetId root, PipeWriter writer, ReadOnlyVirtualFileSystemSpy spy)
+    private static void WriteDependencies(PipeWriter writer, ReadOnlyVirtualFileSystemSpy spy)
     {
-        writer.Write(spy.OpenedFiles.Count);
-        foreach (var dependency in spy.OpenedFiles)
+        // Store dependencies relative to the root of the input file system
+        var root = spy.GetAbsolutePath(DirectoryPath.Empty);
+        var dependencies = spy.OpenedFiles
+            .Select(file => spy.GetAbsolutePath(file).GetPathRelativeTo(root))
+            .ToHashSet();
+
+        writer.Write(dependencies.Count);
+        foreach (var dependency in dependencies)
         {
-            var lastWrite = spy.LastWriteTime(dependency);
-            writer.Write(lastWrite.Ticks);
+            writer.Write(spy.LastWriteTime(dependency).Ticks);
             writer.Write(dependency);
         }
     }

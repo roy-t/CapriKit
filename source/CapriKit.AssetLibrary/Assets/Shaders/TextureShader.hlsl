@@ -28,7 +28,7 @@ Texture2D Normal: register(t1);
 sampler DiffuseSampler : register(s0);
 sampler NormalSampler : register(s1);
 
-static const float3 LIGHT_DIRECTION = normalize(float3(-0.4f, -1.0f, -1.0f));
+static const float3 LIGHT_DIRECTION = normalize(float3(-0.4f,-1.0f, -1.0f));
 static const float3 LIGHT_COLOR = float3(1.0f, 1.0f, 1.0f);
 static const float3 AMBIENT_COLOR = float3(0.0f, 0.0f, 0.0f);
 
