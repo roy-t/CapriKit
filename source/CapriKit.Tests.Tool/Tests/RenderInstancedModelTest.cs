@@ -67,7 +67,6 @@ internal class RenderInstancedModelTest : AModelTest
         context.VS.SetConstantBuffer(InstancedModelShader.ConstantsRegister, ConstantBuffer);
         context.VS.SetShaderResource(InstancedModelShader.Instances, InstanceView);
         context.PS.SetConstantBuffer(InstancedModelShader.ConstantsRegister, ConstantBuffer);
-        context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
         const int lod = 0;
         Model.DrawIndexedInstanced(context, instanceCount, InstancedModelShader.Materials, InstancedModelShader.Triangles, lod);

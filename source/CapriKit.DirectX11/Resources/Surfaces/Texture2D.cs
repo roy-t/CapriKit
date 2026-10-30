@@ -8,11 +8,9 @@ using Vortice.Direct3D11;
 namespace CapriKit.DirectX11.Resources.Surfaces;
 
 /// <summary>
-/// The texel data of one mip level.
+/// The texel data of one texture sub resource, usually one mip level.
 /// </summary>
-/// <param name="Data">The texel data, for block-compressed formats rows of 4x4 blocks.</param>
-/// <param name="RowPitch">Distance in bytes between rows of pixels, or rows of blocks for block-compressed formats.</param>
-public readonly record struct MipLevel(ReadOnlyMemory<byte> Data, uint RowPitch);
+public readonly record struct Subresource(ReadOnlyMemory<byte> Data, uint RowPitch);
 
 public sealed class Texture2D : IShaderResourceView
 {
@@ -20,39 +18,40 @@ public sealed class Texture2D : IShaderResourceView
     private ID3D11Texture2D texture;
 
     /// <summary>
-    /// Creates an immutable 2D texture, <paramref name="mipLevels"/> holds every mip level from largest to smallest.
+    /// Creates an immutable 2D texture of 1 or more mipmaps.
     /// </summary>
-    public Texture2D(Device device, ReadOnlySpan<MipLevel> mipLevels, TextureFormat format, int width, int height,
+    public Texture2D(Device device, ReadOnlySpan<Subresource> mipmap, TextureFormat format, int width, int height,
         [CallerMemberName] string? caller = null, [CallerFilePath] string? callerFile = null, [CallerLineNumber] int callerLine = 0)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-        ArgumentOutOfRangeException.ThrowIfLessThan(mipLevels.Length, 1);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(mipLevels.Length, BitOperations.Log2((uint)Math.Max(width, height)) + 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(mipmap.Length, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(mipmap.Length, BitOperations.Log2((uint)Math.Max(width, height)) + 1);
 
         Width = width;
         Height = height;
-        MipLevels = mipLevels.Length;
+        MipLevels = mipmap.Length;
 
-        var description = new Texture2DDescription(format.InternalFormat, (uint)width, (uint)height, 1u, (uint)mipLevels.Length,
+        var description = new Texture2DDescription(format.InternalFormat, (uint)width, (uint)height, 1u, (uint)mipmap.Length,
             BindFlags.ShaderResource, ResourceUsage.Immutable);
 
-        var pins = new MemoryHandle[mipLevels.Length];
-        var initialData = new SubresourceData[mipLevels.Length];
+        var pins = new MemoryHandle[mipmap.Length];
+        var initialData = new SubresourceData[mipmap.Length];
         try
         {
-            for (var i = 0; i < mipLevels.Length; i++)
+            for (var i = 0; i < mipmap.Length; i++)
             {
-                var mipLevel = mipLevels[i];
+                var mipLevel = mipmap[i];
                 ValidateMipLevel(format, width, height, i, mipLevel);
 
-                var index = D3D11.CalculateSubResourceIndex((uint)i, 0, (uint)mipLevels.Length);
+                var index = D3D11.CalculateSubResourceIndex((uint)i, 0, (uint)mipmap.Length);
 
                 pins[index] = mipLevel.Data.Pin();
                 unsafe { initialData[index] = new SubresourceData(pins[index].Pointer, mipLevel.RowPitch); }
             }
 
             texture = device.ID3D11Device.CreateTexture2D(description, initialData);
+            texture.DebugName = DebugName.For(texture, caller: caller, callerFile: callerFile, callerLine: callerLine);
         }
         finally
         {
@@ -62,21 +61,19 @@ public sealed class Texture2D : IShaderResourceView
             }
         }
 
-        texture.DebugName = DebugName.For(texture, caller: caller, callerFile: callerFile, callerLine: callerLine);
-
         shaderResourceView = device.ID3D11Device.CreateShaderResourceView(texture);
         shaderResourceView.DebugName = DebugName.For(shaderResourceView, caller: caller, callerFile: callerFile, callerLine: callerLine);
     }
 
-    private static void ValidateMipLevel(TextureFormat format, int width, int height, int level, MipLevel data)
+    private static void ValidateMipLevel(TextureFormat format, int width, int height, int level, Subresource resource)
     {
         var levelWidth = Math.Max(1, width >> level);
         var levelHeight = Math.Max(1, height >> level);
         var rows = (levelHeight + format.BlockHeight - 1) / format.BlockHeight;
-        if (data.RowPitch < format.GetRowPitch(levelWidth) || data.Data.Length < data.RowPitch * rows)
+        if (resource.RowPitch < format.GetRowPitch(levelWidth) || resource.Data.Length < resource.RowPitch * rows)
         {
             throw new Exception($"Mip level {level} ({levelWidth}x{levelHeight} {format}) needs a row pitch of at least " +
-                $"{format.GetRowPitch(levelWidth)} and {data.RowPitch * rows} bytes, got {data.RowPitch} and {data.Data.Length}");
+                $"{format.GetRowPitch(levelWidth)} and {resource.RowPitch * rows} bytes, got {resource.RowPitch} and {resource.Data.Length}");
         }
     }
 

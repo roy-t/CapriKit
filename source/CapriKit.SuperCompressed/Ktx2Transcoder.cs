@@ -91,53 +91,44 @@ public static class Ktx2Transcoder
     /// <summary>Transcodes one mip level to the given GPU texture format.</summary>
     /// <remarks>
     /// Do not use concurrently with the same <see cref="Ktx2FileHandle"/>: it uses the file's
-    /// shared transcode state. Use <see cref="TranscodeAll"/> to process a file on all cores.
+    /// shared transcode state.
     /// </remarks>
     public static TranscodedImage Transcode(Ktx2FileHandle ktx2File, TranscodeFormat format, uint level = 0, uint layer = 0, uint face = 0, DecodeFlags flags = DecodeFlags.None)
     {
-        return Transcode(ktx2File, format, level, layer, face, flags, stateHandle: 0);
+        return TranscodeInternal(ktx2File, format, level, layer, face, flags);
     }
 
     /// <summary>
-    /// Transcodes every mip level, layer, and face in the file to the given GPU texture
-    /// format, in parallel. The result is ordered by level, then layer, then face.
+    /// Transcodes every surface in the file to the given GPU texture format.
+    /// The result is ordered like Direct3D subresources: by layer, then face, then level.
     /// </summary>
+    /// <remarks>
+    /// Do not use concurrently with the same <see cref="Ktx2FileHandle"/>: it uses the file's
+    /// shared transcode state.
+    /// </remarks>
     public static TranscodedImage[] TranscodeAll(Ktx2FileHandle ktx2File, TranscodeFormat format, DecodeFlags flags = DecodeFlags.None)
     {
         var levels = GetLevels(ktx2File);
         var layers = Math.Max(GetLayers(ktx2File), 1); // 0 for textures that are not arrays
         var faces = GetFaces(ktx2File);
 
-        var work = new List<(uint Level, uint Layer, uint Face)>();
-        for (var level = 0u; level < levels; level++)
+        var images = new TranscodedImage[levels * layers * faces];
+        var index = 0;
+        for (var layer = 0u; layer < layers; layer++)
         {
-            for (var layer = 0u; layer < layers; layer++)
+            for (var face = 0u; face < faces; face++)
             {
-                for (var face = 0u; face < faces; face++)
+                for (var level = 0u; level < levels; level++)
                 {
-                    work.Add((level, layer, face));
+                    images[index++] = TranscodeInternal(ktx2File, format, level, layer, face, flags);
                 }
             }
         }
 
-        // Transcoding the same file from multiple threads is only safe when every thread
-        // uses its own native transcode state: each worker creates one before its first
-        // item and destroys it after its last, even when an item throws.
-        var images = new TranscodedImage[work.Count];
-        Parallel.ForEach(
-            work,
-            NativeMethods.bt_ktx2_create_transcode_state,
-            (item, _, index, stateHandle) =>
-            {
-                images[index] = Transcode(ktx2File, format, item.Level, item.Layer, item.Face, flags, stateHandle);
-                return stateHandle;
-            },
-            NativeMethods.bt_ktx2_destroy_transcode_state);
-
         return images;
     }
 
-    private static TranscodedImage Transcode(Ktx2FileHandle ktx2File, TranscodeFormat format, uint level, uint layer, uint face, DecodeFlags flags, ulong stateHandle)
+    private static TranscodedImage TranscodeInternal(Ktx2FileHandle ktx2File, TranscodeFormat format, uint level, uint layer, uint face, DecodeFlags flags)
     {
         var width = NativeMethods.bt_ktx2_get_level_orig_width(ktx2File, level, layer, face);
         var height = NativeMethods.bt_ktx2_get_level_orig_height(ktx2File, level, layer, face);
@@ -172,7 +163,7 @@ public static class Ktx2Transcoder
             outputRowPitchInBlocksOrPixels: 0,
             outputRowsInPixels: 0,
             channel0: -1, channel1: -1,
-            stateHandle);
+            0);
 
         if (!succeeded)
         {

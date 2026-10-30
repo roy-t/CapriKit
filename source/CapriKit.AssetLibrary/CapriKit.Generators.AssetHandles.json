@@ -1,5 +1,5 @@
 {
   "targetNamespace": "CapriKit.AssetHandles",
   "contentRoot": "Assets",
-  "includedExtensions": [".blend", ".hlsl", ".ckt"]
+  "includedExtensions": [".blend", ".hlsl", ".ckt", ".png"]
 }

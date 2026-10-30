@@ -28,6 +28,7 @@ internal sealed class Program
         services.AddDirectX11();
         services.AddAssetPipeline(GetArg("--content-input"), GetArg("--content-output"));
         services.AddDirectX11ShaderTranscoders();
+        services.AddDirectX11TextureTranscoders();
         services.AddDirectX11ModelTranscoders();
 
         services.AddSingleton<GameLoop>();
@@ -38,6 +39,7 @@ internal sealed class Program
         services.AddTest<RenderInstancedModelTest, GenericModelTestBundle>(RenderInstancedModelTest.CreateBundleFactory());
         services.AddTest<RenderModelTest, GenericModelTestBundle>(RenderModelTest.CreateBundleFactory());
         services.AddTest<ShaderTest, ShaderTestBundle>(ShaderTest.CreateBundleFactory());
+        services.AddTest<TextureTest, TextureTestBundle>(TextureTest.CreateBundleFactory());
         services.AddTest<WindowStatesTest>();
 
         using var provider = services.BuildServiceProvider(new ServiceProviderOptions

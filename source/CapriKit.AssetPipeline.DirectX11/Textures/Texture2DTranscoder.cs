@@ -148,14 +148,11 @@ public sealed class Texture2DTranscoder(Device device) : IAssetTranscoder<Textur
 
         var (transcodeFormat, textureFormat, flags) = ToDecoderSettings(settings);
 
-        // For textures with multiple layers or faces the ordering of these elements
-        // does not map to how DirectX expects it. Fine for the current use case of a simple
-        // 2D texture (with mipmaps).
         var levels = Ktx2Transcoder.TranscodeAll(handle, transcodeFormat, flags);
-        var mipLevels = new MipLevel[levels.Length];
+        var mipLevels = new Subresource[levels.Length];
         for (var i = 0; i < levels.Length; i++)
         {
-            mipLevels[i] = new MipLevel(levels[i].Data, levels[i].RowPitch);
+            mipLevels[i] = new Subresource(levels[i].Data, levels[i].RowPitch);
         }
 
         return new Texture2D(device, mipLevels, textureFormat, width, height);

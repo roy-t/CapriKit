@@ -72,6 +72,18 @@ internal class Ktx2TranscoderTests
     }
 
     [Test]
+    public async Task TranscodeAll_ZstdSupercompressed()
+    {
+        var ktx2 = Ktx2Encoder.Encode(TestImages.CreateGradient(), BasisTexFormat.UastcLdr4x4, effort: 2,
+            flags: CompressionFlags.Ktx2UastcZstd | CompressionFlags.GenMipsClamp);
+        using var ktx2File = Ktx2Transcoder.Open(ktx2);
+
+        var images = Ktx2Transcoder.TranscodeAll(ktx2File, TranscodeFormat.Bc7Rgba);
+
+        await Assert.That(images.Length).IsEqualTo(5);
+    }
+
+    [Test]
     public async Task TranscodeToBlockCompressedBc7()
     {
         using var ktx2File = Ktx2Transcoder.Open(EncodeGradientWithMips());

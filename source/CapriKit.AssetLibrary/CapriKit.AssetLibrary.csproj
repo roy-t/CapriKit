@@ -12,16 +12,23 @@
   <ItemGroup>
     <AdditionalFiles Include="Assets\Models\Parts.blend" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Models\Container.1TUE.ckt" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\Includes\Gamma.hlsl" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\Includes\Normals.hlsl" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Shaders\TextureShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\BasicShader.hlsl" CopyToOutputDirectory="Always" />
-    <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </AdditionalFiles>
+    <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\ModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Textures\ganges_river_pebbles_diff_1k.png" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Textures\ganges_river_pebbles_nor_dx_1k.png" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>
     <AdditionalFiles Include="CapriKit.Generators.HLSL.json" />
     <AdditionalFiles Include="CapriKit.Generators.AssetHandles.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Assets\Textures\" />
   </ItemGroup>
 </Project>

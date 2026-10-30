@@ -12,6 +12,7 @@ public interface IAssetTranscoder
     Guid Id { get; }
     int Version { get; }
     Type AssetType { get; }
+    Type SettingsType { get; }
 }
 
 /// <inheritdoc cref="IAssetTranscoder"/>
@@ -19,9 +20,14 @@ public interface IAssetTranscoder<TAsset, TSettings> : IAssetTranscoder
     where TAsset : class
 {
     /// <summary>
-    /// The type the transcoder produces
+    /// The type the transcoder produces.
     /// </summary>
     Type IAssetTranscoder.AssetType => typeof(TAsset);
+
+    /// <summary>
+    /// The settings type the transcoder uses for configuration.
+    /// </summary>
+    Type IAssetTranscoder.SettingsType => typeof(TSettings);
 
     /// <summary>
     /// Loads the raw asset data from the file system and build/encodes it into a format optimized for loading.

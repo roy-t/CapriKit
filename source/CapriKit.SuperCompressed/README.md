@@ -33,7 +33,7 @@ Transcoding, done at load time:
 ```csharp
 using var ktx2File = Ktx2Transcoder.Open(File.ReadAllBytes("albedo.ktx2"));
 
-// Transcodes every mip level (and layer/face) in parallel;
+// Transcodes every mip level (and layer/face);
 // use Ktx2Transcoder.Transcode to transcode a single image instead
 foreach (var mip in Ktx2Transcoder.TranscodeAll(ktx2File, TranscodeFormat.Bc7Rgba))
 {

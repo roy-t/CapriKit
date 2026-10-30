@@ -1,3 +1,5 @@
+#include "Includes/Gamma.hlsl"
+
 #pragma Input
 struct VS_INPUT
 {
@@ -15,13 +17,6 @@ cbuffer Constants : register(b0)
 {
     float4x4 ProjectionMatrix;
 };
-
-static const float GAMMA = 2.2f;
-static float4 ToLinear(float4 v)
-{
-    float3 rgb = pow(abs(v.rgb), float3(GAMMA, GAMMA, GAMMA));
-    return float4(rgb.rgb, v.a);
-}
 
 #pragma VertexShader
 PS_INPUT VS(VS_INPUT input)

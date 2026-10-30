@@ -369,9 +369,16 @@ public sealed partial class AssetManager : IDisposable
             throw new Exception($"Missing transcoder for asset type: {type.FullName}");
         }
 
+        var settingsType = typeof(TSetting);
+        if (transcoder.SettingsType != settingsType)
+        {
+            throw new Exception($"Incorrect settings type: asset provided {settingsType.Name} but transcoder expects {transcoder.SettingsType.Name}");
+        }
+
         if (transcoder is not IAssetTranscoder<TAsset, TSetting> specializedTranscoder)
         {
-            throw new Exception($"Expected transcoder of type: {type.FullName} but got transcoder of type: {transcoder.GetType().FullName}");
+            throw new Exception($"Transcoder {transcoder.GetType().Name} implements {nameof(IAssetTranscoder)}<{transcoder.AssetType.Name},{transcoder.SettingsType.Name}> " +
+                $"which does not fulfill requested {nameof(IAssetTranscoder)}<{type.Name},{settingsType.Name}> ");
         }
 
         return specializedTranscoder;

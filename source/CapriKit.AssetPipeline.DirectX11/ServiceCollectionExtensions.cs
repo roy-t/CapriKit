@@ -1,5 +1,6 @@
 using CapriKit.AssetPipeline.DirectX11.Models;
 using CapriKit.AssetPipeline.DirectX11.Shaders;
+using CapriKit.AssetPipeline.DirectX11.Textures;
 using CapriKit.IO;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -12,6 +13,12 @@ public static class ServiceCollectionExtensions
     {
         collection.TryAddEnumerable(ServiceDescriptor.Singleton<IAssetTranscoder, VertexShaderTranscoder>());
         collection.TryAddEnumerable(ServiceDescriptor.Singleton<IAssetTranscoder, PixelShaderTranscoder>());
+        return collection;
+    }
+
+    public static IServiceCollection AddDirectX11TextureTranscoders(this IServiceCollection collection)
+    {
+        collection.TryAddEnumerable(ServiceDescriptor.Singleton<IAssetTranscoder, Texture2DTranscoder>());
         return collection;
     }
 

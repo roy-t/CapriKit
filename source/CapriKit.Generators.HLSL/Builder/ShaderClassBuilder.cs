@@ -38,7 +38,9 @@ internal static class ShaderClassBuilder
         // Write any variable (uniform)
         foreach (var variable in metadata.Variables)
         {
-            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", CreateValidTypeIdentifier(variable.Name), ToLiteral(variable.Register));
+            var name = CreateValidTypeIdentifier(variable.Name);
+            if (name.Equals(GetClassName(path))) { name = $"_{name}"; }
+            builder.WriteField(Modifiers.Public | Modifiers.Const, "uint", name, ToLiteral(variable.Register));
         }
 
         // Write the structs and input element descriptions

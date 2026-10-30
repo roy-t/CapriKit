@@ -42,7 +42,6 @@ internal sealed class RenderModelTest : AModelTest
         context.Setup(InputLayout, PrimitiveTopology.TriangleList, VertexShader, context.RasterizerStates.CullCounterClockwise, PixelShader, context.BlendStates.Opaque, context.DepthStencilStates.ReverseZ);
         context.VS.SetConstantBuffer(ModelShader.ConstantsRegister, ConstantBuffer);
         context.PS.SetConstantBuffer(ModelShader.ConstantsRegister, ConstantBuffer);
-        context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
         const int lod = 0;
         Model.DrawIndexed(context, ModelShader.Materials, ModelShader.Triangles, lod);

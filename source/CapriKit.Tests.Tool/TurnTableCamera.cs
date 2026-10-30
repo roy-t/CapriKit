@@ -22,6 +22,13 @@ internal sealed class TurnTableCamera(Mouse mouse)
             pitch = Math.Clamp(pitch + (mouse.MovementF.Y * MovementSpeed), -MaxPitch, MaxPitch);
         }
 
+        if (mouse.Held(MouseButton.Middle))
+        {
+            yaw = 0.0f;
+            pitch = 0.0f;
+            distance = 5.0f;
+        }
+
         if (mouse.ScrollSteps != 0)
         {
             distance = Math.Max(MinDistance, distance + mouse.ScrollSteps * ZoomSpeed);

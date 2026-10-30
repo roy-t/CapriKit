@@ -66,7 +66,6 @@ internal sealed class ShaderTest : ITestScreen
         context.IA.SetVertexBuffer(VertexBuffer);
         context.IA.SetIndexBuffer(IndexBuffer);
         context.VS.SetConstantBuffer(BasicShader.ConstantsRegister, ConstantBuffer);
-        context.PS.SetSampler(0, context.SamplerStates.LinearWrap);
 
         context.DrawIndexed(3);
     }
