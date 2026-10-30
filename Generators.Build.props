@@ -4,6 +4,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <Platforms>AnyCPU</Platforms>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <ImplicitUsings>true</ImplicitUsings>
 		<LangVersion>Latest</LangVersion>
     <!-- Not on by default for netstandard2.0, without it MSBuildWorkspace (dotnet format, IDEs)

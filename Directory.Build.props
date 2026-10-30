@@ -6,6 +6,8 @@
     <LangVersion>Latest</LangVersion>
     <Platforms>x64</Platforms>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <!-- Directory.Build.props is imported before the SDK sets its defaults -->
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -68,17 +70,10 @@
   <PropertyGroup>
     <MSBuildProjectExtensionsPath>$(MSBuildProjectDirectory)/../../.build/ext/$(MSBuildProjectName)</MSBuildProjectExtensionsPath>
     <BaseIntermediateOutputPath>$(MSBuildProjectDirectory)/../../.build/obj</BaseIntermediateOutputPath>
-    <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)</IntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)/$(MSBuildProjectName)-$(Configuration)</IntermediateOutputPath>
+    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)-$(Configuration)</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' == ''">
-    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)</OutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(Configuration)' != ''">
-    <OutputPath>$(MSBuildProjectDirectory)/../../.build/bin/$(MSBuildProjectName)-$(Configuration)</OutputPath>
   </PropertyGroup>
 
   <!-- Supressions-->
