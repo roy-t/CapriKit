@@ -48,14 +48,13 @@ PS_INPUT VS(VS_INPUT input)
 #pragma PixelShader
 float4 PS(PS_INPUT input) : SV_Target
 {
-    float3 N = normalize(input.normal);
-    float3 texNormal = SampleNormal(Normal, NormalSampler, input.uv);
-    float3 normal = PerturbNormal(texNormal, N, input.world, input.uv);
-    
     float3 diffuse = Diffuse.Sample(DiffuseSampler, input.uv).rgb;
-    float d = saturate(dot(normal, -LIGHT_DIRECTION)); // surface to light!
-    float3 color = diffuse * (AMBIENT_COLOR + LIGHT_COLOR * d);///
+    
+    float3 geomNormal = normalize(input.normal);
+    float3 texNormal = SampleNormal(Normal, NormalSampler, input.uv);
+    float3 normal = PerturbNormal(texNormal, geomNormal, input.world, input.uv);
+    float lambert = Lambert(normal, -LIGHT_DIRECTION);
 
-    //return float4(d, d, d, 1.0f);
+    float3 color = diffuse * (AMBIENT_COLOR + LIGHT_COLOR * lambert);
     return float4(color, 1.0f);
 }

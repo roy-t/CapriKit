@@ -9,9 +9,7 @@ float3 SampleNormal(Texture2D tex, sampler samp, float2 uv)
     return float3(n, sqrt(saturate(1.0f - dot(n, n))));
 }
 
-// Normal mapping as described by Christian Schüler in
-// http://www.thetenthplanet.de/archives/1180
-float3x3 CotangentFrame(float3 N, float3 p, float2 uv)
+float3x3 _CotangentFrame(float3 N, float3 p, float2 uv)
 {
     // get edge vectors of the pixel triangle
     float3 dp1 = ddx(p);
@@ -30,14 +28,30 @@ float3x3 CotangentFrame(float3 N, float3 p, float2 uv)
     float invmax = handedness * rsqrt(max(dot(T, T), dot(B, B)));
     return float3x3(T * invmax, B * invmax, N);
 }
-    
+
+// Normal mapping without precomputed tangents. Algorithm by Christian Schüler.
+// See: http://www.thetenthplanet.de/archives/1180.
+// Transforms a tangent-space normal from a normal map to world space.
+// Uses screen-space derivatives, so only call this from a pixel shader.
+// - texNormal: decoded tangent-space normal in [-1, 1], e.g. from SampleNormal
+// - geomNormal: normalized, interpolated vertex normal (world space)
+// - worldPosition: position of the pixel being shaded (world space)
+// - uv: the coordinates used to sample the normal map
 float3 PerturbNormal(float3 texNormal, float3 geomNormal, float3 worldPosition, float2 uv)
 {
-    float3x3 tbn = CotangentFrame(geomNormal, worldPosition, uv);
+    float3x3 tbn = _CotangentFrame(geomNormal, worldPosition, uv);
     return normalize(mul(texNormal, tbn));
 }
 
-// Normal points in the direction of the viewer if the vertices are given in clock wise order
+// Computes the influence of a light source on a surface using Lambert's cosine law.
+// Takes two normalized vectors. N is the surface normal and L points from the surface towards the light.
+float Lambert(float3 N, float3 L)
+{
+    return saturate(dot(N, L));
+}
+
+// Reconstructs a normal given the three vertices of a triangle.
+// The normal points in the direction of the viewer if the vertices are given in clock wise order.
 float3 GetTriangleNormal(float4 t0, float4 t1, float4 t2)
 {
     float3 c = cross(t2.xyz - t0.xyz, t1.xyz - t0.xyz);
