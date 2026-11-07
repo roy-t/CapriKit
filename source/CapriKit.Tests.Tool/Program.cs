@@ -35,6 +35,7 @@ internal sealed class Program
         services.AddSingleton<LoadingScene>();
         services.AddSingleton<MainScene>();
         services.AddSingleton<TurnTableCamera>();
+        services.AddSingleton<PerformanceDataCollector>();
 
         services.AddTest<RenderInstancedModelTest, GenericModelTestBundle>(RenderInstancedModelTest.CreateBundleFactory());
         services.AddTest<RenderModelTest, GenericModelTestBundle>(RenderModelTest.CreateBundleFactory());

@@ -21,6 +21,7 @@
     <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Textures\ganges_river_pebbles_diff_1k.png" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Textures\ganges_river_pebbles_nor_dx_1k.png" CopyToOutputDirectory="Always" />
+    <AdditionalFiles Include="Assets\Textures\text_logo.png" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
   <ItemGroup>

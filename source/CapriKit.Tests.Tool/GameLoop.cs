@@ -16,6 +16,7 @@ internal sealed class GameLoop
     private readonly SwapChain SwapChain;
     private readonly ImGuiController Gui;
     private readonly AssetManager AssetManager;
+    private readonly PerformanceDataCollector Performance;
     private readonly RenderDoc? RenderDoc;
 
     private DepthStencilBuffer depth;
@@ -23,7 +24,7 @@ internal sealed class GameLoop
     private IScene currentScene;
     private IScene? nextScene;
 
-    public GameLoop(Win32Window window, Keyboard keyboard, Device device, SwapChain swapChain, ImGuiController gui, AssetManager assetManager, RenderDoc? renderDoc = null)
+    public GameLoop(Win32Window window, Keyboard keyboard, Device device, SwapChain swapChain, ImGuiController gui, AssetManager assetManager, PerformanceDataCollector performance, RenderDoc? renderDoc = null)
     {
         Window = window;
         Keyboard = keyboard;
@@ -32,6 +33,7 @@ internal sealed class GameLoop
         Gui = gui;
         AssetManager = assetManager;
         currentScene = new DefaultScene();
+        Performance = performance;
         RenderDoc = renderDoc;
         nextScene = null;
 
@@ -47,8 +49,12 @@ internal sealed class GameLoop
 
         var context = Device.ImmediateDeviceContext;
 
+        using var gpuProfiler = new GpuProfiler(Device, "Setup", "Scene", "Gui");
+        var cpuProfiler = new CpuProfiler("Setup", "Scene", "Gui", "Present");
         while (running)
         {
+            // CPU setup also includes switching scenes, starting the GUI frame and updating assets
+            cpuProfiler.BeginFrame();
             if (nextScene != null)
             {
                 currentScene.Dispose(); // TODO: this assumes that a scene cannot be reused
@@ -61,21 +67,35 @@ internal sealed class GameLoop
             Gui.NewFrame(elapsed);
             AssetManager.Update();
 
+            gpuProfiler.BeginFrame(context);
+
             // Set render output
             SwapChain.Clear(context, depth);
             context.OM.SetRenderTargetToBackBuffer(SwapChain, depth);
             context.RS.SetViewport(SwapChain.Viewport);
             context.RS.SetScissorRect(SwapChain.Viewport);
+            gpuProfiler.EndSection(context, 0); // Setup
+            cpuProfiler.EndSection(0);
 
             // Draw scene
             currentScene.Update(context, elapsed);
+            gpuProfiler.EndSection(context, 1); // Scene
+            cpuProfiler.EndSection(1);
 
             // Draw GUI
             Gui.Render(context);
+            gpuProfiler.EndSection(context, 2); // Gui
+            cpuProfiler.EndSection(2);
 
             // Present
             context.OM.UnsetRenderTargets();
+            if (gpuProfiler.EndFrame(context))
+            {
+                Performance.Collect(gpuProfiler);
+            }
             SwapChain.Present();
+            cpuProfiler.EndFrame(); // Present
+            Performance.Collect(cpuProfiler);
 
             // Bookkeeping
             HandleResize();
