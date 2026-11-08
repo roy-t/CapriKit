@@ -63,4 +63,13 @@ public static partial class Statistics
         return standardDeviation / Math.Sqrt(count);
     }
 
+    /// <summary>
+    /// Nearest-rank percentile, assumes <paramref name="sorted"/> is sorted in ascending order.
+    /// </summary>
+    [GenerateFloatVariant]
+    public static double Percentile(ReadOnlySpan<double> sorted, double percentile)
+    {
+        return sorted[(int)Math.Round(percentile * (sorted.Length - 1))];
+    }
+
 }

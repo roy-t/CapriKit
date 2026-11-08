@@ -3,9 +3,9 @@ using System.Diagnostics;
 
 namespace CapriKit.Tests.Tool;
 
-/// <param name="Median">Typical duration, not skewed by spikes.</param>
-/// <param name="P99">Duration exceeded by 1% of the samples, shows stutter.</param>
-/// <param name="Noise">Interquartile range (p75 - p25), differences between runs smaller than this are not meaningful.</param>
+/// <param name="Median">Median duration</param>
+/// <param name="P99">Duration exceeded by 1% of the samples</param>
+/// <param name="Noise">Interquartile range (p75 - p25)</param>
 internal readonly record struct TimingStatistics(float Median, float P99, float Noise);
 
 /// <summary>
@@ -139,7 +139,6 @@ internal sealed class TimingGroup(int capacity)
 internal sealed class RollingWindow(int capacity)
 {
     private readonly float[] Samples = new float[capacity];
-    private readonly float[] Sorted = new float[capacity];
     private int next;
 
     public int Count { get; private set; }
@@ -147,8 +146,8 @@ internal sealed class RollingWindow(int capacity)
     public void Add(float sample)
     {
         Samples[next] = sample;
-        next = (next + 1) % Samples.Length;
-        Count = Math.Min(Count + 1, Samples.Length);
+        next = (next + 1) % capacity;
+        Count = Math.Min(Count + 1, capacity);
     }
 
     public void Clear()
@@ -159,25 +158,15 @@ internal sealed class RollingWindow(int capacity)
 
     public TimingStatistics GetStatistics()
     {
-        if (Count == 0)
-        {
-            return default;
-        }
+        if (Count == 0) { return default; }
 
-        // Until the window is full, the samples are stored in the first Count elements
-        var sorted = Sorted.AsSpan(0, Count);
+        Span<float> sorted = stackalloc float[Count];
         Samples.AsSpan(0, Count).CopyTo(sorted);
         sorted.Sort();
 
         return new TimingStatistics(
-            Percentile(sorted, 0.50f),
-            Percentile(sorted, 0.99f),
-            Percentile(sorted, 0.75f) - Percentile(sorted, 0.25f));
-    }
-
-    // Nearest-rank percentile, interpolating is not worth it for informal measurements
-    private static float Percentile(ReadOnlySpan<float> sorted, float percentile)
-    {
-        return sorted[(int)MathF.Round(percentile * (sorted.Length - 1))];
+            CapriKit.Mathematics.Statistics.Percentile(sorted, 0.50f),
+            CapriKit.Mathematics.Statistics.Percentile(sorted, 0.99f),
+            CapriKit.Mathematics.Statistics.Percentile(sorted, 0.75f) - CapriKit.Mathematics.Statistics.Percentile(sorted, 0.25f));
     }
 }
