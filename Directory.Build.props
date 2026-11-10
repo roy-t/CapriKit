@@ -2,7 +2,7 @@
 
   <!-- Build settings -->
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <LangVersion>Latest</LangVersion>
     <Platforms>x64</Platforms>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
@@ -13,6 +13,12 @@
     <Nullable>enable</Nullable>
     <WarningsAsErrors>nullable</WarningsAsErrors>
     <Configurations>Debug;Release;Test</Configurations>
+  </PropertyGroup>
+
+  <!-- Runtime Async (preview): async methods are compiled to runtime-native async instead of compiler generated state machines.
+       See: https://learn.microsoft.com/en-us/dotnet/core/whats-new/dotnet-11/runtime -->
+  <PropertyGroup>
+    <Features>$(Features);runtime-async=on</Features>
   </PropertyGroup>
 
   <!-- Debug settings -->

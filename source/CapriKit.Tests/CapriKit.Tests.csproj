@@ -15,7 +15,6 @@
   </ItemGroup>
   <ItemGroup>    
     <PackageReference Include="TUnit" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CapriKit.AssetLibrary\CapriKit.AssetLibrary.csproj" />

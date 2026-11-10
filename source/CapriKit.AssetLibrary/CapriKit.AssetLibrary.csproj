@@ -16,7 +16,6 @@
     <AdditionalFiles Include="Assets\Shaders\Includes\Normals.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\TextureShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\BasicShader.hlsl" CopyToOutputDirectory="Always" />
-    <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\ModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Shaders\InstancedModelShader.hlsl" CopyToOutputDirectory="Always" />
     <AdditionalFiles Include="Assets\Textures\ganges_river_pebbles_diff_1k.png" CopyToOutputDirectory="Always" />
