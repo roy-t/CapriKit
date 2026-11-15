@@ -8,7 +8,7 @@ namespace CapriKit.Strings;
 /// Only values that implement <see cref="ISpanFormattable"/> can be used as holes.
 /// Not thread-safe.
 /// </summary>
-public sealed class StringBuffer
+public sealed class FormatBuffer
 {
     private readonly IFormatProvider? provider;
     private char[] buffer;
@@ -19,7 +19,7 @@ public sealed class StringBuffer
     /// Culture used to format holes, or null to use the current culture.
     /// An <see cref="ICustomFormatter"/> supplied by the provider is ignored.
     /// </param>
-    public StringBuffer(int capacity = 32, IFormatProvider? provider = null)
+    public FormatBuffer(int capacity = 32, IFormatProvider? provider = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
         buffer = new char[capacity];
@@ -30,14 +30,14 @@ public sealed class StringBuffer
 
     /// <summary>
     /// Formats the interpolated string into the buffer and returns the result.
-    /// The returned span is only valid until the next call to <see cref="Write"/>.
+    /// The returned span is only valid until the next call to <see cref="Format"/>.
     /// </summary>
-    public ReadOnlySpan<char> Write([InterpolatedStringHandlerArgument("")] scoped ref StringBufferHandler handler)
+    public ReadOnlySpan<char> Format([InterpolatedStringHandlerArgument("")] scoped ref StringBufferHandler handler)
     {
         // A forwarded handler can belong to another buffer
         if (handler.Owner != this)
         {
-            throw new ArgumentException($"The handler was created for a different {nameof(StringBuffer)}", nameof(handler));
+            throw new ArgumentException($"The handler was created for a different {nameof(FormatBuffer)}", nameof(handler));
         }
 
         length = handler.Length;
@@ -58,19 +58,19 @@ public sealed class StringBuffer
     }
 
     /// <summary>
-    /// Created by the compiler when an interpolated string is passed to <see cref="Write"/>, do not use directly.
+    /// Created by the compiler when an interpolated string is passed to <see cref="Format"/>, do not use directly.
     /// </summary>
     [InterpolatedStringHandler]
     public ref struct StringBufferHandler
     {
-        public StringBufferHandler(int literalLength, int formattedCount, StringBuffer owner)
+        public StringBufferHandler(int literalLength, int formattedCount, FormatBuffer owner)
         {
             Owner = owner;
         }
 
         public int Length { get; private set; }
 
-        internal readonly StringBuffer Owner { get; }
+        internal readonly FormatBuffer Owner { get; }
 
         public void AppendLiteral(string value) => AppendFormatted(value.AsSpan());
 
