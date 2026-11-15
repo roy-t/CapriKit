@@ -8,8 +8,19 @@ namespace CapriKit.Tests.Tool;
 /// <param name="Noise">Interquartile range (p75 - p25)</param>
 internal readonly record struct TimingStatistics(float Median, float P99, float Noise);
 
+/// <param name="PrivateMemorySize">Bytes committed by the process, managed and native</param>
+/// <param name="AllocatedBytes">Bytes allocated on the managed heap since the process started</param>
+/// <param name="AllocatedBytesPerFrame">Average bytes allocated on the managed heap per frame since the previous refresh</param>
+/// <param name="TotalPauseDuration">Milliseconds paused for garbage collections since the process started</param>
+/// <param name="LastPauseDuration">Milliseconds paused for the most recent garbage collection</param>
+internal readonly record struct CpuMemoryStatistics(long PrivateMemorySize, long AllocatedBytes, long AllocatedBytesPerFrame, float TotalPauseDuration, float LastPauseDuration);
+
+/// <param name="MemoryUsage">Total local GPU memory used by this process, in bytes</param>
+/// <param name="MemoryBudget">OS allowed local GPU memory budget, in bytes, before swapping occurs</param>
+internal readonly record struct GpuMemoryStatistics(ulong MemoryUsage, ulong MemoryBudget);
+
 /// <summary>
-/// Keeps CPU and GPU timings of the last frames and periodically summarizes them, so that the numbers are readable.
+/// Keeps CPU and GPU timings and memory use of the last frames and periodically summarizes them, so that the numbers are readable.
 /// </summary>
 internal sealed class PerformanceDataCollector
 {
@@ -18,6 +29,11 @@ internal sealed class PerformanceDataCollector
 
     private PipelineStatistics[] latestPipeline = [];
     private PipelineStatistics[] pipeline = [];
+    private readonly long[] latestGenerations = new long[5];
+    private readonly long[] generations = new long[5];
+    private CpuMemoryStatistics latestCpuMemory;
+    private long allocatedSinceRefresh;
+    private int framesSinceRefresh;
     private long lastRefresh;
 
     public TimingGroup Cpu { get; } = new(WindowSize);
@@ -30,11 +46,38 @@ internal sealed class PerformanceDataCollector
     /// </summary>
     public ReadOnlySpan<PipelineStatistics> Pipeline => pipeline;
 
+
+    /// <summary>
+    /// GPU memory usage.
+    /// </summary>
+    public GpuMemoryStatistics GpuMemory { get; private set; }
+
+    /// <summary>
+    /// Memory use of the process at the last refresh.
+    /// </summary>
+    public CpuMemoryStatistics CpuMemory { get; private set; }
+
+    /// <summary>
+    /// Size in bytes of gen0, gen1, gen2, the large object heap and the pinned object heap at the last refresh.
+    /// </summary>
+    public ReadOnlySpan<long> GenerationSizes => generations;
+
     public int Capacity => WindowSize;
 
     public void Collect(CpuProfiler source)
     {
         Cpu.Add(source.Sections, source.Total, source.Durations);
+
+        allocatedSinceRefresh += source.AllocatedBytesDelta;
+        framesSinceRefresh++;
+        source.GenerationSizes.CopyTo(latestGenerations);
+        latestCpuMemory = new CpuMemoryStatistics(
+            source.PrivateMemorySize,
+            source.AllocatedBytes,
+            allocatedSinceRefresh / framesSinceRefresh,
+            source.TotalPauseDuration,
+            source.LastPauseDuration);
+
         RefreshIfDue();
     }
 
@@ -54,6 +97,8 @@ internal sealed class PerformanceDataCollector
             latestPipeline[i + 1] = source.Statistics[i];
             latestPipeline[0] += source.Statistics[i];
         }
+
+        GpuMemory = new GpuMemoryStatistics(source.MemoryUsage, source.MemoryBudget);
 
         RefreshIfDue();
     }
@@ -76,6 +121,10 @@ internal sealed class PerformanceDataCollector
             Cpu.Refresh();
             Gpu.Refresh();
             latestPipeline.CopyTo(pipeline, 0);
+            latestGenerations.CopyTo(generations, 0);
+            CpuMemory = latestCpuMemory;
+            allocatedSinceRefresh = 0;
+            framesSinceRefresh = 0;
             lastRefresh = Stopwatch.GetTimestamp();
         }
     }

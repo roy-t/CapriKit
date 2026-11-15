@@ -4,6 +4,7 @@ using CapriKit.DirectX11.Debug;
 using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32.Input;
 using ImGuiNET;
+using System.Numerics;
 
 namespace CapriKit.Tests.Tool;
 
@@ -102,16 +103,70 @@ internal sealed class MainScene : IScene, IDisposable
                 ImGui.Text($"CPU samples: {Performance.Cpu.SampleCount}/{Performance.Capacity}");
                 UpdateTimingTable("CpuTimings", "CPU (ms)", Performance.Cpu);
                 ImGui.Spacing();
+                ImGui.SeparatorText("CPU Memory");
+                UpdateCpuMemoryTable(Performance);
+                ImGui.Spacing();
                 ImGui.SeparatorText("GPU Timings");
                 ImGui.Text($"GPU samples: {Performance.Gpu.SampleCount}/{Performance.Capacity}");
                 UpdateTimingTable("GpuTimings", "GPU (ms)", Performance.Gpu);
                 ImGui.Spacing();
                 ImGui.SeparatorText("GPU Statistics");
                 UpdatePipelineTable();
+                ImGui.Spacing();
+                ImGui.SeparatorText("GPU Memory");
+                UpdateGpuMemoryUsageTable(Performance);
+
             }
             ImGui.End();
         }
     }
+
+    private static void UpdateGpuMemoryUsageTable(PerformanceDataCollector performance)
+    {
+        var fraction = performance.GpuMemory.MemoryBudget > 0
+            ? performance.GpuMemory.MemoryUsage / (float)performance.GpuMemory.MemoryBudget
+            : 0.0f;
+        var used = performance.GpuMemory.MemoryUsage / (1024.0f * 1024.0f);
+        var budget = performance.GpuMemory.MemoryBudget / (1024.0f * 1024.0f);
+        ImGui.ProgressBar(fraction, Vector2.Zero, $"Used: {used:F2} MiB / Budget: {budget:F2} MiB");
+    }
+
+    private static void UpdateCpuMemoryTable(PerformanceDataCollector performance)
+    {
+        if (ImGui.BeginTable("CpuMemory", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
+        {
+            ImGui.TableSetupColumn("Memory");
+            ImGui.TableSetupColumn("Value");
+            ImGui.TableHeadersRow();
+
+            var memory = performance.CpuMemory;
+            MemoryRow("Private memory", $"{ToMiB(memory.PrivateMemorySize):F2} MiB");
+            MemoryRow("Allocated total", $"{ToMiB(memory.AllocatedBytes):F2} MiB");
+            MemoryRow("Allocated per frame", $"{memory.AllocatedBytesPerFrame / 1024.0f:F2} KiB");
+            MemoryRow("GC pause total", $"{memory.TotalPauseDuration:F3} ms");
+            MemoryRow("GC pause last", $"{memory.LastPauseDuration:F3} ms");
+
+            var generations = performance.GenerationSizes;
+            MemoryRow("Gen0", $"{ToMiB(generations[0]):F2} MiB");
+            MemoryRow("Gen1", $"{ToMiB(generations[1]):F2} MiB");
+            MemoryRow("Gen2", $"{ToMiB(generations[2]):F2} MiB");
+            MemoryRow("Large object heap", $"{ToMiB(generations[3]):F2} MiB");
+            MemoryRow("Pinned object heap", $"{ToMiB(generations[4]):F2} MiB");
+
+            ImGui.EndTable();
+        }
+    }
+
+    private static void MemoryRow(string label, string value)
+    {
+        ImGui.TableNextRow();
+        ImGui.TableNextColumn();
+        ImGui.Text(label);
+        ImGui.TableNextColumn();
+        ImGui.Text(value);
+    }
+
+    private static float ToMiB(long bytes) => bytes / (1024.0f * 1024.0f);
 
     private static void UpdateTimingTable(string id, string header, TimingGroup group)
     {

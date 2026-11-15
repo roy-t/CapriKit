@@ -1,11 +1,12 @@
 using CapriKit.DirectX11.Contexts;
 using Vortice.Direct3D11;
+using Vortice.DXGI;
 
 namespace CapriKit.DirectX11.Debug;
 
 /// <summary>
 /// Measures how long the GPU spends on consecutive sections of a frame, and how much work it does in them,
-/// using timestamp and pipeline statistics queries.
+/// and GPU memory usage.
 /// Call <see cref="BeginFrame"/> at the start of a frame, <see cref="EndSection"/> after the commands
 /// of each section, in the order the sections were given to the constructor, and <see cref="EndFrame"/>
 /// before presenting. Results arrive a few frames late so that reading them never stalls the CPU.
@@ -21,6 +22,7 @@ public sealed class GpuProfiler : IDisposable
     private readonly ID3D11Query[] Disjoint;
     private readonly ID3D11Query[,] Timestamps; // [slot, 0 = frame start, i + 1 = end of section i]
     private readonly ID3D11Query[,] PipelineQueries; // [slot, section]
+    private readonly IDXGIAdapter3 Adapter;
     private readonly bool[] Pending; // Queries of a slot must be read before they can be reused
     private readonly float[] SectionDurations;
     private readonly PipelineStatistics[] SectionStatistics;
@@ -41,6 +43,10 @@ public sealed class GpuProfiler : IDisposable
         Disjoint = new ID3D11Query[Latency];
         Timestamps = new ID3D11Query[Latency, sections.Length + 1];
         PipelineQueries = new ID3D11Query[Latency, sections.Length];
+
+        using var dxgiDevice = device.ID3D11Device.QueryInterface<IDXGIDevice>();
+        using var adapter = dxgiDevice.GetParent<IDXGIAdapter>();
+        Adapter = adapter.QueryInterface<IDXGIAdapter3>();
 
         for (var slot = 0; slot < Latency; slot++)
         {
@@ -77,6 +83,16 @@ public sealed class GpuProfiler : IDisposable
     /// Work done by the GPU in each section, from the same frame as <see cref="Durations"/>.
     /// </summary>
     public ReadOnlySpan<PipelineStatistics> Statistics => SectionStatistics;
+
+    /// <summary>
+    /// Total local GPU memory used by this process, in bytes.
+    /// </summary>
+    public ulong MemoryUsage { get; private set; }
+
+    /// <summary>
+    /// OS allowed local GPU memory budget, in bytes, before swapping occurs.
+    /// </summary>
+    public ulong MemoryBudget { get; private set; }
 
     public void BeginFrame(ImmediateDeviceContext context)
     {
@@ -140,6 +156,11 @@ public sealed class GpuProfiler : IDisposable
             Pending[readSlot] = false;
             readSlot = (readSlot + 1) % Latency;
         }
+
+        // Note: for IGPs the NonLocal memory might also be interesting
+        var local = Adapter.QueryVideoMemoryInfo(0, MemorySegmentGroup.Local);        
+        MemoryUsage = local.CurrentUsage;
+        MemoryBudget = local.Budget;
 
         return hasResults;
     }
@@ -208,5 +229,7 @@ public sealed class GpuProfiler : IDisposable
         {
             query.Dispose();
         }
+
+        Adapter.Dispose();
     }
 }
