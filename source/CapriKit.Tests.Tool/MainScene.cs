@@ -1,16 +1,32 @@
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
+using CapriKit.Strings;
 using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32.Input;
 using ImGuiNET;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using static CapriKit.Strings.StringBuffer;
 
 namespace CapriKit.Tests.Tool;
+
+internal static class UI
+{
+    // ImGui copies text during each call and runs on a single thread, so one shared buffer is enough
+    internal static readonly StringBuffer Buffer = new();
+
+    public static void Text(StringBuffer buffer, [InterpolatedStringHandlerArgument("buffer")] ref StringBufferHandler handler)
+    {
+        ImGui.TextUnformatted(buffer.Write(ref handler));
+    }
+}
+
 
 internal sealed class MainScene : IScene, IDisposable
 {
     private readonly IReadOnlyList<ITestScreen> Tests;
+    private readonly StringBuffer StringBuffer;
     private readonly Keyboard Keyboard;
     private readonly SwapChain SwapChain;
     private readonly PerformanceDataCollector Performance;
@@ -25,6 +41,7 @@ internal sealed class MainScene : IScene, IDisposable
         Keyboard = keyboard;
         SwapChain = swapChain;
         Performance = performance;
+        StringBuffer = new StringBuffer();
     }
 
     public void Update(DeviceContext context, float elapsed)
@@ -65,7 +82,7 @@ internal sealed class MainScene : IScene, IDisposable
                 for (var i = 0; i < Tests.Count; i++)
                 {
                     var test = Tests[i];
-                    if (ImGui.MenuItem($"{test.Title}", string.Empty, i == currentTestIndex))
+                    if (ImGui.MenuItem(test.Title, string.Empty, i == currentTestIndex))
                     {
                         currentTestIndex = i;
                     }
@@ -100,14 +117,14 @@ internal sealed class MainScene : IScene, IDisposable
 
                 ImGui.Spacing();
                 ImGui.SeparatorText("CPU Timings");
-                ImGui.Text($"CPU samples: {Performance.Cpu.SampleCount}/{Performance.Capacity}");
+                UI.Text(StringBuffer, $"CPU samples: {Performance.Cpu.SampleCount}/{Performance.Capacity}");
                 UpdateTimingTable("CpuTimings", "CPU (ms)", Performance.Cpu);
                 ImGui.Spacing();
                 ImGui.SeparatorText("CPU Memory");
                 UpdateCpuMemoryTable(Performance);
                 ImGui.Spacing();
                 ImGui.SeparatorText("GPU Timings");
-                ImGui.Text($"GPU samples: {Performance.Gpu.SampleCount}/{Performance.Capacity}");
+                UI.Text(StringBuffer, $"GPU samples: {Performance.Gpu.SampleCount}/{Performance.Capacity}");
                 UpdateTimingTable("GpuTimings", "GPU (ms)", Performance.Gpu);
                 ImGui.Spacing();
                 ImGui.SeparatorText("GPU Statistics");
@@ -161,14 +178,14 @@ internal sealed class MainScene : IScene, IDisposable
     {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
-        ImGui.Text(label);
+        ImGui.TextUnformatted(label);
         ImGui.TableNextColumn();
-        ImGui.Text(value);
+        ImGui.TextUnformatted(value);
     }
 
     private static float ToMiB(long bytes) => bytes / (1024.0f * 1024.0f);
 
-    private static void UpdateTimingTable(string id, string header, TimingGroup group)
+    private void UpdateTimingTable(string id, string header, TimingGroup group)
     {
         if (ImGui.BeginTable(id, 4, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
         {
@@ -183,13 +200,13 @@ internal sealed class MainScene : IScene, IDisposable
             {
                 ImGui.TableNextRow();
                 ImGui.TableNextColumn();
-                ImGui.Text(group.Names[i]);
+                ImGui.TextUnformatted(group.Names[i]);
                 ImGui.TableNextColumn();
-                ImGui.Text($"{statistics[i].Median:F3}");
+                UI.Text(StringBuffer, $"{statistics[i].Median:F3}");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{statistics[i].P99:F3}");
+                UI.Text(StringBuffer, $"{statistics[i].P99:F3}");
                 ImGui.TableNextColumn();
-                ImGui.Text($"{statistics[i].Noise:F3}");
+                UI.Text(StringBuffer, $"{statistics[i].Noise:F3}");
             }
 
             ImGui.EndTable();
@@ -224,15 +241,15 @@ internal sealed class MainScene : IScene, IDisposable
         }
     }
 
-    private static void PipelineRow(string label, ReadOnlySpan<PipelineStatistics> pipeline, Func<PipelineStatistics, ulong> selector)
+    private void PipelineRow(string label, ReadOnlySpan<PipelineStatistics> pipeline, Func<PipelineStatistics, ulong> selector)
     {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
-        ImGui.Text(label);
+        ImGui.TextUnformatted(label);
         foreach (var statistics in pipeline)
         {
             ImGui.TableNextColumn();
-            ImGui.Text($"{selector(statistics):N0}");
+            UI.Text(StringBuffer, $"{selector(statistics):N0}");
         }
     }
 

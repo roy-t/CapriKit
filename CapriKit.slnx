@@ -70,6 +70,9 @@
   <Project Path="source/CapriKit.Meta/CapriKit.Meta.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="source/CapriKit.Strings/CapriKit.Strings.csproj" Id="35f49139-2c91-40ae-8988-14f614e7b4d0">
+    <Platform Project="x64" />
+  </Project>
   <Project Path="source/CapriKit.SuperCompressed/CapriKit.SuperCompressed.csproj">
     <Platform Project="x64" />
   </Project>
