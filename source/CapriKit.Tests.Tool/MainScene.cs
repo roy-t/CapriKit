@@ -11,18 +11,6 @@ using static CapriKit.Strings.StringBuffer;
 
 namespace CapriKit.Tests.Tool;
 
-internal static class UI
-{
-    // ImGui copies text during each call and runs on a single thread, so one shared buffer is enough
-    internal static readonly StringBuffer Buffer = new();
-
-    public static void Text(StringBuffer buffer, [InterpolatedStringHandlerArgument("buffer")] ref StringBufferHandler handler)
-    {
-        ImGui.TextUnformatted(buffer.Write(ref handler));
-    }
-}
-
-
 internal sealed class MainScene : IScene, IDisposable
 {
     private readonly IReadOnlyList<ITestScreen> Tests;
@@ -117,14 +105,14 @@ internal sealed class MainScene : IScene, IDisposable
 
                 ImGui.Spacing();
                 ImGui.SeparatorText("CPU Timings");
-                UI.Text(StringBuffer, $"CPU samples: {Performance.Cpu.SampleCount}/{Performance.Capacity}");
+                ImGui.TextUnformatted(StringBuffer.Write($"CPU samples: {Performance.Cpu.SampleCount}/{Performance.Capacity}"));
                 UpdateTimingTable("CpuTimings", "CPU (ms)", Performance.Cpu);
                 ImGui.Spacing();
                 ImGui.SeparatorText("CPU Memory");
                 UpdateCpuMemoryTable(Performance);
                 ImGui.Spacing();
                 ImGui.SeparatorText("GPU Timings");
-                UI.Text(StringBuffer, $"GPU samples: {Performance.Gpu.SampleCount}/{Performance.Capacity}");
+                ImGui.TextUnformatted(StringBuffer.Write($"GPU samples: {Performance.Gpu.SampleCount}/{Performance.Capacity}"));
                 UpdateTimingTable("GpuTimings", "GPU (ms)", Performance.Gpu);
                 ImGui.Spacing();
                 ImGui.SeparatorText("GPU Statistics");
@@ -138,17 +126,17 @@ internal sealed class MainScene : IScene, IDisposable
         }
     }
 
-    private static void UpdateGpuMemoryUsageTable(PerformanceDataCollector performance)
+    private void UpdateGpuMemoryUsageTable(PerformanceDataCollector performance)
     {
         var fraction = performance.GpuMemory.MemoryBudget > 0
             ? performance.GpuMemory.MemoryUsage / (float)performance.GpuMemory.MemoryBudget
             : 0.0f;
         var used = performance.GpuMemory.MemoryUsage / (1024.0f * 1024.0f);
         var budget = performance.GpuMemory.MemoryBudget / (1024.0f * 1024.0f);
-        ImGui.ProgressBar(fraction, Vector2.Zero, $"Used: {used:F2} MiB / Budget: {budget:F2} MiB");
+        ImGui.ProgressBar(fraction, Vector2.Zero, StringBuffer.Write($"Used: {used:F2} MiB / Budget: {budget:F2} MiB"));
     }
 
-    private static void UpdateCpuMemoryTable(PerformanceDataCollector performance)
+    private void UpdateCpuMemoryTable(PerformanceDataCollector performance)
     {
         if (ImGui.BeginTable("CpuMemory", 2, ImGuiTableFlags.Borders | ImGuiTableFlags.RowBg))
         {
@@ -157,30 +145,30 @@ internal sealed class MainScene : IScene, IDisposable
             ImGui.TableHeadersRow();
 
             var memory = performance.CpuMemory;
-            MemoryRow("Private memory", $"{ToMiB(memory.PrivateMemorySize):F2} MiB");
-            MemoryRow("Allocated total", $"{ToMiB(memory.AllocatedBytes):F2} MiB");
-            MemoryRow("Allocated per frame", $"{memory.AllocatedBytesPerFrame / 1024.0f:F2} KiB");
-            MemoryRow("GC pause total", $"{memory.TotalPauseDuration:F3} ms");
-            MemoryRow("GC pause last", $"{memory.LastPauseDuration:F3} ms");
+            MemoryRow("Private memory", StringBuffer, $"{ToMiB(memory.PrivateMemorySize):F2} MiB");
+            MemoryRow("Allocated total", StringBuffer, $"{ToMiB(memory.AllocatedBytes):F2} MiB");
+            MemoryRow("Allocated per frame", StringBuffer, $"{memory.AllocatedBytesPerFrame} Bytes");
+            MemoryRow("GC pause total", StringBuffer, $"{memory.TotalPauseDuration:F3} ms");
+            MemoryRow("GC pause last", StringBuffer, $"{memory.LastPauseDuration:F3} ms");
 
             var generations = performance.GenerationSizes;
-            MemoryRow("Gen0", $"{ToMiB(generations[0]):F2} MiB");
-            MemoryRow("Gen1", $"{ToMiB(generations[1]):F2} MiB");
-            MemoryRow("Gen2", $"{ToMiB(generations[2]):F2} MiB");
-            MemoryRow("Large object heap", $"{ToMiB(generations[3]):F2} MiB");
-            MemoryRow("Pinned object heap", $"{ToMiB(generations[4]):F2} MiB");
+            MemoryRow("Gen0", StringBuffer, $"{ToMiB(generations[0]):F2} MiB");
+            MemoryRow("Gen1", StringBuffer, $"{ToMiB(generations[1]):F2} MiB");
+            MemoryRow("Gen2", StringBuffer, $"{ToMiB(generations[2]):F2} MiB");
+            MemoryRow("Large object heap", StringBuffer, $"{ToMiB(generations[3]):F2} MiB");
+            MemoryRow("Pinned object heap", StringBuffer, $"{ToMiB(generations[4]):F2} MiB");
 
             ImGui.EndTable();
         }
     }
 
-    private static void MemoryRow(string label, string value)
+    private static void MemoryRow(string label, StringBuffer buffer, [InterpolatedStringHandlerArgument("buffer")] ref StringBufferHandler value)
     {
         ImGui.TableNextRow();
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(label);
         ImGui.TableNextColumn();
-        ImGui.TextUnformatted(value);
+        ImGui.TextUnformatted(buffer.Write(ref value));
     }
 
     private static float ToMiB(long bytes) => bytes / (1024.0f * 1024.0f);
@@ -202,11 +190,11 @@ internal sealed class MainScene : IScene, IDisposable
                 ImGui.TableNextColumn();
                 ImGui.TextUnformatted(group.Names[i]);
                 ImGui.TableNextColumn();
-                UI.Text(StringBuffer, $"{statistics[i].Median:F3}");
+                ImGui.TextUnformatted(StringBuffer.Write($"{statistics[i].Median:F3}"));
                 ImGui.TableNextColumn();
-                UI.Text(StringBuffer, $"{statistics[i].P99:F3}");
+                ImGui.TextUnformatted(StringBuffer.Write($"{statistics[i].P99:F3}"));
                 ImGui.TableNextColumn();
-                UI.Text(StringBuffer, $"{statistics[i].Noise:F3}");
+                ImGui.TextUnformatted(StringBuffer.Write($"{statistics[i].Noise:F3}"));
             }
 
             ImGui.EndTable();
@@ -249,7 +237,7 @@ internal sealed class MainScene : IScene, IDisposable
         foreach (var statistics in pipeline)
         {
             ImGui.TableNextColumn();
-            UI.Text(StringBuffer, $"{selector(statistics):N0}");
+            ImGui.TextUnformatted(StringBuffer.Write($"{selector(statistics):N0}"));
         }
     }
 

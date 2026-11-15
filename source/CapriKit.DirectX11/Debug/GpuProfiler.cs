@@ -158,7 +158,7 @@ public sealed class GpuProfiler : IDisposable
         }
 
         // Note: for IGPs the NonLocal memory might also be interesting
-        var local = Adapter.QueryVideoMemoryInfo(0, MemorySegmentGroup.Local);        
+        var local = Adapter.QueryVideoMemoryInfo(0, MemorySegmentGroup.Local);
         MemoryUsage = local.CurrentUsage;
         MemoryBudget = local.Budget;
 

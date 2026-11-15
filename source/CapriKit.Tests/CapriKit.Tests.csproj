@@ -30,6 +30,7 @@
     <ProjectReference Include="..\CapriKit.Geometry\CapriKit.Geometry.csproj" />
     <ProjectReference Include="..\CapriKit.IO\CapriKit.IO.csproj" />
     <ProjectReference Include="..\CapriKit.Mathematics\CapriKit.Mathematics.csproj" />
+    <ProjectReference Include="..\CapriKit.Strings\CapriKit.Strings.csproj" />
     <ProjectReference Include="..\CapriKit.SuperCompressed\CapriKit.SuperCompressed.csproj" />
     <ProjectReference Include="..\CapriKit.Win32\CapriKit.Win32.csproj" />
   </ItemGroup>
