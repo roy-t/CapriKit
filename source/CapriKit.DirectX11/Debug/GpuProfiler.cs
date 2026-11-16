@@ -5,7 +5,7 @@ using Vortice.DXGI;
 namespace CapriKit.DirectX11.Debug;
 
 /// <summary>
-/// Measures how long the GPU spends on consecutive sections of a frame, and how much work it does in them,
+/// Measures how long the GPU spends on consecutive sections of a frame, how much work it does in them,
 /// and GPU memory usage.
 /// Call <see cref="BeginFrame"/> at the start of a frame, <see cref="EndSection"/> after the commands
 /// of each section, in the order the sections were given to the constructor, and <see cref="EndFrame"/>

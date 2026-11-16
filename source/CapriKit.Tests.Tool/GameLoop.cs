@@ -2,6 +2,7 @@ using CapriKit.AssetPipeline;
 using CapriKit.DirectX11;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
+using CapriKit.Tests.Tool.Performance;
 using CapriKit.Win32;
 using CapriKit.Win32.Input;
 using System.Diagnostics;

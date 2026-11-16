@@ -1,19 +1,18 @@
 using System.Diagnostics;
 
-namespace CapriKit.Tests.Tool;
+namespace CapriKit.Tests.Tool.Performance;
 
 /// <summary>
 /// Measures how long the CPU spends on consecutive sections of a frame.
 /// Call <see cref="BeginFrame"/> at the start of a frame, <see cref="EndSection"/> after the work
 /// of each section, in the order the sections were given to the constructor, and <see cref="EndFrame"/>
 /// at the end of the frame. Results are available immediately after <see cref="EndFrame"/>.
-/// Also tracks the memory use of the process, covering all threads.
+/// Also tracks the memory use of the process.
 /// </summary>
 internal sealed class CpuProfiler
 {
     private readonly long[] Timestamps; // 0 = frame start, i + 1 = end of section i
     private readonly float[] SectionDurations;
-    private readonly long[] Generations = new long[5]; // gen0, gen1, gen2, large object heap, pinned object heap
 
     private int nextSection;
     private int lastCollectionCount = -1; // -1 so the first frame always reads the memory info
@@ -25,7 +24,6 @@ internal sealed class CpuProfiler
         Sections = sections;
         Timestamps = new long[sections.Length + 1];
         SectionDurations = new float[sections.Length];
-        AllocatedBytes = GC.GetTotalAllocatedBytes(precise: false);
     }
 
     /// <summary>
@@ -44,35 +42,10 @@ internal sealed class CpuProfiler
     public float Total { get; private set; }
 
     /// <summary>
-    /// Bytes allocated on the managed heap by all threads since the process started.
+    /// Memory use of the process, covering all threads, as of the last completed frame.
+    /// Private memory, generation sizes and last pause are only updated after a garbage collection.
     /// </summary>
-    public long AllocatedBytes { get; private set; }
-
-    /// <summary>
-    /// Bytes allocated on the managed heap by all threads during the last completed frame.
-    /// </summary>
-    public long AllocatedBytesDelta { get; private set; }
-
-    /// <summary>
-    /// Time in milliseconds the runtime was paused for garbage collections since the process started.
-    /// </summary>
-    public float TotalPauseDuration { get; private set; }
-
-    /// <summary>
-    /// Time in milliseconds the runtime was paused for the most recent garbage collection.
-    /// </summary>
-    public float LastPauseDuration { get; private set; }
-
-    /// <summary>
-    /// Size in bytes of gen0, gen1, gen2, the large object heap and the pinned object heap,
-    /// as measured after the most recent garbage collection.
-    /// </summary>
-    public ReadOnlySpan<long> GenerationSizes => Generations;
-
-    /// <summary>
-    /// Memory in bytes committed by the process, both managed and native, as measured after the most recent garbage collection.
-    /// </summary>
-    public long PrivateMemorySize { get; private set; }
+    public CpuMemoryStatistics Memory { get; private set; }
 
     public void BeginFrame()
     {
@@ -117,9 +90,12 @@ internal sealed class CpuProfiler
     {
         // Not precise: can be off by a few KB per thread, but much cheaper
         var allocated = GC.GetTotalAllocatedBytes(precise: false);
-        AllocatedBytesDelta = allocated - AllocatedBytes;
-        AllocatedBytes = allocated;
-        TotalPauseDuration = (float)GC.GetTotalPauseDuration().TotalMilliseconds;
+        Memory = Memory with
+        {
+            AllocatedBytes = allocated,
+            AllocatedBytesPerFrame = allocated - Memory.AllocatedBytes,
+            TotalPauseDuration = (float)GC.GetTotalPauseDuration().TotalMilliseconds
+        };
 
         // Every garbage collection increments the gen0 count, even when collecting a higher generation
         var collectionCount = GC.CollectionCount(0);
@@ -131,10 +107,7 @@ internal sealed class CpuProfiler
 
         // These calls allocate, and their results only change after a garbage collection
         var info = GC.GetGCMemoryInfo();
-        for (var i = 0; i < Generations.Length; i++)
-        {
-            Generations[i] = info.GenerationInfo[i].SizeAfterBytes;
-        }
+        var generations = info.GenerationInfo;
 
         // A background collection pauses twice, the second pause is zero for other collections
         var pause = TimeSpan.Zero;
@@ -142,9 +115,18 @@ internal sealed class CpuProfiler
         {
             pause += duration;
         }
-        LastPauseDuration = (float)pause.TotalMilliseconds;
 
         using var process = Process.GetCurrentProcess();
-        PrivateMemorySize = process.PrivateMemorySize64;
+        Memory = Memory with
+        {
+            Collections = collectionCount,
+            PrivateMemorySize = process.PrivateMemorySize64,
+            LastPauseDuration = (float)pause.TotalMilliseconds,
+            Gen0Size = generations[0].SizeAfterBytes,
+            Gen1Size = generations[1].SizeAfterBytes,
+            Gen2Size = generations[2].SizeAfterBytes,
+            LargeObjectHeapSize = generations[3].SizeAfterBytes,
+            PinnedObjectHeapSize = generations[4].SizeAfterBytes
+        };
     }
 }

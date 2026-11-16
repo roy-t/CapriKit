@@ -2,6 +2,7 @@ using CapriKit.DirectX11;
 using CapriKit.DirectX11.Contexts;
 using CapriKit.DirectX11.Debug;
 using CapriKit.Strings;
+using CapriKit.Tests.Tool.Performance;
 using CapriKit.Tests.Tool.Tests.Framework;
 using CapriKit.Win32.Input;
 using ImGuiNET;
@@ -147,16 +148,15 @@ internal sealed class MainScene : IScene, IDisposable
             var memory = performance.CpuMemory;
             MemoryRow("Private memory", FormatBuffer, $"{ToMiB(memory.PrivateMemorySize):F2} MiB");
             MemoryRow("Allocated total", FormatBuffer, $"{ToMiB(memory.AllocatedBytes):F2} MiB");
-            MemoryRow("Allocated per frame", FormatBuffer, $"{memory.AllocatedBytesPerFrame} Bytes");
+            MemoryRow("Allocated per frame", FormatBuffer, $"{performance.AverageAllocatedBytesPerFrame} Bytes");
+            MemoryRow("GC collections", FormatBuffer, $"{memory.Collections}");
             MemoryRow("GC pause total", FormatBuffer, $"{memory.TotalPauseDuration:F3} ms");
             MemoryRow("GC pause last", FormatBuffer, $"{memory.LastPauseDuration:F3} ms");
-
-            var generations = performance.GenerationSizes;
-            MemoryRow("Gen0", FormatBuffer, $"{ToMiB(generations[0]):F2} MiB");
-            MemoryRow("Gen1", FormatBuffer, $"{ToMiB(generations[1]):F2} MiB");
-            MemoryRow("Gen2", FormatBuffer, $"{ToMiB(generations[2]):F2} MiB");
-            MemoryRow("Large object heap", FormatBuffer, $"{ToMiB(generations[3]):F2} MiB");
-            MemoryRow("Pinned object heap", FormatBuffer, $"{ToMiB(generations[4]):F2} MiB");
+            MemoryRow("Gen0", FormatBuffer, $"{ToMiB(memory.Gen0Size):F2} MiB");
+            MemoryRow("Gen1", FormatBuffer, $"{ToMiB(memory.Gen1Size):F2} MiB");
+            MemoryRow("Gen2", FormatBuffer, $"{ToMiB(memory.Gen2Size):F2} MiB");
+            MemoryRow("Large object heap", FormatBuffer, $"{ToMiB(memory.LargeObjectHeapSize):F2} MiB");
+            MemoryRow("Pinned object heap", FormatBuffer, $"{ToMiB(memory.PinnedObjectHeapSize):F2} MiB");
 
             ImGui.EndTable();
         }
