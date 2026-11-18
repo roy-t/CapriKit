@@ -148,7 +148,7 @@ internal sealed class MainScene : IScene, IDisposable
             var memory = performance.CpuMemory;
             MemoryRow("Private memory", FormatBuffer, $"{ToMiB(memory.PrivateMemorySize):F2} MiB");
             MemoryRow("Allocated total", FormatBuffer, $"{ToMiB(memory.AllocatedBytes):F2} MiB");
-            MemoryRow("Allocated per frame", FormatBuffer, $"{performance.AverageAllocatedBytesPerFrame} Bytes");
+            MemoryRow("Allocated per second", FormatBuffer, $"{performance.BytesAllocatedPerSecond:F2} Bytes");
             MemoryRow("GC collections", FormatBuffer, $"{memory.Collections}");
             MemoryRow("GC pause total", FormatBuffer, $"{memory.TotalPauseDuration:F3} ms");
             MemoryRow("GC pause last", FormatBuffer, $"{memory.LastPauseDuration:F3} ms");
