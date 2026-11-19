@@ -26,7 +26,7 @@ internal sealed class PerformanceDataCollector
     public GpuMemoryStatistics GpuMemory { get; private set; }
     public CpuMemoryStatistics CpuMemory { get; private set; }
 
-    public float BytesAllocatedPerSecond { get; private set; }
+    public float BytesAllocatedPerFrame { get; private set; }
 
     public int Capacity => WindowSize;
 
@@ -52,7 +52,7 @@ internal sealed class PerformanceDataCollector
 
     public void Collect(CpuProfiler source)
     {
-        Cpu.Add(source.Sections, source.Total, source.Durations);
+        Cpu.Add(source.Sections, source.TotalDuration, source.Durations);
         CpuMemory = source.Memory;
         bytesAllocatedSinceLastRefresh += source.Memory.AllocatedBytesPerFrame;
         framesSinceLastRefresh++;
@@ -67,7 +67,7 @@ internal sealed class PerformanceDataCollector
         {
             Cpu.Refresh();
             Gpu.Refresh();
-            BytesAllocatedPerSecond = bytesAllocatedSinceLastRefresh / (float)framesSinceLastRefresh;
+            BytesAllocatedPerFrame = bytesAllocatedSinceLastRefresh / (float)framesSinceLastRefresh;
 
             bytesAllocatedSinceLastRefresh = 0;
             framesSinceLastRefresh = 0;
@@ -83,7 +83,7 @@ internal sealed class PerformanceDataCollector
         GpuMemory = default;
         CpuMemory = default;
         bytesAllocatedSinceLastRefresh = 0;
-        BytesAllocatedPerSecond = 0;
+        BytesAllocatedPerFrame = 0;
         framesSinceLastRefresh = 0;
         lastRefresh = Stopwatch.GetTimestamp();
     }

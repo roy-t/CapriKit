@@ -12,7 +12,9 @@ namespace CapriKit.Tests.Tool.Performance;
 internal sealed class CpuProfiler
 {
     private readonly long[] Timestamps; // 0 = frame start, i + 1 = end of section i
+    private readonly long[] AllocationStamps; // Same as timestamps
     private readonly float[] SectionDurations;
+    private readonly long[] SectionAllocations;
 
     private int nextSection;
     private int lastCollectionCount = -1; // -1 so the first frame always reads the memory info
@@ -23,7 +25,9 @@ internal sealed class CpuProfiler
 
         Sections = sections;
         Timestamps = new long[sections.Length + 1];
+        AllocationStamps = new long[sections.Length + 1];
         SectionDurations = new float[sections.Length];
+        SectionAllocations = new long[sections.Length];
     }
 
     /// <summary>
@@ -37,12 +41,23 @@ internal sealed class CpuProfiler
     public ReadOnlySpan<float> Durations => SectionDurations;
 
     /// <summary>
-    /// CPU time in milliseconds from the start of the frame to the end of the last section.
+    /// Main thread allocations per section of the last completed frame
     /// </summary>
-    public float Total { get; private set; }
+    public ReadOnlySpan<long> Allocations => SectionAllocations;
 
     /// <summary>
-    /// Memory use of the process, covering all threads, as of the last completed frame.
+    /// CPU time in milliseconds from the start of the frame to the end of the last section.
+    /// </summary>
+    public float TotalDuration { get; private set; }
+
+    /// <summary>
+    /// Total allocations on the main thread from the start of the frame to the end of the last section.
+    /// Use <see cref="Memory"/> for information on memory allocated on all threads.
+    /// </summary>
+    public long TotalAllocations { get; private set; }
+
+    /// <summary>
+    /// Memory use of the process, as of the last completed frame.
     /// Private memory, generation sizes and last pause are only updated after a garbage collection.
     /// </summary>
     public CpuMemoryStatistics Memory { get; private set; }
@@ -51,6 +66,7 @@ internal sealed class CpuProfiler
     {
         nextSection = 0;
         Timestamps[0] = Stopwatch.GetTimestamp();
+        AllocationStamps[0] = GC.GetAllocatedBytesForCurrentThread();
     }
 
     /// <summary>
@@ -63,9 +79,11 @@ internal sealed class CpuProfiler
         ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(section, Sections.Count);
 
         var now = Stopwatch.GetTimestamp();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
         for (; nextSection <= section; nextSection++)
         {
             Timestamps[nextSection + 1] = now;
+            AllocationStamps[nextSection + 1] = allocated;
         }
     }
 
@@ -76,12 +94,14 @@ internal sealed class CpuProfiler
             EndSection(Sections.Count - 1);
         }
 
-        // Durations are only updated here so they always describe one complete frame
+        // Durations and allocations are only updated here so they always describe one complete frame
         for (var i = 0; i < SectionDurations.Length; i++)
         {
             SectionDurations[i] = (float)Stopwatch.GetElapsedTime(Timestamps[i], Timestamps[i + 1]).TotalMilliseconds;
+            SectionAllocations[i] = AllocationStamps[i] - AllocationStamps[i + 1];
         }
-        Total = (float)Stopwatch.GetElapsedTime(Timestamps[0], Timestamps[^1]).TotalMilliseconds;
+        TotalDuration = (float)Stopwatch.GetElapsedTime(Timestamps[0], Timestamps[^1]).TotalMilliseconds;
+        TotalAllocations = AllocationStamps[^1] - AllocationStamps[0];
 
         UpdateMemory();
     }
@@ -94,6 +114,7 @@ internal sealed class CpuProfiler
         {
             AllocatedBytes = allocated,
             AllocatedBytesPerFrame = allocated - Memory.AllocatedBytes,
+            MainThreadAllocatedBytes = TotalAllocations,
             TotalPauseDuration = (float)GC.GetTotalPauseDuration().TotalMilliseconds
         };
 

@@ -8,7 +8,11 @@ internal static class TestRegistration
     public static IServiceCollection AddTest<TTest>(this IServiceCollection services)
         where TTest : class, ITestScreen
     {
-        return services.AddSingleton<ITestScreen, TTest>();
+        // Keyed by class name, the same key as the test's asset bundle, so a single test can be resolved by name.
+        // The unkeyed registration forwards to the same instance so all tests can be resolved as a collection.
+        var key = typeof(TTest).Name;
+        return services.AddKeyedSingleton<ITestScreen, TTest>(key)
+                       .AddSingleton<ITestScreen>(sp => sp.GetRequiredKeyedService<ITestScreen>(key));
     }
 
     public static IServiceCollection AddTest<TTest, TContent>(this IServiceCollection services, Func<AssetManager, AssetBundle<TContent>> create)
@@ -16,7 +20,7 @@ internal static class TestRegistration
         where TContent : class
     {
         return services.AddBundle(typeof(TTest).Name, create)
-                       .AddSingleton<ITestScreen, TTest>();
+                       .AddTest<TTest>();
     }
 
     /// <summary>
@@ -26,12 +30,15 @@ internal static class TestRegistration
     public static IServiceCollection AddBundle<TContent>(this IServiceCollection services, string key, Func<AssetManager, AssetBundle<TContent>> create)
         where TContent : class
     {
-        // Create a generic bundle factory that uses the asset bundle registered by key so the loading screen can use it
-        // to check if all assets in the bundle are ready.
-        services.AddSingleton<AssetBundle>(sp => sp.GetRequiredKeyedService<AssetBundle<TContent>>(key));
-
         // Create a keyed bundle factory so that each dependent get its own bundle instance.
         services.AddKeyedSingleton(key, (sp, _) => create(sp.GetRequiredService<AssetManager>()));
+
+        // DI only matches the exact registered type, so also expose the bundle as a keyed non-generic AssetBundle.
+        services.AddKeyedSingleton<AssetBundle>(key, (sp, k) => sp.GetRequiredKeyedService<AssetBundle<TContent>>(k));
+
+        // Create a generic bundle factory that uses the asset bundle registered by key so the loading screen can use it
+        // to check if all assets in the bundle are ready.
+        services.AddSingleton<AssetBundle>(sp => sp.GetRequiredKeyedService<AssetBundle>(key));
 
         // Create a keyed factory for the instance of the bundle that we can only resolve once the bundle is ready.
         services.AddKeyedSingleton(key, (sp, _) =>

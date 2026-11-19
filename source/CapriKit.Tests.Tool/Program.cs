@@ -37,6 +37,7 @@ internal sealed class Program
         services.AddSingleton<MainScene>();
         services.AddSingleton<TurnTableCamera>();
         services.AddSingleton<PerformanceDataCollector>();
+        services.AddSingleton<TestDriver>();
 
         services.AddTest<RenderInstancedModelTest, GenericModelTestBundle>(RenderInstancedModelTest.CreateBundleFactory());
         services.AddTest<RenderModelTest, GenericModelTestBundle>(RenderModelTest.CreateBundleFactory());
@@ -50,12 +51,24 @@ internal sealed class Program
             ValidateScopes = true
         });
 
+
+        //if (true)
+        //{
+        //    //var testClass = CommandLineArguments.GetArgumentValue("--test-class");
+        //    var testDriver = provider.GetRequiredService<TestDriver>();
+        //    testDriver.Run("TextureTest");
+        //    return;
+        //}
+
+
         var gameLoop = provider.GetRequiredService<GameLoop>();
         var scene = provider.GetRequiredService<LoadingScene>();
         gameLoop.ChangeScene(scene);
         gameLoop.Run();
 
         UnloadRenderDoc(provider);
+
+
     }
 
     private static void LoadRenderDoc(ServiceCollection services)
